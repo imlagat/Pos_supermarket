@@ -1,0 +1,30 @@
+<?php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+class DatabaseSeeder extends Seeder
+{
+    public function run()
+    {
+        User::create([
+            'name' => 'Administrator',
+            'email' => 'admin@pos.com',
+            'password' => Hash::make('admin123'),
+            'role' => 'admin'
+        ]);
+        User::create([
+            'name' => 'Store Manager',
+            'email' => 'manager@pos.com',
+            'password' => Hash::make('manager123'),
+            'role' => 'manager'
+        ]);
+        User::create([
+            'name' => 'Cashier User',
+            'email' => 'cashier@pos.com',
+            'password' => Hash::make('cashier123'),
+            'role' => 'cashier'
+        ]);
+    }
+}

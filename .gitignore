@@ -1,0 +1,23 @@
+# Backend
+backend/.env
+backend/.env.backup
+backend/vendor/
+backend/storage/*.log
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/node_modules/
+backend/.phpunit.cache
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+*.sqlite

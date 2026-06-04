@@ -1,0 +1,157 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Payment;
+use App\Models\Customer;
+use App\Models\Product;
+use App\Models\Batch;
+use App\Models\LoyaltyTransaction;
+use App\Services\CartObject;
+use App\Helpers\SettingsHelper;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Pipeline;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+
+class OrderController extends Controller
+{
+    public function calculateCart(Request $request)
+    {
+        $items = $request->input('items', []);
+        $customerId = $request->input('customer_id');
+        $cart = new CartObject($items, $customerId);
+        try {
+            $cart = Pipeline::send($cart)->through([\App\Pipelines\ApplyAllPromotions::class])->thenReturn();
+        } catch (\Exception $e) {
+            Log::error('Pipeline error: ' . $e->getMessage());
+        }
+        return response()->json([
+            'subtotal' => (float) $cart->subtotal,
+            'total' => (float) $cart->total,
+            'discounts' => $cart->discounts,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        Log::info('Order store started', $request->all());
+        $request->validate([
+            'items' => 'required|array',
+            'payments' => 'required|array',
+            'customer_id' => 'nullable|exists:customers,id',
+            'total' => 'required|numeric',
+            'discounts' => 'nullable|array',
+            'points_discount' => 'nullable|numeric'
+        ]);
+
+        try {
+            \DB::beginTransaction();
+
+            $order = Order::create([
+                'order_number' => 'ORD-'.Str::upper(Str::random(8)),
+                'customer_id' => $request->customer_id,
+                'user_id' => auth()->id(),
+                'total_amount' => $request->total,
+                'status' => 'completed',
+                'discounts_applied' => json_encode([
+                    'discounts' => $request->discounts ?? [],
+                    'points_discount' => $request->points_discount ?? 0
+                ])
+            ]);
+
+            \App\Models\AuditLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'sale',
+                'model_type' => 'Order',
+                'model_id' => $order->id,
+                'ip_address' => request()->ip(),
+            ]);
+
+            foreach ($request->items as $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['price'],
+                    'total' => $item['price'] * $item['quantity']
+                ]);
+
+                $product = Product::find($item['product_id']);
+                if (!$product) continue;
+
+                if (isset($item['unit_id']) && $item['unit_id']) {
+                    $unit = \App\Models\AlternativeUnit::find($item['unit_id']);
+                    if ($unit) {
+                        $unit->decrement('stock', $item['quantity']);
+                        $product->decrement('stock_quantity', $unit->quantity_in_base_unit * $item['quantity']);
+                    }
+                } else {
+                    $remaining = $item['quantity'];
+                    $deductFromBase = min($product->stock_quantity, $remaining);
+                    $product->decrement('stock_quantity', $deductFromBase);
+                    $remaining -= $deductFromBase;
+
+                    if ($remaining > 0) {
+                        $alternatives = $product->alternativeUnits()->where('stock', '>', 0)->orderBy('price')->get();
+                        foreach ($alternatives as $unit) {
+                            if ($remaining <= 0) break;
+                            $piecesPerUnit = $unit->quantity_in_base_unit;
+                            $unitsNeeded = ceil($remaining / $piecesPerUnit);
+                            $unitsToConvert = min($unit->stock, $unitsNeeded);
+                            $piecesObtained = $unitsToConvert * $piecesPerUnit;
+                            $unit->decrement('stock', $unitsToConvert);
+                            $product->increment('stock_quantity', $piecesObtained);
+                            $deductNow = min($remaining, $piecesObtained);
+                            $product->decrement('stock_quantity', $deductNow);
+                            $remaining -= $deductNow;
+                        }
+                    }
+                }
+            }
+
+            foreach ($request->payments as $payment) {
+                Payment::create([
+                    'order_id' => $order->id,
+                    'amount' => $payment['amount'],
+                    'method' => $payment['method'],
+                    'status' => 'completed'
+                ]);
+            }
+
+            if ($request->customer_id) {
+                $customer = Customer::find($request->customer_id);
+                if ($customer) {
+                    $pointsEarningRate = (int) SettingsHelper::get('points_earning_rate', 10);
+                    $pointsEarned = (int) floor($order->total_amount / $pointsEarningRate);
+                    if ($pointsEarned > 0) {
+                        $customer->points_balance += $pointsEarned;
+                        $customer->save();
+                        LoyaltyTransaction::create([
+                            'customer_id' => $customer->id,
+                            'points' => $pointsEarned,
+                            'type' => 'earn',
+                            'order_id' => $order->id,
+                            'description' => 'Purchase at POS'
+                        ]);
+                    }
+                }
+            }
+
+            \DB::commit();
+            return response()->json(['order' => $order, 'message' => 'Sale completed'], 201);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            Log::error('Order store failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to save order: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function index()
+    {
+        if (auth()->user()->role === 'cashier') {
+            return Order::where('user_id', auth()->id())->with('items.product', 'payments')->get();
+        }
+        return Order::with('items.product', 'payments', 'cashier')->get();
+    }
+}
