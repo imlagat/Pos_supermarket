@@ -6,7 +6,7 @@
 Open your terminal and run the following commands to clone the project and navigate into the root directory:
 
 ```bash
-git clone [https://github.com/DorcasKipyegon/supermarket.git]
+git clone https://github.com/DorcasKipyegon/supermarket.git
 cd supermarket
 
 ```
