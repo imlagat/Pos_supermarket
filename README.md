@@ -38,7 +38,10 @@ Once your database is configured, run the database structures and start the deve
 
 ```bash
 # Run migrations and populate the database with seed data
-php artisan migrate:fresh --seed --class=DemoProductsSeeder
+php artisan migrate:fresh --seed
+
+# seed product table 
+php artisan db:seed --class=DemoProductsSeeder
 
 # Start the Laravel development server
 php artisan serve
