@@ -3,7 +3,6 @@ namespace App\Pipelines;
 use App\Models\DiscountRule;
 use App\Services\CartObject;
 use App\Models\Batch;
-use App\Models\Customer;
 use Closure;
 use Carbon\Carbon;
 
@@ -22,6 +21,30 @@ class ApplyAllPromotions
             ->get();
 
         foreach ($rules as $rule) {
+            // Skip if rule has product_id and none of cart items match
+            if ($rule->product_id) {
+                $hasProduct = false;
+                foreach ($cart->items as $item) {
+                    if ($item['product_id'] == $rule->product_id) {
+                        $hasProduct = true;
+                        break;
+                    }
+                }
+                if (!$hasProduct) continue;
+            }
+            // Skip if rule has category and none of cart items match
+            if ($rule->category) {
+                $hasCategory = false;
+                foreach ($cart->items as $item) {
+                    $product = \App\Models\Product::find($item['product_id']);
+                    if ($product && $product->category == $rule->category) {
+                        $hasCategory = true;
+                        break;
+                    }
+                }
+                if (!$hasCategory) continue;
+            }
+
             switch ($rule->type) {
                 case 'bogo':
                     $this->applyBogo($cart, $rule);
@@ -44,9 +67,11 @@ class ApplyAllPromotions
     private function applyBogo(CartObject $cart, $rule)
     {
         $targetId = $rule->product_id;
+        if (!$targetId) return;
         $minQty = $rule->min_quantity ?? 2;
         $freeQty = $rule->free_quantity ?? 1;
         $discountPercent = $rule->discount_percentage ?? 100;
+
         foreach ($cart->items as &$item) {
             if ($item['product_id'] == $targetId) {
                 $qty = $item['quantity'];
@@ -74,17 +99,17 @@ class ApplyAllPromotions
     private function applyMemberTier(CartObject $cart, $rule)
     {
         if (!$cart->customer) return;
-        $customer = Customer::find($cart->customer);
+        $customer = \App\Models\Customer::find($cart->customer);
         if (!$customer) return;
         $tier = $customer->tier;
-        $discountPercent = match($tier) {
-            'silver' => \App\Helpers\SettingsHelper::get('silver_discount', 5),
-            'gold' => \App\Helpers\SettingsHelper::get('gold_discount', 10),
+        $tierDiscount = match($tier) {
+            'silver' => 5,
+            'gold' => 10,
             default => 0,
         };
-        if ($discountPercent > 0) {
-            $discountAmount = $cart->subtotal * ($discountPercent / 100);
-            $cart->applyDiscount("Member {$tier} discount ({$discountPercent}%)", $discountAmount);
+        if ($tierDiscount > 0) {
+            $discountAmount = $cart->subtotal * ($tierDiscount / 100);
+            $cart->applyDiscount("Member {$tier} discount ({$tierDiscount}%)", $discountAmount);
         }
     }
 
@@ -101,7 +126,7 @@ class ApplyAllPromotions
                 if ($daysLeft <= $rule->days_left_max && $daysLeft >= $rule->days_left_min) {
                     $discountPercent = $rule->discount_percentage;
                     $discountAmount = $item['price'] * $item['quantity'] * ($discountPercent / 100);
-                    $cart->applyDiscount($rule->name, $discountAmount);
+                    $cart->applyDiscount("Expiry sale ({$batch->batch_number})", $discountAmount);
                     break;
                 }
             }
