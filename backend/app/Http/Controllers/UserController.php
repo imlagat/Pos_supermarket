@@ -4,6 +4,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
+use App\Models\Order;
 
 class UserController extends Controller
 {
@@ -98,5 +100,60 @@ class UserController extends Controller
 
         $user->update($validated);
         return response()->json(['user' => $user, 'message' => 'Profile updated']);
+    }
+
+    // Admin/Manager only – get cashier performance
+    public function performance(Request $request)
+    {
+        $query = Order::query()->where('status', 'completed');
+        $returnsQuery = \App\Models\ReturnOrder::query();
+
+        $period = $request->input('period', 'daily');
+        if ($period === 'daily') {
+            $query->whereDate('created_at', today());
+            $returnsQuery->whereDate('created_at', today());
+        } elseif ($period === 'weekly') {
+            $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+            $returnsQuery->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+        } elseif ($period === 'monthly') {
+            $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year);
+            $returnsQuery->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year);
+        } elseif ($period === 'custom') {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+            if ($startDate && $endDate) {
+                $query->whereBetween('created_at', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()]);
+                $returnsQuery->whereBetween('created_at', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()]);
+            }
+        }
+
+        $ordersByUser = $query->with('cashier')->get()->groupBy('user_id');
+        $returnsByUser = $returnsQuery->get()->groupBy('user_id');
+
+        $allUserIds = $ordersByUser->keys()->merge($returnsByUser->keys())->unique();
+
+        $performance = $allUserIds->map(function ($userId) use ($ordersByUser, $returnsByUser) {
+            $user = User::find($userId);
+            if (!$user || $user->role !== 'cashier') return null;
+
+            $orders = $ordersByUser->get($userId, collect());
+            $returns = $returnsByUser->get($userId, collect());
+
+            return [
+                'user_id' => $userId,
+                'name' => $user->name,
+                'email' => $user->email,
+                'orders_taken' => $orders->count(),
+                'total_sales' => (float) $orders->sum('total_amount'),
+                'returns_taken' => $returns->count(),
+                'total_returns_amount' => (float) $returns->sum('refund_amount'),
+            ];
+        })
+        ->filter(function ($data) {
+            return $data !== null;
+        })
+        ->values();
+
+        return response()->json($performance);
     }
 }

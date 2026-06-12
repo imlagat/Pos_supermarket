@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { Package, Trash2, Tag, X } from 'lucide-react';
@@ -60,12 +61,12 @@ export default function ReturnedItems() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Loading returned items...</div>;
+  if (loading) return <PageLoader message="Loading returned items..." />;
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        <Package className="text-amber-500" /> Returned Items Management
+        <Package className="text-orange-600" /> Returned Items Management
       </h1>
       <div className="bg-white rounded-2xl shadow-xl overflow-x-auto">
         <table className="w-full">
@@ -86,9 +87,9 @@ export default function ReturnedItems() {
                 <td className="p-4 capitalize">{item.condition}</td>
                 <td className="p-4 capitalize">{item.status}</td>
                 <td className="p-4 flex gap-2">
-                  {item.status === 'pending' && (
+                  {(item.status === 'pending' || item.status === 'open_box') && (
                     <>
-                      <button onClick={() => { setSelectedItem(item); setActionType('openbox'); setOpenBoxPrice((item.product?.base_price * 0.5).toFixed(2)); }} className="text-blue-600 hover:text-blue-800"><Tag size={18} /> Open Box</button>
+                      <button onClick={() => { setSelectedItem(item); setActionType('openbox'); setOpenBoxPrice(item.open_box_price || (item.product?.base_price * 0.5).toFixed(2)); }} className="text-blue-600 hover:text-blue-800"><Tag size={18} /> {item.status === 'open_box' ? 'Edit Price' : 'Open Box'}</button>
                       <button onClick={() => { setSelectedItem(item); setActionType('dispose'); }} className="text-red-600 hover:text-red-800"><Trash2 size={18} /> Dispose</button>
                     </>
                   )}

@@ -19,6 +19,11 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 // M-Pesa callback — must be public (no auth) so Safaricom can reach it
 Route::post('/mpesa/callback', [MpesaController::class, 'callback']);
 
+// Remote Barcode Scanner endpoints (Public so mobile phone doesn't need to log in)
+Route::post('/remote-scan/session/{sessionId}', [App\Http\Controllers\RemoteScannerController::class, 'store']);
+Route::get('/remote-scan/session/{sessionId}', [App\Http\Controllers\RemoteScannerController::class, 'check']);
+Route::get('/system/local-ip', [App\Http\Controllers\RemoteScannerController::class, 'getLocalIp']);
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get("/customers/export", [App\Http\Controllers\CustomerController::class, "export"]);
@@ -28,6 +33,7 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/products/lookup/{barcode}', [ProductController::class, 'lookup']);
+    Route::post('products/{product}/unbox', [ProductController::class, 'unbox']);
     Route::apiResource('products', ProductController::class);
 
     Route::post('/cart/calculate', [OrderController::class, 'calculateCart']);
@@ -38,6 +44,7 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::apiResource('customers', CustomerController::class);
     Route::post('/customers/{customer}/redeem-points', [CustomerController::class, 'redeemPoints']);
 
+    Route::get('/discount-rules/active', [App\Http\Controllers\DiscountRuleController::class, 'active']);
     Route::apiResource('discount-rules', DiscountRuleController::class)->middleware('role:admin,manager');
     Route::get('/reports/sales', [ReportController::class, 'sales'])->middleware('role:admin,manager');
     Route::get('/reports/low-stock', [ReportController::class, 'lowStock'])->middleware('role:admin,manager');
@@ -46,8 +53,18 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::post('/mpesa/stkpush', [MpesaController::class, 'stkPush']);
     Route::get('/mpesa/status/{checkoutId}', [MpesaController::class, 'checkStatus']);
 
+    Route::get('/users/performance', [UserController::class, 'performance'])->middleware('role:admin,manager');
     Route::apiResource('users', UserController::class)->middleware('role:admin');
+    Route::apiResource('branches', \App\Http\Controllers\BranchController::class)->middleware('role:admin');
+    Route::get('/batches', [InventoryController::class, 'getBatches'])->middleware('role:admin,manager');
     Route::post('/batches', [InventoryController::class, 'addBatch'])->middleware('role:admin,manager');
+    
+    // AI Chatbot
+    Route::post('/chat', [App\Http\Controllers\AIChatbotController::class, 'chat']);
+
+    // AI Automated Operations
+    Route::post('/ai/auto-reorder', [App\Http\Controllers\AIOperationsController::class, 'autoReorder'])->middleware('role:admin,manager');
+    Route::post('/ai/dynamic-pricing', [App\Http\Controllers\AIOperationsController::class, 'dynamicPricing'])->middleware('role:admin,manager');
 });
 
 Route::middleware('auth:sanctum')->get('/mpesa/status/{checkoutId}', [MpesaController::class, 'checkStatus']);
@@ -125,12 +142,13 @@ Route::middleware('auth:sanctum')->get('/returns', [App\Http\Controllers\ReturnC
 Route::middleware('auth:sanctum')->get('/products/{product}/units', [App\Http\Controllers\AlternativeUnitController::class, 'index']);
 Route::middleware('auth:sanctum')->get('/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->middleware('role:admin');
 Route::middleware('auth:sanctum')->get('/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->middleware('role:admin');
-Route::middleware('auth:sanctum')->get('/discount-rules/active', [App\Http\Controllers\DiscountRuleController::class, 'active']);
-Route::middleware('auth:sanctum')->get('/promotions/active', [App\Http\Controllers\DiscountRuleController::class, 'active']);
+    Route::get('/promotions/active', [App\Http\Controllers\DiscountRuleController::class, 'active']);
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('suppliers/{supplier}/purchase-orders', [App\Http\Controllers\SupplierController::class, 'purchaseOrders']);
     Route::apiResource('suppliers', App\Http\Controllers\SupplierController::class);
     Route::apiResource('purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
     Route::post('/purchase-orders/{purchaseOrder}/receive', [App\Http\Controllers\PurchaseOrderController::class, 'receive']);
+    Route::post('/purchase-orders/{purchaseOrder}/approve', [App\Http\Controllers\PurchaseOrderController::class, 'approve'])->middleware('role:admin,manager');
 });
 Route::middleware('auth:sanctum')->post('/returns/search-order', [App\Http\Controllers\ReturnController::class, 'getOrder']);
 Route::middleware('auth:sanctum')->post('/returns', [App\Http\Controllers\ReturnController::class, 'store']);

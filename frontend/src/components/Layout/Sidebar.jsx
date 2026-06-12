@@ -6,8 +6,10 @@ import {
   Truck, RefreshCw
 } from 'lucide-react';
 
+import BranchSelector from './BranchSelector';
+
 const menuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'manager'] },
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'manager', 'cashier'] },
   { name: 'POS', path: '/pos', icon: ShoppingCart, roles: ['admin', 'manager', 'cashier'] },
   { name: 'Products', path: '/products', icon: Package, roles: ['admin', 'manager'] },
   { name: 'Discounts', path: '/discounts', icon: Tag, roles: ['admin', 'manager'] },
@@ -35,6 +37,8 @@ export default function Sidebar() {
           <span className="md:hidden text-white">P</span>
         </h1>
       </div>
+
+      <BranchSelector />
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-1">

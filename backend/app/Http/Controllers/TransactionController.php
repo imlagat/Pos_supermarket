@@ -6,11 +6,17 @@ use Carbon\Carbon;
 
 class TransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with(['items.product', 'payments', 'customer', 'cashier'])
-            ->orderBy('created_at', 'desc')
-            ->get()
+        $user = $request->user();
+        $query = Order::with(['items.product', 'payments', 'customer', 'cashier'])
+            ->orderBy('created_at', 'desc');
+
+        if ($user && $user->role === 'cashier') {
+            $query->where('user_id', $user->id);
+        }
+
+        $orders = $query->get()
             ->map(function ($order) {
                 $discounts = json_decode($order->discounts_applied, true);
                 $order->discounts = $discounts['discounts'] ?? [];
@@ -33,8 +39,13 @@ class TransactionController extends Controller
     {
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
+        $user = $request->user();
 
         $query = Order::with(['customer', 'cashier', 'payments']);
+
+        if ($user && $user->role === 'cashier') {
+            $query->where('user_id', $user->id);
+        }
 
         if ($startDate && $endDate) {
             $query->whereBetween('created_at', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()]);

@@ -15,6 +15,7 @@ class OpenBoxController extends Controller
                 return [
                     'id' => $item->id,
                     'returned_item_id' => $item->id,
+                    'product_id' => $item->product_id,
                     'name' => $item->product->name . ' (Open Box)',
                     'price' => (float) $item->open_box_price,
                     'original_price' => (float) $item->product->base_price,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { Users, Plus, Edit2, Trash2, Search, Award, History, Download } from 'lucide-react';
@@ -33,7 +34,24 @@ export default function Customers() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault(); 
+    if (!form.name || form.name.trim() === '') {
+      return toast.error('Customer Name is required.');
+    }
+    if (!form.phone || form.phone.trim() === '') {
+      return toast.error('Phone Number is required.');
+    }
+    // simple phone regex
+    const phoneRegex = /^[0-9]{10,12}$/;
+    if (!phoneRegex.test(form.phone)) {
+      return toast.error('Phone number must be 10-12 digits.');
+    }
+    
+    if (!form.email || form.email.trim() === '') {
+      return toast.error('Email Address is required.');
+    }
+    
+    setSaving(true);
     try {
       if (editing) {
         await api.put(`/customers/${editing}`, form);
@@ -78,12 +96,12 @@ export default function Customers() {
   };
 
   const filtered = customers.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone.includes(searchTerm));
-  if (loading) return <div className="flex justify-center items-center h-64">Loading customers...</div>;
+  if (loading) return <PageLoader message="Loading customers..." />;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="text-amber-500" /> Customers & Loyalty</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="text-orange-600" /> Customers & Loyalty</h1>
         <div className="flex gap-2">
           <select
             value={tierFilter}
@@ -98,19 +116,40 @@ export default function Customers() {
           <button
             onClick={exportCSV}
             disabled={exporting}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-xl flex items-center gap-2"
+            className="bg-gradient-to-r from-orange-600 to-orange-600 text-white px-4 py-2 rounded-xl flex items-center gap-2"
           >
             <Download size={18} /> {exporting ? 'Exporting...' : 'Export CSV'}
           </button>
         </div>
       </div>
-      <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><Plus className="text-amber-500" /> {editing ? 'Edit' : 'Add'} Customer</h2>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <input type="text" placeholder="Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="border p-2 rounded-xl" required />
-          <input type="tel" placeholder="Phone (e.g., 0712345678)" pattern="[0-9]{10,12}" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="border p-2 rounded-xl" required />
-          <input type="email" placeholder="Email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="border p-2 rounded-xl" />
-          <div className="flex gap-2"><button type="submit" className="bg-amber-500 text-white px-6 py-2 rounded-xl">{editing ? 'Update' : 'Create'}</button>{editing && <button type="button" onClick={resetForm} className="bg-gray-200 px-4 py-2 rounded-xl">Cancel</button>}</div>
+      <div className="mb-8 space-y-6">
+        <div className="flex items-center gap-2">
+          <Plus className="text-orange-600 w-6 h-6" />
+          <h2 className="text-xl font-bold text-gray-800">{editing ? 'Edit' : 'Add'} Customer</h2>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Customer Information Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">Customer Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input type="text" placeholder="John Doe" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input type="tel" placeholder="e.g., 0712345678" pattern="[0-9]{10,12}" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input type="email" placeholder="john@example.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            {editing && <button type="button" onClick={resetForm} className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition">Cancel</button>}
+            <button type="submit" disabled={saving} className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white px-8 py-2 rounded-xl font-semibold shadow-md transition">{saving ? 'Saving...' : (editing ? 'Update Customer' : 'Create Customer')}</button>
+          </div>
         </form>
       </div>
       <div className="bg-white rounded-2xl shadow-xl overflow-x-auto">

@@ -4,7 +4,17 @@ import api from '../services/api';
 export const useAuthStore = create((set, get) => ({
     user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token') || null,
+    activeBranchId: localStorage.getItem('activeBranchId') || null,
     isLoading: false,
+
+    setActiveBranchId: (id) => {
+        if (id) {
+            localStorage.setItem('activeBranchId', id);
+        } else {
+            localStorage.removeItem('activeBranchId');
+        }
+        set({ activeBranchId: id });
+    },
 
     login: async (email, password) => {
         set({ isLoading: true });
@@ -16,7 +26,16 @@ export const useAuthStore = create((set, get) => ({
             }
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
-            set({ user: res.data.user, token: res.data.token, isLoading: false });
+            
+            // Auto-set activeBranchId for non-admins if they have one assigned
+            const user = res.data.user;
+            let activeBranch = null;
+            if (user.role !== 'admin' && user.branch_id) {
+                activeBranch = String(user.branch_id);
+                localStorage.setItem('activeBranchId', activeBranch);
+            }
+
+            set({ user, token: res.data.token, activeBranchId: activeBranch, isLoading: false });
             return { success: true };
         } catch (error) {
             set({ isLoading: false });
@@ -29,8 +48,13 @@ export const useAuthStore = create((set, get) => ({
         try {
             const res = await api.post('/verify-otp', { email, otp_code });
             localStorage.setItem('token', res.data.token);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            set({ user: res.data.user, token: res.data.token, isLoading: false });
+            const user = res.data.user;
+            let activeBranch = get().activeBranchId;
+            if (user.role !== 'admin' && user.branch_id) {
+                activeBranch = String(user.branch_id);
+                localStorage.setItem('activeBranchId', activeBranch);
+            }
+            set({ user, token: res.data.token, activeBranchId: activeBranch, isLoading: false });
             return true;
         } catch (error) {
             set({ isLoading: false });
@@ -51,7 +75,8 @@ export const useAuthStore = create((set, get) => ({
         try { await api.post('/logout'); } catch (e) {}
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        set({ user: null, token: null });
+        localStorage.removeItem('activeBranchId');
+        set({ user: null, token: null, activeBranchId: null });
     },
 
     // Call this on app start to validate token and refresh user if needed
@@ -66,7 +91,8 @@ export const useAuthStore = create((set, get) => ({
             // Token invalid
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            set({ user: null, token: null });
+            localStorage.removeItem('activeBranchId');
+            set({ user: null, token: null, activeBranchId: null });
         }
     }
 }));

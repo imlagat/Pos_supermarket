@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { User, Mail, Lock, Save, Eye, EyeOff } from 'lucide-react';
+import PageLoader from '../components/common/PageLoader';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -27,6 +28,23 @@ export default function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.name || form.name.trim() === '') {
+      return toast.error('Full Name is required.');
+    }
+    if (!form.email || form.email.trim() === '') {
+      return toast.error('Email Address is required.');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      return toast.error('Please enter a valid email address.');
+    }
+
+    if (form.password) {
+      if (form.password.length < 8) return toast.error('New Password must be at least 8 characters long.');
+      if (!form.current_password) return toast.error('Current Password is required to change password.');
+      if (form.password !== form.password_confirmation) return toast.error('New Passwords do not match.');
+    }
+
     setLoading(true);
     try {
       const payload = { name: form.name, email: form.email };
@@ -47,117 +65,124 @@ export default function Profile() {
     }
   };
 
-  if (!user) return <div className="p-6">Loading...</div>;
+  if (!user) return <PageLoader message="Loading profile..." />;
 
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        <User className="text-amber-500" /> My Profile
+        <User className="text-orange-600" /> My Profile
       </h1>
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={form.name}
-                onChange={e => setForm({...form, name: e.target.value})}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                required
-              />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Personal Information Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">Personal Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={e => setForm({...form, name: e.target.value})}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm({...form, email: e.target.value})}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none"
+                  required
+                />
+              </div>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => setForm({...form, email: e.target.value})}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                required
-              />
-            </div>
-          </div>
+        </div>
 
-          <div className="border-t pt-4 mt-2">
-            <h3 className="text-md font-semibold text-gray-800 mb-3">Change Password (optional)</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type={showCurrent ? 'text' : 'password'}
-                    value={form.current_password}
-                    onChange={e => setForm({...form, current_password: e.target.value})}
-                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                    placeholder="Required only when changing password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrent(!showCurrent)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  >
-                    {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+        {/* Change Password Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">Change Password (optional)</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+              <div className="relative md:w-1/2">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type={showCurrent ? 'text' : 'password'}
+                  value={form.current_password}
+                  onChange={e => setForm({...form, current_password: e.target.value})}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none"
+                  placeholder="Required only when changing password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent(!showCurrent)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type={showNew ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={e => setForm({...form, password: e.target.value})}
-                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                    placeholder="Leave blank to keep current"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  >
-                    {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type={showNew ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={e => setForm({...form, password: e.target.value})}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none"
+                  placeholder="Leave blank to keep current"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew(!showNew)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    value={form.password_confirmation}
-                    onChange={e => setForm({...form, password_confirmation: e.target.value})}
-                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-                    placeholder="Confirm new password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  >
-                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type={showConfirm ? 'text' : 'password'}
+                  value={form.password_confirmation}
+                  onChange={e => setForm({...form, password_confirmation: e.target.value})}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none"
+                  placeholder="Confirm new password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
+        <div className="flex justify-end">
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white py-2 rounded-xl font-semibold flex items-center justify-center gap-2"
+            className="w-full md:w-auto px-8 bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md transition-all"
           >
             <Save size={18} /> {loading ? 'Saving...' : 'Save Changes'}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }

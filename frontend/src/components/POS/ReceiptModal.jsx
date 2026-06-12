@@ -25,8 +25,10 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
     return isNaN(num) ? '0.00' : num.toFixed(digits);
   };
 
-  const receiptTitle = settings.receipt_title || 'SUPER POS';
-  const receiptSubtitle = settings.receipt_subtitle || 'P.O Box 20100 Nakuru, Kenyatta Avenue';
+  const receiptTitle = settings.store_name || 'SUPER POS';
+  const receiptSubtitle = settings.store_address || 'P.O Box 20100 Nakuru, Kenyatta Avenue';
+  const storePhone = settings.store_phone ? `Tel: ${settings.store_phone}` : '';
+  const storeEmail = settings.store_email ? `Email: ${settings.store_email}` : '';
   const receiptFooter = settings.receipt_footer || 'Thank you for shopping!';
   const taxRate = parseFloat(settings.tax_rate) || 16;
   const showVat = settings.show_vat_on_receipt !== false;
@@ -48,9 +50,15 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
   }
 
   let finalPointsDiscount = pointsDiscount;
-  if (!finalPointsDiscount && orderDetails.discounts_applied) {
-    const parsed = typeof orderDetails.discounts_applied === 'string' ? JSON.parse(orderDetails.discounts_applied) : orderDetails.discounts_applied;
-    finalPointsDiscount = parsed.points_discount || 0;
+  if (!finalPointsDiscount && orderDetails.points_discount) {
+    finalPointsDiscount = parseFloat(orderDetails.points_discount);
+  } else if (!finalPointsDiscount && orderDetails.discounts_applied) {
+    try {
+      const parsed = typeof orderDetails.discounts_applied === 'string' ? JSON.parse(orderDetails.discounts_applied) : orderDetails.discounts_applied;
+      finalPointsDiscount = parseFloat(parsed.points_discount) || 0;
+    } catch (e) {
+      finalPointsDiscount = 0;
+    }
   }
 
   const subtotal = itemsSubtotal;
@@ -64,18 +72,35 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-auto font-mono text-sm">
         <div className="sticky top-0 bg-white z-10 flex justify-end p-2 border-b">
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-1">✖</button>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }} 
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="text-gray-500 hover:text-gray-700 p-1"
+          >
+            ✖
+          </button>
         </div>
         <div className="px-4 pb-4" id="receipt-content">
           <div className="text-center border-b pb-3 mb-3">
-            <h1 className="text-xl font-bold text-amber-600">{receiptTitle}</h1>
+            <h1 className="text-xl font-bold text-orange-500">{receiptTitle}</h1>
             <p className="text-xs text-gray-500">{receiptSubtitle}</p>
+            {storePhone && <p className="text-xs text-gray-500">{storePhone}</p>}
+            {storeEmail && <p className="text-xs text-gray-500">{storeEmail}</p>}
             <p className="text-xs font-mono mt-2">{orderDetails.order_number}</p>
             <p className="text-xs">{new Date(orderDetails.created_at).toLocaleString()}</p>
           </div>
           <div className="mb-3 text-xs">
             <p><strong>Customer:</strong> {customerPhone}</p>
             <p><strong>Loyalty points:</strong> {customerPoints} pts</p>
+            {finalPointsDiscount > 0 && <p><strong>Points Redeemed:</strong> {finalPointsDiscount} pts</p>}
           </div>
           <table className="w-full text-xs mb-3">
             <thead className="border-b">
@@ -162,7 +187,7 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
         </div>
         <div className="p-3 border-t flex gap-3 bg-gray-50">
           <button onClick={onClose} className="flex-1 py-2 border rounded-xl">Close</button>
-          <button onClick={printReceipt} className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2 rounded-xl">Print Receipt</button>
+          <button onClick={printReceipt} className="flex-1 bg-gradient-to-r from-orange-500 to-[#f09a56] text-white py-2 rounded-xl">Print Receipt</button>
         </div>
       </div>
     </div>

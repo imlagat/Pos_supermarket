@@ -13,23 +13,95 @@ class ReportController extends Controller
 {
     public function sales(Request $request)
     {
-        $grossSales = Order::where('status', 'completed')->sum('total_amount');
-        $totalRefunds = ReturnOrder::sum('refund_amount');
-        $netSales = $grossSales - $totalRefunds;
-        $ordersCount = Order::where('status', 'completed')->count();
-        $customersCount = Customer::count();
-        $productsCount = Product::count();
+        $period = $request->query('period', 'weekly');
 
-        $weeklySales = Order::where('status', 'completed')
-            ->where('created_at', '>=', now()->subDays(7))
-            ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
-            ->groupBy('date')
-            ->get()
-            ->map(function ($item) {
-                $refundsOnDate = ReturnOrder::whereDate('created_at', $item->date)->sum('refund_amount');
-                $item->total = $item->total - $refundsOnDate;
-                return $item;
-            });
+        if ($period === 'daily') {
+            $startDate = now()->startOfDay();
+        } elseif ($period === 'monthly') {
+            $startDate = now()->subDays(29)->startOfDay();
+        } else { // weekly
+            $startDate = now()->subDays(6)->startOfDay();
+        }
+
+        $user = $request->user();
+
+        $ordersQuery = Order::where('status', 'completed')
+            ->where('created_at', '>=', $startDate);
+
+        $refundsQuery = ReturnOrder::where('created_at', '>=', $startDate);
+
+        $ordersCountQuery = Order::where('status', 'completed')
+            ->where('created_at', '>=', $startDate);
+
+        if ($user && $user->role === 'cashier') {
+            $ordersQuery->where('user_id', $user->id);
+            $refundsQuery->where('user_id', $user->id); // Assuming ReturnOrder has user_id
+            $ordersCountQuery->where('user_id', $user->id);
+        }
+
+        $grossSales = $ordersQuery->sum('total_amount');
+            
+        $totalRefunds = $refundsQuery->sum('refund_amount');
+            
+        $netSales = $grossSales - $totalRefunds;
+        
+        $ordersCount = $ordersCountQuery->count();
+            
+        $customersCount = Customer::where('created_at', '>=', $startDate)->count();
+        $productsCount = Product::where('created_at', '>=', $startDate)->count();
+
+        $ordersQueryForChart = Order::where('status', 'completed')
+            ->where('created_at', '>=', $startDate)
+            ->select(['total_amount', 'created_at']);
+            
+        $refundsQueryForChart = ReturnOrder::where('created_at', '>=', $startDate)
+            ->select(['refund_amount', 'created_at']);
+
+        if ($user && $user->role === 'cashier') {
+            $ordersQueryForChart->where('user_id', $user->id);
+            $refundsQueryForChart->where('user_id', $user->id);
+        }
+
+        $orders = $ordersQueryForChart->get();
+        $refunds = $refundsQueryForChart->get();
+
+        $chartMap = [];
+        
+        if ($period === 'daily') {
+            for ($i = 0; $i < 24; $i++) {
+                $time = now()->startOfDay()->addHours($i);
+                $key = $time->format('Y-m-d H:00');
+                $chartMap[$key] = ['date' => $time->format('H:00'), 'total' => 0];
+            }
+        } elseif ($period === 'weekly') {
+            for ($i = 6; $i >= 0; $i--) {
+                $time = now()->subDays($i)->startOfDay();
+                $key = $time->format('Y-m-d');
+                $chartMap[$key] = ['date' => $time->format('M d'), 'total' => 0];
+            }
+        } else { // monthly
+            for ($i = 29; $i >= 0; $i--) {
+                $time = now()->subDays($i)->startOfDay();
+                $key = $time->format('Y-m-d');
+                $chartMap[$key] = ['date' => $time->format('M d'), 'total' => 0];
+            }
+        }
+
+        foreach ($orders as $order) {
+            $key = $period === 'daily' ? $order->created_at->format('Y-m-d H:00') : $order->created_at->format('Y-m-d');
+            if (isset($chartMap[$key])) {
+                $chartMap[$key]['total'] += $order->total_amount;
+            }
+        }
+        
+        foreach ($refunds as $refund) {
+            $key = $period === 'daily' ? $refund->created_at->format('Y-m-d H:00') : $refund->created_at->format('Y-m-d');
+            if (isset($chartMap[$key])) {
+                $chartMap[$key]['total'] -= $refund->refund_amount;
+            }
+        }
+
+        $chartData = array_values($chartMap);
 
         return response()->json([
             'total_sales' => (float) $grossSales,
@@ -38,7 +110,8 @@ class ReportController extends Controller
             'orders' => $ordersCount,
             'customers' => $customersCount,
             'products' => $productsCount,
-            'weekly_sales' => $weeklySales
+            'weekly_sales' => $chartData, // Keeping the same key for backwards compatibility or can change frontend
+            'chart_data' => $chartData
         ]);
     }
 
@@ -85,9 +158,18 @@ class ReportController extends Controller
     public function topProducts(Request $request)
     {
         $limit = $request->get('limit', 5);
-        $top = OrderItem::select('product_id', DB::raw('SUM(quantity) as total_quantity'))
+        $user = $request->user();
+
+        $query = OrderItem::select('order_items.product_id', DB::raw('SUM(order_items.quantity) as total_quantity'))
             ->with('product')
-            ->groupBy('product_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', 'completed');
+
+        if ($user && $user->role === 'cashier') {
+            $query->where('orders.user_id', $user->id);
+        }
+
+        $top = $query->groupBy('order_items.product_id')
             ->orderByDesc('total_quantity')
             ->limit($limit)
             ->get()

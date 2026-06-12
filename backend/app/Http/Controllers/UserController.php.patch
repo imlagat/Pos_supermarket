@@ -1,0 +1,53 @@
+--- backend/app/Http/Controllers/UserController.php
++++ backend/app/Http/Controllers/UserController.php
+@@ -5,6 +5,8 @@
+ use Illuminate\Http\Request;
+ use Illuminate\Support\Facades\Hash;
+ use Illuminate\Validation\Rule;
++use Carbon\Carbon;
++use App\Models\Order;
+ 
+ class UserController extends Controller
+ {
+@@ -94,4 +96,36 @@
+         $user->update($validated);
+         return response()->json(['user' => $user, 'message' => 'Profile updated']);
+     }
++
++    // Admin/Manager only – get cashier performance
++    public function performance(Request $request)
++    {
++        $query = Order::query()->where('status', 'completed');
++
++        $period = $request->input('period', 'daily');
++        if ($period === 'daily') {
++            $query->whereDate('created_at', today());
++        } elseif ($period === 'weekly') {
++            $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
++        } elseif ($period === 'monthly') {
++            $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year);
++        } elseif ($period === 'custom') {
++            $startDate = $request->input('start_date');
++            $endDate = $request->input('end_date');
++            if ($startDate && $endDate) {
++                $query->whereBetween('created_at', [Carbon::parse($startDate)->startOfDay(), Carbon::parse($endDate)->endOfDay()]);
++            }
++        }
++
++        $performance = $query->with('cashier')
++            ->get()
++            ->groupBy('user_id')
++            ->map(function ($orders, $userId) {
++                $cashier = $orders->first()->cashier;
++                return [
++                    'user_id' => $userId,
++                    'name' => $cashier ? $cashier->name : 'Unknown',
++                    'email' => $cashier ? $cashier->email : 'Unknown',
++                    'orders_taken' => $orders->count(),
++                    'total_sales' => $orders->sum('total_amount'),
++                ];
++            })->values();
++
++        return response()->json($performance);
++    }
+ }

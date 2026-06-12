@@ -13,7 +13,7 @@ class PurchaseOrderController extends Controller
 {
     public function index()
     {
-        $orders = PurchaseOrder::with(['supplier', 'creator', 'items.product'])
+        $orders = PurchaseOrder::with(['supplier', 'creator', 'items.product', 'items.alternativeUnit'])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($order) {
@@ -36,9 +36,16 @@ class PurchaseOrderController extends Controller
             'expected_delivery_date' => 'nullable|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.alternative_unit_id' => 'nullable|exists:alternative_units,id',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.cost_price' => 'required|numeric|min:0',
+            'agreed_price' => 'nullable|numeric|min:0',
+            'paid_amount' => 'nullable|numeric|min:0',
         ]);
+
+        $agreed = $request->agreed_price ?? 0;
+        $paid = $request->paid_amount ?? 0;
+        $balance = $agreed - $paid;
 
         try {
             DB::beginTransaction();
@@ -49,13 +56,17 @@ class PurchaseOrderController extends Controller
                 'expected_delivery_date' => $request->expected_delivery_date,
                 'notes' => $request->notes,
                 'created_by' => auth()->id(),
-                'status' => 'pending'
+                'status' => 'pending',
+                'agreed_price' => $agreed,
+                'paid_amount' => $paid,
+                'balance' => $balance
             ]);
 
             foreach ($request->items as $item) {
                 PurchaseOrderItem::create([
                     'purchase_order_id' => $po->id,
                     'product_id' => $item['product_id'],
+                    'alternative_unit_id' => $item['alternative_unit_id'] ?? null,
                     'quantity' => $item['quantity'],
                     'cost_price' => $item['cost_price'],
                 ]);
@@ -69,9 +80,64 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function update(Request $request, PurchaseOrder $purchaseOrder)
+    {
+        if ($purchaseOrder->status !== 'draft') {
+            return response()->json(['message' => 'Only draft orders can be updated'], 400);
+        }
+
+        $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'order_date' => 'required|date',
+            'expected_delivery_date' => 'nullable|date',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.alternative_unit_id' => 'nullable|exists:alternative_units,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.cost_price' => 'required|numeric|min:0',
+            'agreed_price' => 'nullable|numeric|min:0',
+            'paid_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $agreed = $request->agreed_price ?? 0;
+        $paid = $request->paid_amount ?? 0;
+        $balance = $agreed - $paid;
+
+        try {
+            DB::beginTransaction();
+            $purchaseOrder->update([
+                'supplier_id' => $request->supplier_id,
+                'order_date' => $request->order_date,
+                'expected_delivery_date' => $request->expected_delivery_date,
+                'notes' => $request->notes,
+                'agreed_price' => $agreed,
+                'paid_amount' => $paid,
+                'balance' => $balance
+            ]);
+
+            // Remove old items and insert new ones
+            $purchaseOrder->items()->delete();
+            foreach ($request->items as $item) {
+                PurchaseOrderItem::create([
+                    'purchase_order_id' => $purchaseOrder->id,
+                    'product_id' => $item['product_id'],
+                    'alternative_unit_id' => $item['alternative_unit_id'] ?? null,
+                    'quantity' => $item['quantity'],
+                    'cost_price' => $item['cost_price'],
+                ]);
+            }
+            DB::commit();
+            return response()->json($purchaseOrder->load('items.product'), 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('PO update failed: '.$e->getMessage());
+            return response()->json(['message' => 'Failed to update purchase order'], 500);
+        }
+    }
+
     public function show(PurchaseOrder $purchaseOrder)
     {
-        $purchaseOrder->load('items.product', 'supplier', 'creator');
+        $purchaseOrder->load('items.product', 'items.alternativeUnit', 'supplier', 'creator');
         $purchaseOrder->total_quantity = $purchaseOrder->items->sum('quantity');
         $purchaseOrder->total_amount = $purchaseOrder->items->sum(function ($item) {
             return $item->quantity * $item->cost_price;
@@ -90,6 +156,8 @@ class PurchaseOrderController extends Controller
             'items' => 'required|array',
             'items.*.id' => 'required|exists:purchase_order_items,id',
             'items.*.expiry_date' => 'nullable|date',
+            'agreed_price' => 'nullable|numeric|min:0',
+            'paid_amount' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -99,8 +167,14 @@ class PurchaseOrderController extends Controller
                 if (!$poItem) continue;
 
                 $product = $poItem->product;
-                // Increase stock quantity
-                $product->increment('stock_quantity', $poItem->quantity);
+                
+                // Increase stock quantity in branch_stocks
+                $branchId = app('current_branch_id') ?? 1;
+                $stockRecord = \App\Models\BranchStock::firstOrCreate(
+                    ['branch_id' => $branchId, 'product_id' => $product->id, 'alternative_unit_id' => $poItem->alternative_unit_id],
+                    ['quantity' => 0]
+                );
+                $stockRecord->increment('quantity', $poItem->quantity);
 
                 // Create batch if expiry date provided
                 if (!empty($itemData['expiry_date'])) {
@@ -112,6 +186,15 @@ class PurchaseOrderController extends Controller
                     ]);
                 }
             }
+
+            if ($request->has('agreed_price') || $request->has('paid_amount')) {
+                $agreed = $request->has('agreed_price') ? $request->agreed_price : $purchaseOrder->agreed_price;
+                $paid = $request->has('paid_amount') ? $request->paid_amount : $purchaseOrder->paid_amount;
+                $purchaseOrder->agreed_price = $agreed;
+                $purchaseOrder->paid_amount = $paid;
+                $purchaseOrder->balance = $agreed - $paid;
+            }
+
             $purchaseOrder->status = 'received';
             $purchaseOrder->save();
             DB::commit();
@@ -125,11 +208,21 @@ class PurchaseOrderController extends Controller
 
     public function destroy(PurchaseOrder $purchaseOrder)
     {
-        if ($purchaseOrder->status !== 'pending') {
-            return response()->json(['message' => 'Only pending orders can be deleted'], 400);
+        if ($purchaseOrder->status !== 'pending' && $purchaseOrder->status !== 'draft') {
+            return response()->json(['message' => 'Only pending or draft orders can be deleted'], 400);
         }
         $purchaseOrder->delete();
         return response()->noContent();
+    }
+
+    public function approve(PurchaseOrder $purchaseOrder)
+    {
+        if ($purchaseOrder->status !== 'draft') {
+            return response()->json(['message' => 'Only draft orders can be approved'], 400);
+        }
+        $purchaseOrder->status = 'pending';
+        $purchaseOrder->save();
+        return response()->json(['message' => 'Order approved and sent to pending status successfully.']);
     }
 
     // Overdue POs for dashboard alerts

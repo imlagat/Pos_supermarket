@@ -10,6 +10,19 @@ class DiscountRuleController extends Controller
         return DiscountRule::all();
     }
 
+    public function active()
+    {
+        $now = now();
+        return DiscountRule::where('is_active', true)
+            ->where(function($q) use ($now) {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+            })
+            ->where(function($q) use ($now) {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+            })
+            ->get();
+    }
+
     public function store(Request $request)
     {
         $rules = [

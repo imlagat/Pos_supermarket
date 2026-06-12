@@ -244,10 +244,18 @@ if (split) {
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
           <h3 className="text-xl font-bold">Payment</h3>
-          <button
-            onClick={onClose}
-            disabled={isProcessing}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }} 
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="p-1 hover:bg-gray-200 rounded-full text-gray-500 transition"
           >
             <X size={20} />
           </button>
@@ -282,7 +290,7 @@ if (split) {
                       onClick={() => setPayments([{ method, amount: 0 }])}
                       className={`flex-1 py-2 rounded-lg border capitalize disabled:opacity-40 ${
                         payments[0]?.method === method
-                          ? 'bg-amber-500 text-white border-amber-500'
+                          ? 'bg-orange-500 text-white border-orange-500'
                           : 'bg-white text-gray-700 border-gray-300'
                       }`}
                     >
@@ -301,7 +309,7 @@ if (split) {
                     placeholder="Enter cash amount"
                     value={cashAmount}
                     onChange={(e) => handleCashChange(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               )}
@@ -314,7 +322,7 @@ if (split) {
                     placeholder="0712345678"
                     value={mpesaPhone}
                     onChange={(e) => setMpesaPhone(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">Format: 0712345678 or 254712345678</p>
                 </div>
@@ -328,7 +336,7 @@ if (split) {
               )}
 
               {!showChange && remaining > 0 && selectedMethod === 'cash' && (
-                <div className="mt-3 p-3 bg-amber-50 rounded-xl flex justify-between">
+                <div className="mt-3 p-3 bg-orange-50 rounded-xl flex justify-between">
                   <span>Remaining Balance</span>
                   <span className="font-bold">Ksh {remaining.toFixed(2)}</span>
                 </div>
@@ -337,7 +345,7 @@ if (split) {
               <button
                 onClick={() => setSplit(true)}
                 disabled={isProcessing}
-                className="mt-3 text-amber-600 text-sm flex items-center gap-1 disabled:opacity-30"
+                className="mt-3 text-orange-500 text-sm flex items-center gap-1 disabled:opacity-30"
               >
                 <Plus size={14} /> Split payment (add M-Pesa/Card)
               </button>
@@ -382,7 +390,7 @@ if (split) {
                     />
                   )}
                   {payments.length > 1 && (
-                    <button onClick={() => removeSplitPayment(idx)} className="text-amber-500">
+                    <button onClick={() => removeSplitPayment(idx)} className="text-orange-500">
                       <X size={18} />
                     </button>
                   )}
@@ -390,13 +398,13 @@ if (split) {
               ))}
               <button
                 onClick={addSplitPayment}
-                className="text-amber-600 text-sm flex items-center gap-1 mt-2"
+                className="text-orange-500 text-sm flex items-center gap-1 mt-2"
               >
                 <Plus size={14} /> Add M-Pesa or Card
               </button>
-              <div className="mt-3 p-3 bg-amber-50 rounded-xl flex justify-between">
+              <div className="mt-3 p-3 bg-orange-50 rounded-xl flex justify-between">
                 <span>Remaining</span>
-                <span className={`font-bold ${remaining > 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                <span className={`font-bold ${remaining > 0 ? 'text-red-600' : 'text-orange-500'}`}>
                   Ksh {remaining.toFixed(2)}
                 </span>
               </div>
@@ -415,7 +423,7 @@ if (split) {
             <button
               onClick={processPayment}
               disabled={isProcessing}
-              className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-xl font-semibold disabled:opacity-70"
+              className="flex-1 bg-gradient-to-r from-orange-500 to-[#f09a56] text-white py-3 rounded-xl font-semibold disabled:opacity-70"
             >
               {isProcessing
                 ? (statusMessage ? 'Waiting for PIN...' : 'Processing...')

@@ -1,0 +1,10 @@
+--- backend/routes/api.php
++++ backend/routes/api.php
+@@ -29,6 +29,7 @@
+     Route::put('/profile', [App\Http\Controllers\UserController::class, 'updateProfile']);
+ 
+     // Admin / Manager routes
++    Route::middleware('role:admin,manager')->get('/users/performance', [App\Http\Controllers\UserController::class, 'performance']);
+     Route::middleware('role:admin,manager')->apiResource('users', App\Http\Controllers\UserController::class);
+     Route::middleware('role:admin,manager')->apiResource('suppliers', App\Http\Controllers\SupplierController::class);
+     Route::middleware('role:admin,manager')->get('/dashboard/stats', [App\Http\Controllers\DashboardController::class, 'stats']);

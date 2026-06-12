@@ -6,12 +6,12 @@ export const useCartStore = create((set, get) => ({
     customerId: null,
     total: 0,
 
-    addItem: (product, quantity = 1, unitPrice = null, unitId = null) => {
-        const existing = get().items.find(i => i.product_id === product.id && i.unit_id === unitId);
+    addItem: (product, quantity = 1, unitPrice = null, unitId = null, isOpenBox = false, returnedItemId = null) => {
+        const existing = get().items.find(i => i.product_id === product.id && i.unit_id === unitId && i.is_open_box === isOpenBox && i.returned_item_id === returnedItemId);
         let newItems;
         if (existing) {
             newItems = get().items.map(i =>
-                i.product_id === product.id && i.unit_id === unitId
+                i.product_id === product.id && i.unit_id === unitId && i.is_open_box === isOpenBox && i.returned_item_id === returnedItemId
                     ? { ...i, quantity: i.quantity + quantity }
                     : i
             );
@@ -21,7 +21,9 @@ export const useCartStore = create((set, get) => ({
                 name: product.name,
                 price: unitPrice !== null ? unitPrice : product.base_price,
                 quantity: quantity,
-                unit_id: unitId
+                unit_id: unitId,
+                is_open_box: isOpenBox,
+                returned_item_id: returnedItemId
             }];
         }
         set({ items: newItems });
@@ -54,7 +56,9 @@ export const useCartStore = create((set, get) => ({
                     product_id: i.product_id,
                     quantity: i.quantity,
                     price: i.price,
-                    unit_id: i.unit_id || null
+                    unit_id: i.unit_id || null,
+                    is_open_box: i.is_open_box,
+                    returned_item_id: i.returned_item_id
                 })),
                 customer_id: customerId
             };

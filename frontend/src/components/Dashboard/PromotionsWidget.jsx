@@ -26,14 +26,14 @@ export default function PromotionsWidget() {
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-        <Tag className="text-amber-500" /> Active Promotions
+        <Tag className="text-orange-600" /> Active Promotions
       </h2>
       {promotions.length === 0 ? (
         <p className="text-gray-500">No active promotions at the moment.</p>
       ) : (
         <div className="space-y-3">
           {promotions.map(promo => (
-            <div key={promo.id} className="border-l-4 border-amber-500 pl-3 py-2 bg-gray-50 rounded-r-lg">
+            <div key={promo.id} className="border-l-4 border-orange-600 pl-3 py-2 bg-gray-50 rounded-r-lg">
               <div className="font-medium text-gray-800">{promo.name}</div>
               <div className="text-sm text-gray-600">
                 {promo.type === 'bogo' && `Buy ${promo.min_quantity} Get ${promo.free_quantity} Free`}

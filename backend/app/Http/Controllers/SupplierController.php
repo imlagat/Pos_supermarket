@@ -10,4 +10,8 @@ class SupplierController extends Controller
     public function show(Supplier $supplier) { return $supplier; }
     public function update(Request $request, Supplier $supplier) { $supplier->update($request->all()); return $supplier; }
     public function destroy(Supplier $supplier) { $supplier->delete(); return response()->noContent(); }
+    public function purchaseOrders(Supplier $supplier) {
+        $orders = $supplier->purchaseOrders()->with('items.product')->orderBy('created_at', 'desc')->get();
+        return response()->json($orders);
+    }
 }

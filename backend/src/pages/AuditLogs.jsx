@@ -110,7 +110,7 @@ export default function AuditLogs() {
               </tr>
             ))}
             {logs.length === 0 && (
-              <td><td colSpan="6" className="text-center p-8 text-gray-400">No audit logs found</td></tr>
+              <td><td colSpan="6" className="text-center p-8 text-gray-400">No audit logs found</td></td>
             )}
           </tbody>
         </table>

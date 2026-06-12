@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { RefreshCw, Search, Tag, Trash2, X, Settings } from 'lucide-react';
@@ -17,7 +18,6 @@ export default function Returns() {
   const [processing, setProcessing] = useState(false);
   const [restockingFee, setRestockingFee] = useState(0);
   const [incurredExpense, setIncurredExpense] = useState(0);
-  const NON_REFUNDABLE_FEE = 100;
   const VAT_RATE = 0.16;
   const [evidenceImage, setEvidenceImage] = useState(null);
   const [evidencePreview, setEvidencePreview] = useState(null);
@@ -79,11 +79,17 @@ export default function Returns() {
         const items = order.items.map(item => {
           const alreadyReturned = returnedQuantities[item.product_id] || 0;
           const maxAvailable = Math.max(0, item.quantity - alreadyReturned);
+          
+          const cat = (item.product?.category || '').toLowerCase();
+          const returnableCats = ['electronic', 'household', 'clothing'];
+          const isReturnable = returnableCats.some(c => cat.includes(c));
+
           return {
             product_id: item.product_id,
             name: item.product?.name || 'Unknown',
             unit_price: item.unit_price,
             max_quantity: maxAvailable,
+            is_returnable: isReturnable,
             selected: false,
             quantity: 0
           };
@@ -92,6 +98,10 @@ export default function Returns() {
         setSelectedItems(items);
         const hasElectronics = items.some(i => i.name.toLowerCase().includes('electronic') || i.name.toLowerCase().includes('laptop') || i.name.toLowerCase().includes('phone'));
         setRestockingFee(hasElectronics ? 50 : 0);
+
+        if (items.some(i => !i.is_returnable && i.max_quantity > 0)) {
+          toast.error('This item cannot be returned unless they were bought on the same receipt. Therefore, food products cannot be selected.', { duration: 5000 });
+        }
       } else {
         toast.error('Order not found');
         setFoundOrder(null);
@@ -122,17 +132,14 @@ export default function Returns() {
 
   const calculateRefund = () => {
     let totalOriginalPrice = 0;
-    let selectedProductTypes = 0;
     for (let item of selectedItems) {
       if (item.selected && item.quantity > 0) {
         totalOriginalPrice += item.unit_price * item.quantity;
-        selectedProductTypes++;
       }
     }
-    const nonRefundableDeduction = selectedProductTypes * NON_REFUNDABLE_FEE;
     const vatDeduction = totalOriginalPrice * VAT_RATE;
-    const finalRefund = Math.max(0, totalOriginalPrice - restockingFee - nonRefundableDeduction - incurredExpense - vatDeduction);
-    return { totalOriginalPrice, finalRefund, nonRefundableDeduction, vatDeduction };
+    const finalRefund = Math.max(0, totalOriginalPrice - restockingFee - incurredExpense - vatDeduction);
+    return { totalOriginalPrice, finalRefund, vatDeduction };
   };
 
   const handleImageChange = (e) => {
@@ -155,6 +162,10 @@ export default function Returns() {
     }));
     if (selected.length === 0) {
       toast.error('Select at least one item to return');
+      return;
+    }
+    if (!reason || reason.trim() === '') {
+      toast.error('Please provide a reason for the return.');
       return;
     }
     const { finalRefund } = calculateRefund();
@@ -242,22 +253,22 @@ export default function Returns() {
     setOpenBoxDiscount(discountPercent);
   };
 
-  const pendingItems = returnedItems.filter(i => i.status === 'pending');
+  const engineItems = returnedItems.filter(i => (i.status === 'pending' || i.status === 'open_box') && i.quantity > 0);
   const imageUrl = (path) => path ? `http://localhost:8000/storage/${path}` : null;
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (loading) return <PageLoader message="Loading..." />;
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        <RefreshCw className="text-amber-500" /> Returns Management
+        <RefreshCw className="text-orange-600" /> Returns Management
       </h1>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b">
-        <button onClick={() => setActiveTab('process')} className={`px-6 py-2 text-sm font-semibold rounded-t-lg transition ${activeTab === 'process' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Process Return</button>
-        <button onClick={() => setActiveTab('items')} className={`px-6 py-2 text-sm font-semibold rounded-t-lg transition ${activeTab === 'items' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Returned Items List</button>
-        <button onClick={() => setActiveTab('engine')} className={`px-6 py-2 text-sm font-semibold rounded-t-lg transition ${activeTab === 'engine' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}><Settings size={16} className="inline mr-1" /> Returned Goods Engine</button>
+        <button onClick={() => setActiveTab('process')} className={`px-6 py-2 text-sm font-semibold rounded-t-lg transition ${activeTab === 'process' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Process Return</button>
+        <button onClick={() => setActiveTab('items')} className={`px-6 py-2 text-sm font-semibold rounded-t-lg transition ${activeTab === 'items' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Returned Items List</button>
+        <button onClick={() => setActiveTab('engine')} className={`px-6 py-2 text-sm font-semibold rounded-t-lg transition ${activeTab === 'engine' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}><Settings size={16} className="inline mr-1" /> Returned Goods Engine</button>
       </div>
 
       {/* Process Return Tab */}
@@ -265,7 +276,7 @@ export default function Returns() {
         <div className="bg-white rounded-2xl shadow-xl p-6">
           <div className="flex gap-4 mb-4">
             <input type="text" placeholder="Enter Order Number (e.g., ORD-XXXX)" value={searchOrder} onChange={e => setSearchOrder(e.target.value)} className="border p-2 rounded-xl flex-1" />
-            <button onClick={searchOrderByNumber} className="bg-amber-500 text-white px-4 py-2 rounded-xl flex items-center gap-2"><Search size={18} /> Search Order</button>
+            <button onClick={searchOrderByNumber} className="bg-orange-600 text-white px-4 py-2 rounded-xl flex items-center gap-2"><Search size={18} /> Search Order</button>
           </div>
           {foundOrder && (
             <div className="border-t pt-4">
@@ -289,10 +300,10 @@ export default function Returns() {
                         <td className="p-2">{item.name}</td>
                         <td className="p-2">{item.max_quantity}</td>
                         <td className="p-2">
-                          <input type="checkbox" checked={item.selected} onChange={() => toggleItem(idx)} disabled={item.max_quantity === 0} />
+                          <input type="checkbox" checked={item.selected} onChange={() => toggleItem(idx)} disabled={item.max_quantity === 0 || !item.is_returnable} />
                         </td>
                         <td className="p-2">
-                          <input type="number" min="0" max={item.max_quantity} value={item.quantity} onChange={(e) => updateQuantity(idx, e.target.value)} disabled={!item.selected || item.max_quantity === 0} className="w-20 border p-1 rounded disabled:bg-gray-100" />
+                          <input type="number" min="0" max={item.max_quantity} value={item.quantity} onChange={(e) => updateQuantity(idx, e.target.value)} disabled={!item.selected || item.max_quantity === 0 || !item.is_returnable} className="w-20 border p-1 rounded disabled:bg-gray-100" />
                         </td>
                         <td className="p-2">Ksh {item.unit_price}</td>
                       </tr>
@@ -300,8 +311,7 @@ export default function Returns() {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 p-3 bg-amber-50 rounded-xl flex justify-between"><span>Restocking fee (Electronics):</span><span className="font-semibold">Ksh {restockingFee}</span></div>
-              <div className="mt-2 p-3 bg-blue-50 rounded-xl flex justify-between"><span>Non‑refundable fee (Ksh {NON_REFUNDABLE_FEE} per product):</span><span className="font-semibold">Ksh {calculateRefund().nonRefundableDeduction}</span></div>
+              <div className="mt-4 p-3 bg-orange-50 rounded-xl flex justify-between"><span>Restocking fee:</span><span className="font-semibold">Ksh {restockingFee}</span></div>
               <div className="mt-2 p-3 bg-purple-50 rounded-xl flex justify-between"><span>VAT Deduction (16%):</span><span className="font-semibold">Ksh {calculateRefund().vatDeduction.toFixed(2)}</span></div>
               <div className="mt-2">
                 <label className="block text-sm font-medium mb-1">Incurred Expense (e.g., shipping, handling)</label>
@@ -329,7 +339,7 @@ export default function Returns() {
               </div>
 
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium mb-1">Reason</label><textarea value={reason} onChange={e => setReason(e.target.value)} className="border p-2 rounded-xl w-full" rows="2" /></div>
+                <div><label className="block text-sm font-medium mb-1">Reason <span className="text-red-500">*</span></label><textarea value={reason} onChange={e => setReason(e.target.value)} className="border p-2 rounded-xl w-full" rows="2" required /></div>
                 <div><label className="block text-sm font-medium mb-1">Refund Method</label><select value={refundMethod} onChange={e => setRefundMethod(e.target.value)} className="border p-2 rounded-xl w-full"><option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="card">Card</option><option value="credit_note">Credit Note</option></select></div>
               </div>
               <div className="mt-4 flex items-center gap-2"><input type="checkbox" checked={warrantyOk} onChange={e => setWarrantyOk(e.target.checked)} id="warranty" /><label htmlFor="warranty" className="text-sm">Warranty valid (for electronics)</label></div>
@@ -379,14 +389,18 @@ export default function Returns() {
       {/* Returned Goods Engine Tab – without Upload Image */}
       {activeTab === 'engine' && (
         <div className="bg-white rounded-2xl shadow-xl p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><Settings size={18} className="text-amber-500" /> Pending Returned Items – Vet & Decide</h2>
-          {pendingItems.length === 0 ? <p className="text-gray-500">No pending returned items.</p> : (
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><Settings size={18} className="text-orange-600" /> Pending Returned Items – Vet & Decide</h2>
+          {engineItems.length === 0 ? <p className="text-gray-500">No pending returned items.</p> : (
             <div className="space-y-4">
-              {pendingItems.map(item => (
+              {engineItems.map(item => (
                 <div key={item.id} className="border rounded-xl p-4 flex justify-between items-center flex-wrap gap-4">
-                  <div><p className="font-semibold">{item.product?.name}</p><p className="text-sm text-gray-600">Quantity: {item.quantity}</p></div>
+                  <div>
+                    <p className="font-semibold">{item.product?.name} {item.status === 'open_box' && '(Open Box)'}</p>
+                    <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                    {item.status === 'open_box' && <p className="text-sm text-blue-600">Current Price: Ksh {item.open_box_price}</p>}
+                  </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setActionItem(item); setActionType('openbox'); setOpenBoxPrice((item.product?.base_price * 0.5).toFixed(2)); setOpenBoxDiscount(50); }} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1"><Tag size={14} /> Open Box</button>
+                    <button onClick={() => { setActionItem(item); setActionType('openbox'); setOpenBoxPrice(item.open_box_price || (item.product?.base_price * 0.5).toFixed(2)); setOpenBoxDiscount(item.open_box_price ? (100 - (item.open_box_price / item.product?.base_price * 100)) : 50); }} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1"><Tag size={14} /> {item.status === 'open_box' ? 'Edit Price' : 'Open Box'}</button>
                     <button onClick={() => { setActionItem(item); setActionType('dispose'); }} className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1"><Trash2 size={14} /> Dispose</button>
                   </div>
                 </div>

@@ -2,8 +2,11 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\Auditable;
+
 class DiscountRule extends Model
 {
+    use Auditable;
     protected $fillable = [
         'name', 'type', 'value', 'conditions', 'starts_at', 'ends_at', 'is_active',
         'product_id', 'category', 'min_quantity', 'free_quantity', 'discount_percentage',

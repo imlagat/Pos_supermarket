@@ -54,6 +54,7 @@ class OrderController extends Controller
                 'user_id' => auth()->id(),
                 'total_amount' => $request->total,
                 'status' => 'completed',
+                'branch_id' => app('current_branch_id') ?? 1,
                 'discounts_applied' => json_encode([
                     'discounts' => $request->discounts ?? [],
                     'points_discount' => $request->points_discount ?? 0
@@ -66,6 +67,7 @@ class OrderController extends Controller
                 'model_type' => 'Order',
                 'model_id' => $order->id,
                 'ip_address' => request()->ip(),
+                'branch_id' => app('current_branch_id') ?? 1,
             ]);
 
             foreach ($request->items as $item) {
@@ -80,33 +82,18 @@ class OrderController extends Controller
                 $product = Product::find($item['product_id']);
                 if (!$product) continue;
 
-                if (isset($item['unit_id']) && $item['unit_id']) {
-                    $unit = \App\Models\AlternativeUnit::find($item['unit_id']);
-                    if ($unit) {
-                        $unit->decrement('stock', $item['quantity']);
-                        $product->decrement('stock_quantity', $unit->quantity_in_base_unit * $item['quantity']);
+                if (isset($item['is_open_box']) && $item['is_open_box'] && isset($item['returned_item_id'])) {
+                    $returnedItem = \App\Models\ReturnedItem::find($item['returned_item_id']);
+                    if ($returnedItem) {
+                        $returnedItem->decrement('quantity', $item['quantity']);
                     }
-                } else {
-                    $remaining = $item['quantity'];
-                    $deductFromBase = min($product->stock_quantity, $remaining);
-                    $product->decrement('stock_quantity', $deductFromBase);
-                    $remaining -= $deductFromBase;
+                    continue;
+                }
 
-                    if ($remaining > 0) {
-                        $alternatives = $product->alternativeUnits()->where('stock', '>', 0)->orderBy('price')->get();
-                        foreach ($alternatives as $unit) {
-                            if ($remaining <= 0) break;
-                            $piecesPerUnit = $unit->quantity_in_base_unit;
-                            $unitsNeeded = ceil($remaining / $piecesPerUnit);
-                            $unitsToConvert = min($unit->stock, $unitsNeeded);
-                            $piecesObtained = $unitsToConvert * $piecesPerUnit;
-                            $unit->decrement('stock', $unitsToConvert);
-                            $product->increment('stock_quantity', $piecesObtained);
-                            $deductNow = min($remaining, $piecesObtained);
-                            $product->decrement('stock_quantity', $deductNow);
-                            $remaining -= $deductNow;
-                        }
-                    }
+                if (isset($item['unit_id']) && $item['unit_id']) {
+                    $product->deductAlternativeUnit($item['unit_id'], $item['quantity']);
+                } else {
+                    $product->deductBaseStock($item['quantity']);
                 }
             }
 
@@ -122,11 +109,22 @@ class OrderController extends Controller
             if ($request->customer_id) {
                 $customer = Customer::find($request->customer_id);
                 if ($customer) {
+                    if (isset($request->points_discount) && $request->points_discount > 0) {
+                        $redeemed = (int) $request->points_discount;
+                        $customer->points_balance -= $redeemed;
+                        LoyaltyTransaction::create([
+                            'customer_id' => $customer->id,
+                            'points' => -$redeemed,
+                            'type' => 'redeem',
+                            'order_id' => $order->id,
+                            'description' => 'Points redeemed at POS'
+                        ]);
+                    }
+
                     $pointsEarningRate = (int) SettingsHelper::get('points_earning_rate', 10);
                     $pointsEarned = (int) floor($order->total_amount / $pointsEarningRate);
                     if ($pointsEarned > 0) {
                         $customer->points_balance += $pointsEarned;
-                        $customer->save();
                         LoyaltyTransaction::create([
                             'customer_id' => $customer->id,
                             'points' => $pointsEarned,
@@ -135,6 +133,7 @@ class OrderController extends Controller
                             'description' => 'Purchase at POS'
                         ]);
                     }
+                    $customer->save();
                 }
             }
 

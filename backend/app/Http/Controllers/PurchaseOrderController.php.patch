@@ -1,0 +1,51 @@
+--- backend/app/Http/Controllers/PurchaseOrderController.php
++++ backend/app/Http/Controllers/PurchaseOrderController.php
+@@ -73,6 +73,43 @@
+         return response()->json($po->load('items.product'), 201);
+     }
+ 
++    public function update(Request $request, PurchaseOrder $purchaseOrder)
++    {
++        if ($purchaseOrder->status !== 'draft') {
++            return response()->json(['message' => 'Only draft orders can be updated'], 400);
++        }
++
++        $request->validate([
++            'supplier_id' => 'required|exists:suppliers,id',
++            'order_date' => 'required|date',
++            'expected_delivery_date' => 'nullable|date',
++            'items' => 'required|array|min:1',
++            'items.*.product_id' => 'required|exists:products,id',
++            'items.*.quantity' => 'required|integer|min:1',
++            'items.*.cost_price' => 'required|numeric|min:0',
++        ]);
++
++        try {
++            DB::beginTransaction();
++            $purchaseOrder->update([
++                'supplier_id' => $request->supplier_id,
++                'order_date' => $request->order_date,
++                'expected_delivery_date' => $request->expected_delivery_date,
++                'notes' => $request->notes,
++            ]);
++
++            // Remove old items and insert new ones
++            $purchaseOrder->items()->delete();
++            foreach ($request->items as $item) {
++                PurchaseOrderItem::create([
++                    'purchase_order_id' => $purchaseOrder->id,
++                    'product_id' => $item['product_id'],
++                    'quantity' => $item['quantity'],
++                    'cost_price' => $item['cost_price'],
++                ]);
++            }
++            DB::commit();
++            return response()->json($purchaseOrder->load('items.product'), 200);
++        } catch (\Exception $e) {
++            DB::rollBack();
++            Log::error('PO update failed: '.$e->getMessage());
++            return response()->json(['message' => 'Failed to update purchase order'], 500);
++        }
++    }
++
+     public function show(PurchaseOrder $purchaseOrder)
