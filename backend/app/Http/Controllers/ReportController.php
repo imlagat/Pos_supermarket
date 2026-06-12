@@ -199,10 +199,28 @@ class ReportController extends Controller
         return response()->json($categories);
     }
 
-    public function lowStock()
+    public function lowStock(Request $request)
     {
-        $lowStock = Product::whereColumn('stock_quantity', '<=', 'min_stock_threshold')->get();
-        return response()->json($lowStock);
+        $branchId = $request->header('X-Branch-ID');
+        
+        $query = \App\Models\BranchStock::with('product')
+            ->whereColumn('quantity', '<=', 'min_stock_threshold');
+            
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        
+        $lowStockData = $query->get()->map(function($stock) {
+            return [
+                'id' => $stock->product_id,
+                'name' => $stock->product->name ?? 'Unknown',
+                'sku' => $stock->product->sku ?? '',
+                'stock_quantity' => (float)$stock->quantity,
+                'min_stock_threshold' => (float)$stock->min_stock_threshold
+            ];
+        });
+        
+        return response()->json($lowStockData);
     }
 
     public function returnedItems()

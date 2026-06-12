@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { 
@@ -25,6 +26,7 @@ const menuItems = [
 ];
 
 export default function Sidebar() {
+  const [loadingPath, setLoadingPath] = useState(null);
   const { user, logout } = useAuthStore();
   const allowed = menuItems.filter(item => item.roles.includes(user?.role));
 
@@ -44,19 +46,28 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-1">
         {allowed.map((item) => {
           const Icon = item.icon;
+          const isNavigating = loadingPath === item.path;
           return (
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={() => {
+                setLoadingPath(item.path);
+                setTimeout(() => setLoadingPath(null), 600);
+              }}
               className={({ isActive }) =>
                 `flex items-center justify-center md:justify-start gap-3 px-2 md:px-4 py-3 rounded-xl transition-all duration-200 ${
-                  isActive
+                  isActive || isNavigating
                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
                     : 'text-amber-100 hover:bg-amber-700/50 hover:text-white'
                 }`
               }
             >
-              <Icon size={20} className="flex-shrink-0" />
+              {isNavigating ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              ) : (
+                <Icon size={20} className="flex-shrink-0" />
+              )}
               <span className="hidden md:inline font-medium">{item.name}</span>
             </NavLink>
           );

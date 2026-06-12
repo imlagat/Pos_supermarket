@@ -45,8 +45,12 @@ export default function Login() {
         } else {
           navigate('/');
         }
-      } catch {
-        toast.error('Invalid credentials');
+      } catch (error) {
+        if (error.response && error.response.status === 500) {
+          toast.error('Server error: Could not send OTP email. Please check your SMTP settings.');
+        } else {
+          toast.error(error.response?.data?.message || 'Invalid credentials');
+        }
       }
     }
   };

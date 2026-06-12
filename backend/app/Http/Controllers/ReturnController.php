@@ -115,7 +115,8 @@ class ReturnController extends Controller
 
             // Reverse loyalty points (if any)
             if ($order->customer_id) {
-                $pointsEarned = floor($order->total_amount / 10);
+                $pointsEarningRate = (int) \App\Helpers\SettingsHelper::get('points_earning_rate', 10);
+                $pointsEarned = floor($order->total_amount / $pointsEarningRate);
                 if ($pointsEarned > 0) {
                     $order->customer->decrement('points_balance', $pointsEarned);
                 }

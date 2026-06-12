@@ -18,7 +18,7 @@ export default function Returns() {
   const [processing, setProcessing] = useState(false);
   const [restockingFee, setRestockingFee] = useState(0);
   const [incurredExpense, setIncurredExpense] = useState(0);
-  const VAT_RATE = 0.16;
+  const [systemSettings, setSystemSettings] = useState({});
   const [evidenceImage, setEvidenceImage] = useState(null);
   const [evidencePreview, setEvidencePreview] = useState(null);
 
@@ -32,6 +32,7 @@ export default function Returns() {
   useEffect(() => {
     fetchReturns();
     fetchReturnedItems();
+    api.get('/settings').then(res => setSystemSettings(res.data)).catch(() => {});
   }, []);
 
   const fetchReturns = async () => {
@@ -137,7 +138,8 @@ export default function Returns() {
         totalOriginalPrice += item.unit_price * item.quantity;
       }
     }
-    const vatDeduction = totalOriginalPrice * VAT_RATE;
+    const taxRate = systemSettings.tax_rate !== undefined ? systemSettings.tax_rate : 16;
+    const vatDeduction = totalOriginalPrice * (taxRate / 100);
     const finalRefund = Math.max(0, totalOriginalPrice - restockingFee - incurredExpense - vatDeduction);
     return { totalOriginalPrice, finalRefund, vatDeduction };
   };
@@ -312,7 +314,7 @@ export default function Returns() {
                 </table>
               </div>
               <div className="mt-4 p-3 bg-orange-50 rounded-xl flex justify-between"><span>Restocking fee:</span><span className="font-semibold">Ksh {restockingFee}</span></div>
-              <div className="mt-2 p-3 bg-purple-50 rounded-xl flex justify-between"><span>VAT Deduction (16%):</span><span className="font-semibold">Ksh {calculateRefund().vatDeduction.toFixed(2)}</span></div>
+              <div className="mt-2 p-3 bg-purple-50 rounded-xl flex justify-between"><span>VAT Deduction ({systemSettings.tax_rate !== undefined ? systemSettings.tax_rate : 16}%):</span><span className="font-semibold">Ksh {calculateRefund().vatDeduction.toFixed(2)}</span></div>
               <div className="mt-2">
                 <label className="block text-sm font-medium mb-1">Incurred Expense (e.g., shipping, handling)</label>
                 <input

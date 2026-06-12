@@ -328,7 +328,8 @@ export default function POS() {
   };
 
   const subtotalDisplay = subtotal;
-  const vat = finalTotal * 0.16;
+  const taxRate = systemSettings.tax_rate !== undefined ? systemSettings.tax_rate : 16;
+  const vat = finalTotal * (taxRate / 100);
 
   return (
     <div className="grid grid-cols-12 gap-6">
@@ -417,7 +418,7 @@ export default function POS() {
           {appliedDiscounts.map((d, idx) => (<div key={idx} className="flex justify-between text-sm text-green-600 mb-2"><span>{d.name}</span><span>- Ksh {d.amount.toFixed(2)}</span></div>))}
           {discountFromPoints > 0 && <div className="flex justify-between text-sm text-blue-600 mb-2"><span>Points redeemed</span><span>- Ksh {discountFromPoints.toFixed(2)}</span></div>}
           <div className="flex justify-between text-2xl font-bold text-gray-800 mb-4"><span>Total</span><span>Ksh {finalTotal.toFixed(2)}</span></div>
-          <div className="flex justify-between text-sm text-gray-600 mb-2"><span>VAT (16%)</span><span>Ksh {vat.toFixed(2)}</span></div>
+          <div className="flex justify-between text-sm text-gray-600 mb-2"><span>VAT ({taxRate}%)</span><span>Ksh {vat.toFixed(2)}</span></div>
           <button onClick={() => setShowPayment(true)} disabled={items.length === 0} className={`w-full py-3 rounded-xl font-semibold transition-all ${items.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-[#f09a56] hover:from-orange-500 hover:to-orange-500 text-white shadow-lg'}`}>Complete Sale</button>
         </div>
       </div>
