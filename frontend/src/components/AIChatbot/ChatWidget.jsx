@@ -95,8 +95,8 @@ export default function ChatWidget() {
                         <div className="flex items-center gap-2">
                             <Bot size={24} />
                             <div>
-                                <h3 className="font-bold">Supermarket AI</h3>
-                                <p className="text-xs opacity-90">Powered by Anthropic Claude</p>
+                                <h3 className="font-bold text-lg leading-tight">Supermarket AI</h3>
+                                <p className="text-xs opacity-90">Powered by Google Gemini</p>
                             </div>
                         </div>
                         <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-lg transition">

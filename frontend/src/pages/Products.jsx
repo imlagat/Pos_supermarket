@@ -56,9 +56,8 @@ export default function Products() {
     if (!editing) {
       const namePart = form.name.trim() ? form.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase() : 'PRD';
       const catPart = form.category.trim() ? form.category.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase() : 'GEN';
-      const date = new Date();
-      const datePart = `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getFullYear()).substring(2)}`;
-      const autoSku = `${namePart}-${catPart}-${datePart}`;
+      const randomPrefix = Math.floor(100 + Math.random() * 900); // 3-digit random number
+      const autoSku = `${randomPrefix}-${namePart}-${catPart}`;
       
       setForm(prev => prev.sku !== autoSku ? { ...prev, sku: autoSku } : prev);
     }
@@ -145,8 +144,15 @@ export default function Products() {
       try {
         const res = await api.get('/system/local-ip');
         if (res.data.ip) {
-          const protocol = window.location.protocol; // will be https:
-          base = `${protocol}//${res.data.ip}:${window.location.port || '5173'}`;
+          let protocol = window.location.protocol;
+          let port = window.location.port || '5173';
+          
+          if (protocol === 'http:') {
+            protocol = 'https:';
+            port = '5174';
+          }
+          
+          base = `${protocol}//${res.data.ip}:${port}`;
         }
       } catch (err) {
         console.warn('Failed to fetch local IP', err);

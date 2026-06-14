@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "dev:vite": "vite --host",
+    "dev:proxy": "local-ssl-proxy --source 5174 --target 5173",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:proxy\"",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -24,6 +26,8 @@
     "@vitejs/plugin-basic-ssl": "^1.2.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.5.0",
+    "concurrently": "^10.0.3",
+    "local-ssl-proxy": "^2.0.5",
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",
     "vite": "^5.0.8",

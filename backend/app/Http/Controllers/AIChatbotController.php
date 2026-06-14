@@ -20,7 +20,7 @@ class AIChatbotController extends Controller
 
     public function __construct()
     {
-        $this->apiKey = env('ANTHROPIC_API_KEY');
+        $this->apiKey = env('GEMINI_API_KEY');
     }
 
     public function chat(Request $request)
@@ -32,7 +32,6 @@ class AIChatbotController extends Controller
             return $this->localFallbackChat($messages, $user);
         }
 
-        // Add a system prompt with context and roles
         $role = $user ? $user->role : 'guest';
         $name = $user ? $user->name : 'User';
         
@@ -47,39 +46,30 @@ class AIChatbotController extends Controller
             . "- To create a discount, use create_discount. You must know the product ID.\n"
             . "If a tool returns an error saying 'Permission denied', apologize politely and inform the user that their role ({$role}) does not have the required privileges.\n";
 
-        $tools = [
+        // Gemini tool definitions
+        $functionDeclarations = [
             [
                 'name' => 'lookup_product',
                 'description' => 'Look up a product in the inventory by name or SKU to check its price and stock level.',
-                'input_schema' => [
-                    'type' => 'object',
+                'parameters' => [
+                    'type' => 'OBJECT',
                     'properties' => [
-                        'query' => [
-                            'type' => 'string',
-                            'description' => 'The name or SKU of the product to search for.'
-                        ]
+                        'query' => ['type' => 'STRING', 'description' => 'The exact short name or exact SKU to search for (e.g., "SKU011" or "Yoghurt"). Extract only the core keyword. NEVER pass a full phrase or sentence.']
                     ],
                     'required' => ['query']
                 ]
             ],
             [
                 'name' => 'get_low_stock',
-                'description' => 'Get a list of products that are currently low on stock.',
-                'input_schema' => [
-                    'type' => 'object',
-                    'properties' => new \stdClass()
-                ]
+                'description' => 'Get a list of products that are currently low on stock.'
             ],
             [
                 'name' => 'get_sales_report',
                 'description' => 'Get a summary of total sales, refunds, and order counts. Only Admin and Manager roles are allowed.',
-                'input_schema' => [
-                    'type' => 'object',
+                'parameters' => [
+                    'type' => 'OBJECT',
                     'properties' => [
-                        'period' => [
-                            'type' => 'string',
-                            'description' => 'The time period for the sales report. Allowed values: daily, weekly, monthly, all_time.'
-                        ]
+                        'period' => ['type' => 'STRING', 'description' => 'The time period for the sales report. Allowed values: daily, weekly, monthly, all_time.']
                     ],
                     'required' => ['period']
                 ]
@@ -87,15 +77,15 @@ class AIChatbotController extends Controller
             [
                 'name' => 'create_discount',
                 'description' => 'Create a discount rule for a specific product. Only Admin and Manager roles are allowed.',
-                'input_schema' => [
-                    'type' => 'object',
+                'parameters' => [
+                    'type' => 'OBJECT',
                     'properties' => [
-                        'name' => ['type' => 'string', 'description' => 'Name of the discount (e.g. Summer Sale)'],
-                        'discount_type' => ['type' => 'string', 'description' => 'Type of discount: percentage or fixed'],
-                        'value' => ['type' => 'number', 'description' => 'Discount amount or percentage'],
-                        'product_id' => ['type' => 'integer', 'description' => 'ID of the product to apply discount to'],
-                        'starts_at' => ['type' => 'string', 'description' => 'Start date (YYYY-MM-DD)'],
-                        'ends_at' => ['type' => 'string', 'description' => 'End date (YYYY-MM-DD)']
+                        'name' => ['type' => 'STRING', 'description' => 'Name of the discount (e.g. Summer Sale)'],
+                        'discount_type' => ['type' => 'STRING', 'description' => 'Type of discount: percentage or fixed'],
+                        'value' => ['type' => 'NUMBER', 'description' => 'Discount amount or percentage'],
+                        'product_id' => ['type' => 'INTEGER', 'description' => 'ID of the product to apply discount to'],
+                        'starts_at' => ['type' => 'STRING', 'description' => 'Start date (YYYY-MM-DD)'],
+                        'ends_at' => ['type' => 'STRING', 'description' => 'End date (YYYY-MM-DD)']
                     ],
                     'required' => ['name', 'discount_type', 'value', 'product_id']
                 ]
@@ -103,25 +93,24 @@ class AIChatbotController extends Controller
             [
                 'name' => 'perform_return',
                 'description' => 'Process a return for a specific order. Ensure you have the order ID and items list.',
-                'input_schema' => [
-                    'type' => 'object',
+                'parameters' => [
+                    'type' => 'OBJECT',
                     'properties' => [
-                        'order_id' => ['type' => 'integer', 'description' => 'The ID of the order being returned'],
+                        'order_id' => ['type' => 'INTEGER', 'description' => 'The ID of the order being returned'],
                         'items' => [
-                            'type' => 'array',
+                            'type' => 'ARRAY',
                             'description' => 'List of items to return',
                             'items' => [
-                                'type' => 'object',
+                                'type' => 'OBJECT',
                                 'properties' => [
-                                    'product_id' => ['type' => 'integer'],
-                                    'quantity' => ['type' => 'integer']
-                                ],
-                                'required' => ['product_id', 'quantity']
+                                    'product_id' => ['type' => 'INTEGER'],
+                                    'quantity' => ['type' => 'INTEGER']
+                                ]
                             ]
                         ],
-                        'reason' => ['type' => 'string', 'description' => 'Reason for return'],
-                        'refund_amount' => ['type' => 'number', 'description' => 'Total amount to refund'],
-                        'refund_method' => ['type' => 'string', 'description' => 'Method: cash, mpesa, card, credit_note']
+                        'reason' => ['type' => 'STRING', 'description' => 'Reason for return'],
+                        'refund_amount' => ['type' => 'NUMBER', 'description' => 'Total amount to refund'],
+                        'refund_method' => ['type' => 'STRING', 'description' => 'Method: cash, mpesa, card, credit_note']
                     ],
                     'required' => ['order_id', 'items', 'refund_amount', 'refund_method']
                 ]
@@ -129,135 +118,154 @@ class AIChatbotController extends Controller
             [
                 'name' => 'get_recent_transactions',
                 'description' => 'Get a list of the most recent completed orders/transactions.',
-                'input_schema' => [
-                    'type' => 'object',
+                'parameters' => [
+                    'type' => 'OBJECT',
                     'properties' => [
-                        'limit' => ['type' => 'integer', 'description' => 'Number of recent transactions to fetch (default 5)']
+                        'limit' => ['type' => 'INTEGER', 'description' => 'Number of recent transactions to fetch (default 5)']
                     ]
                 ]
             ],
             [
                 'name' => 'get_suppliers_count',
-                'description' => 'Get the total count of registered suppliers in the system.',
-                'input_schema' => [
-                    'type' => 'object',
-                    'properties' => new \stdClass()
-                ]
+                'description' => 'Get the total count of registered suppliers in the system.'
             ],
             [
                 'name' => 'create_open_box_deal',
                 'description' => 'Mark a returned item as an Open Box deal with a special price. Only Admin and Manager roles are allowed.',
-                'input_schema' => [
-                    'type' => 'object',
+                'parameters' => [
+                    'type' => 'OBJECT',
                     'properties' => [
-                        'returned_item_id' => ['type' => 'integer', 'description' => 'The ID of the ReturnedItem record'],
-                        'open_box_price' => ['type' => 'number', 'description' => 'The special discounted price for the open box item']
+                        'returned_item_id' => ['type' => 'INTEGER', 'description' => 'The ID of the ReturnedItem record'],
+                        'open_box_price' => ['type' => 'NUMBER', 'description' => 'The special discounted price for the open box item']
                     ],
                     'required' => ['returned_item_id', 'open_box_price']
                 ]
             ]
         ];
 
-        // Format user messages for Anthropic
-        $anthropicMessages = [];
+        // Format user messages for Gemini
+        $geminiMessages = [];
         foreach ($messages as $msg) {
             if ($msg['role'] !== 'system') {
                 if (isset($msg['content']) && is_string($msg['content'])) {
-                    $anthropicMessages[] = [
-                        'role' => $msg['role'] === 'assistant' ? 'assistant' : 'user',
-                        'content' => $msg['content']
+                    $geminiMessages[] = [
+                        'role' => $msg['role'] === 'assistant' ? 'model' : 'user',
+                        'parts' => [['text' => $msg['content']]]
                     ];
                 }
             }
         }
 
-        // Send to Anthropic
-        $response = $this->callAnthropic($anthropicMessages, $systemPrompt, $tools);
+        // Send to Gemini
+        $response = $this->callGemini($geminiMessages, $systemPrompt, $functionDeclarations);
 
-        if ($response->successful()) {
+        if (!$response->successful()) {
+            $errorResponse = $response->json();
+            $errorMessage = $errorResponse['error']['message'] ?? 'Failed to connect to Gemini API';
+            return response()->json(['error' => 'API Error: ' . $errorMessage, 'details' => $errorResponse], 500);
+        }
+
+        $maxToolCalls = 5;
+        $toolCallCount = 0;
+
+        while ($toolCallCount < $maxToolCalls) {
             $data = $response->json();
+            $candidate = $data['candidates'][0]['content'] ?? null;
             
-            // Check for tool_use in response
+            if (!$candidate) {
+                return response()->json(['error' => 'API Error: Invalid response from Gemini', 'details' => $data], 500);
+            }
+
             $toolUse = null;
             $assistantText = '';
             
-            if (isset($data['content']) && is_array($data['content'])) {
-                foreach ($data['content'] as $block) {
-                    if ($block['type'] === 'tool_use') {
-                        $toolUse = $block;
-                    } elseif ($block['type'] === 'text') {
-                        $assistantText .= $block['text'];
-                    }
+            foreach ($candidate['parts'] as $part) {
+                if (isset($part['functionCall'])) {
+                    $toolUse = $part['functionCall'];
+                } elseif (isset($part['text'])) {
+                    $assistantText .= $part['text'];
                 }
             }
 
+            // If there's a tool use, execute it and loop again
             if ($toolUse) {
-                // Execute the local function
-                $toolResult = $this->executeTool($toolUse['name'], $toolUse['input'], $user);
+                $toolCallCount++;
                 
-                // Pass exact previous assistant response back
-                $anthropicMessages[] = [
-                    'role' => 'assistant',
-                    'content' => $data['content']
+                // Execute the local function
+                $toolResult = $this->executeTool($toolUse['name'], $toolUse['args'] ?? [], $user);
+                
+                // Ensure functionCall args serialize to {} instead of [] when empty
+                $modelParts = $candidate['parts'];
+                foreach ($modelParts as &$p) {
+                    if (isset($p['functionCall'])) {
+                        if (!isset($p['functionCall']['args']) || (is_array($p['functionCall']['args']) && empty($p['functionCall']['args']))) {
+                            $p['functionCall']['args'] = new \stdClass();
+                        } elseif (is_array($p['functionCall']['args'])) {
+                            $p['functionCall']['args'] = (object) $p['functionCall']['args'];
+                        }
+                    }
+                }
+
+                // Append model's tool call request to history
+                $geminiMessages[] = [
+                    'role' => 'model',
+                    'parts' => $modelParts
                 ];
                 
-                // Pass tool result
-                $anthropicMessages[] = [
+                // Append tool result as user role
+                $geminiMessages[] = [
                     'role' => 'user',
-                    'content' => [
+                    'parts' => [
                         [
-                            'type' => 'tool_result',
-                            'tool_use_id' => $toolUse['id'],
-                            'content' => json_encode($toolResult)
+                            'functionResponse' => [
+                                'name' => $toolUse['name'],
+                                'response' => [
+                                    'name' => $toolUse['name'],
+                                    'content' => $toolResult
+                                ]
+                            ]
                         ]
                     ]
                 ];
 
-                $finalResponse = $this->callAnthropic($anthropicMessages, $systemPrompt, $tools);
+                // Call Gemini again with the updated history
+                $response = $this->callGemini($geminiMessages, $systemPrompt, $functionDeclarations);
                 
-                if ($finalResponse->successful()) {
-                    $finalData = $finalResponse->json();
-                    $finalText = '';
-                    if (isset($finalData['content']) && is_array($finalData['content'])) {
-                        foreach ($finalData['content'] as $block) {
-                            if ($block['type'] === 'text') {
-                                $finalText .= $block['text'];
-                            }
-                        }
-                    }
-                    return response()->json([
-                        'message' => ['role' => 'assistant', 'content' => $finalText]
-                    ]);
+                if (!$response->successful()) {
+                    $errorResponse = $response->json();
+                    $errorMessage = $errorResponse['error']['message'] ?? 'Subsequent Gemini API call failed';
+                    return response()->json(['error' => 'API Error: ' . $errorMessage, 'details' => $errorResponse], 500);
                 }
                 
-                $errorResponse = $finalResponse->json();
-                $errorMessage = $errorResponse['error']['message'] ?? 'Subsequent Anthropic API call failed';
-                
-                return response()->json(['error' => 'API Error: ' . $errorMessage, 'details' => $errorResponse], 500);
+                continue; // Loop again to process the new response
             }
 
+            // If no tool use, we have our final text response
             return response()->json(['message' => ['role' => 'assistant', 'content' => $assistantText]]);
         }
         
-        $errorResponse = $response->json();
-        $errorMessage = $errorResponse['error']['message'] ?? 'Failed to connect to Anthropic API';
-
-        return response()->json(['error' => 'API Error: ' . $errorMessage, 'details' => $errorResponse], 500);
+        return response()->json(['error' => 'API Error: Maximum tool call limit reached'], 500);
     }
 
-    private function callAnthropic($messages, $systemPrompt, $tools)
+    private function callGemini($messages, $systemPrompt, $functionDeclarations)
     {
+        $payload = [
+            'systemInstruction' => [
+                'parts' => [['text' => $systemPrompt]]
+            ],
+            'contents' => $messages,
+            'tools' => [
+                ['functionDeclarations' => $functionDeclarations]
+            ],
+            'generationConfig' => [
+                'temperature' => 0.7,
+                'maxOutputTokens' => 1024,
+            ]
+        ];
+
         return Http::withHeaders([
-            'x-api-key' => $this->apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->post('https://api.anthropic.com/v1/messages', [
-            'model' => 'claude-3-5-sonnet-20241022',
-            'max_tokens' => 1024,
-            'system' => $systemPrompt,
-            'messages' => $messages,
-            'tools' => $tools
-        ]);
+            'Content-Type' => 'application/json',
+        ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $this->apiKey, $payload);
     }
 
     private function localFallbackChat($messages, $user)
@@ -265,7 +273,7 @@ class AIChatbotController extends Controller
         return response()->json([
             'message' => [
                 'role' => 'assistant', 
-                'content' => "*(Running in Offline Mode - Anthropic API Key missing)*\nPlease configure your ANTHROPIC_API_KEY."
+                'content' => "*(Running in Offline Mode - Gemini API Key missing)*\nPlease configure your GEMINI_API_KEY."
             ]
         ]);
     }
@@ -339,7 +347,7 @@ class AIChatbotController extends Controller
                 try {
                     $discount = DiscountRule::create([
                         'name' => $arguments['name'],
-                        'type' => 'specific_products',
+                        'type' => $arguments['discount_type'],
                         'product_id' => $arguments['product_id'],
                         'discount_type' => $arguments['discount_type'],
                         'value' => $arguments['value'],

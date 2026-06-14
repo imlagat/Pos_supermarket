@@ -161,8 +161,16 @@ export default function POS() {
       try {
         const res = await api.get('/system/local-ip');
         if (res.data.ip) {
-          const protocol = window.location.protocol; // will be https:
-          base = `${protocol}//${res.data.ip}:${window.location.port || '5173'}`;
+          let protocol = window.location.protocol;
+          let port = window.location.port || '5173';
+          
+          // Force use of the secure proxy port for remote devices
+          if (protocol === 'http:') {
+            protocol = 'https:';
+            port = '5174';
+          }
+          
+          base = `${protocol}//${res.data.ip}:${port}`;
         }
       } catch (err) {
         console.warn('Failed to fetch local IP', err);
