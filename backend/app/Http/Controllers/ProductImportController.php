@@ -27,6 +27,16 @@ class ProductImportController extends Controller
         $rowNumber = 1;
         while (($data = fgetcsv($handle)) !== false) {
             $rowNumber++;
+            
+            // Skip entirely empty blank lines to prevent array_combine errors
+            if (empty(array_filter($data))) continue;
+            
+            // Also skip if the column count doesn't match the header
+            if (count($header) !== count($data)) {
+                $errors[] = "Row $rowNumber: Invalid column count. Expected " . count($header) . " but got " . count($data);
+                continue;
+            }
+
             $row = array_combine($header, $data);
             if (!$row) continue;
 
@@ -60,7 +70,23 @@ class ProductImportController extends Controller
         fclose($handle);
 
         if (!empty($products)) {
-            Product::insert($products);
+            $branchId = app('current_branch_id') ?? 1;
+            foreach ($products as $pData) {
+                $stockQty = $pData['stock_quantity'];
+                $minStock = $pData['min_stock_threshold'];
+                unset($pData['stock_quantity'], $pData['min_stock_threshold']);
+                
+                $product = Product::create($pData);
+                
+                \Illuminate\Support\Facades\DB::table('branch_stocks')->insert([
+                    'branch_id' => $branchId,
+                    'product_id' => $product->id,
+                    'quantity' => $stockQty,
+                    'min_stock_threshold' => $minStock,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
 
         return response()->json([

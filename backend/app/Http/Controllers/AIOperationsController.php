@@ -18,7 +18,10 @@ class AIOperationsController extends Controller
     public function autoReorder(Request $request)
     {
         // 1. Find products low on stock
-        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'min_stock_threshold')->get();
+        $lowStockProducts = Product::join('branch_stocks', 'products.id', '=', 'branch_stocks.product_id')
+            ->whereColumn('branch_stocks.quantity', '<=', 'branch_stocks.min_stock_threshold')
+            ->select('products.*', 'branch_stocks.min_stock_threshold as branch_min_stock_threshold')
+            ->get();
 
         if ($lowStockProducts->isEmpty()) {
             return response()->json([
@@ -37,13 +40,14 @@ class AIOperationsController extends Controller
             'expected_delivery_date' => now()->addDays(3),
             'status' => 'draft',
             'notes' => 'AI Auto-Generated PO for low stock items',
-            'created_by' => auth()->id() ?? 1
+            'created_by' => auth()->id() ?? 1,
+            'branch_id' => app('current_branch_id') ?? 1
         ]);
 
         $itemsAdded = 0;
 
         foreach ($lowStockProducts as $product) {
-            $orderQuantity = max(50, $product->min_stock_threshold * 2); // Simple heuristic: order enough to be 2x above threshold
+            $orderQuantity = max(50, $product->branch_min_stock_threshold * 2); // Simple heuristic: order enough to be 2x above threshold
             
             PurchaseOrderItem::create([
                 'purchase_order_id' => $po->id,
@@ -101,7 +105,10 @@ class AIOperationsController extends Controller
 
         // 2. Excess Stock Discount
         // Find products with extremely high stock
-        $excessProducts = Product::where('stock_quantity', '>', 500)->get();
+        $excessProducts = Product::join('branch_stocks', 'products.id', '=', 'branch_stocks.product_id')
+            ->where('branch_stocks.quantity', '>', 500)
+            ->select('products.*', 'branch_stocks.quantity as branch_stock_quantity')
+            ->get();
         foreach ($excessProducts as $product) {
             $ruleName = "Clearance: {$product->name}";
             $existing = DiscountRule::where('name', $ruleName)->first();
@@ -118,7 +125,7 @@ class AIOperationsController extends Controller
                     'conditions' => json_encode(['reason' => 'excess_inventory'])
                 ]);
                 $rulesCreated++;
-                $messages[] = "Applied 20% clearance discount to {$product->name} due to high stock ({$product->stock_quantity}).";
+                $messages[] = "Applied 20% clearance discount to {$product->name} due to high stock ({$product->branch_stock_quantity}).";
             }
         }
 

@@ -66,4 +66,19 @@ class InventoryController extends Controller
         $batches = Batch::with('product')->orderBy('created_at', 'desc')->get();
         return response()->json($batches);
     }
+
+    public function updateBatch(Request $request, Batch $batch)
+    {
+        $request->validate([
+            'expiry_date' => 'nullable|date',
+            'created_at' => 'nullable|date'
+        ]);
+
+        $batch->update([
+            'expiry_date' => $request->expiry_date,
+            'created_at' => $request->created_at ? \Carbon\Carbon::parse($request->created_at) : $batch->created_at,
+        ]);
+
+        return response()->json(['message' => 'Batch updated successfully', 'batch' => $batch]);
+    }
 }

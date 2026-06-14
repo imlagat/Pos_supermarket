@@ -91,58 +91,29 @@ export default function POS() {
     }
   }, [customerId]);
 
-  const [selectedProductForUnits, setSelectedProductForUnits] = useState(null);
-
   const handleAddProduct = (product) => {
-    if (product.alternative_units && product.alternative_units.length > 0) {
-      setSelectedProductForUnits(product);
-      return;
-    }
-    
-    // Fallback to base product if no alternative units
-    confirmAddProduct(product, null, product.base_price, 'Base Unit');
+    confirmAddProduct(product);
   };
 
-  const confirmAddProduct = (product, unitId = null, price = null, unitName = 'Pieces') => {
-    const existing = items.find(i => i.product_id === product.id && i.unit_id === unitId && !i.is_open_box);
-    const cartQty = existing ? existing.quantity : 0;
+  const confirmAddProduct = (product) => {
+    const existing = items.find(i => i.product_id === product.id && !i.is_open_box);
     
-    let availableStock = 0;
-    if (unitId) {
-      availableStock = product.branch_stocks?.find(bs => bs.alternative_unit_id === unitId)?.quantity || 0;
-    } else {
-      availableStock = product.branch_stocks?.find(bs => bs.alternative_unit_id === null)?.quantity || product.stock_quantity || 0;
-    }
-    
-    // We can also allow auto-unboxing to fulfill base piece orders if base piece stock is 0 but crate stock exists.
-    // However, on the POS frontend, we'll just check if there's enough of the requested unit.
-    // Let's rely on backend for actual auto-unboxing, but for frontend UI, if they select Base Unit, we can check getTotalBaseStock if we had it,
-    // or just let them add it and backend will handle it.
-    // Let's just bypass strict frontend stock checking for base units if crate exists.
-    let totalBaseStock = availableStock;
-    if (!unitId && product.branch_stocks) {
-        totalBaseStock = product.branch_stocks.reduce((acc, bs) => {
-            if (bs.alternative_unit_id === null) return acc + bs.quantity;
-            const altUnit = product.alternative_units?.find(au => au.id === bs.alternative_unit_id);
-            return acc + (bs.quantity * (altUnit ? altUnit.quantity_in_base_unit : 0));
-        }, 0);
-        availableStock = totalBaseStock;
+    if (existing) {
+      toast.success(`${product.name} is already in the cart! Please adjust the quantity.`);
+      playBeep();
+      return;
     }
 
+    let availableStock = product.current_stock ?? product.stock_quantity ?? 0;
+
     if (availableStock <= 0) {
-      toast.error(`${product.name} (${unitName}) is out of stock!`);
-      return;
-    }
-    if (cartQty + 1 > availableStock) {
-      toast.error(`Not enough stock available for ${product.name} (${unitName})`);
+      toast.error(`${product.name} is out of stock!`);
       return;
     }
     
-    const productToCart = { ...product, name: unitId ? `${product.name} - ${unitName}` : product.name };
-    addItem(productToCart, 1, price !== null ? price : product.base_price, unitId);
+    addItem(product, 1, product.base_price, null);
     playBeep();
-    toast.success(`${product.name.toUpperCase()} (${unitName}) ADDED TO CART`);
-    setSelectedProductForUnits(null);
+    toast.success(`${product.name.toUpperCase()} ADDED TO CART`);
   };
 
   const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
@@ -468,43 +439,6 @@ export default function POS() {
         </div>
       )}
       
-      {selectedProductForUnits && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Select Unit</h2>
-              <button onClick={() => setSelectedProductForUnits(null)} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full"><X size={20} /></button>
-            </div>
-            <p className="text-gray-600 mb-4 font-medium">{selectedProductForUnits.name}</p>
-            <div className="space-y-3">
-              <button 
-                onClick={() => confirmAddProduct(selectedProductForUnits, null, selectedProductForUnits.base_price, 'Pieces')}
-                className="w-full text-left p-4 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 transition flex justify-between items-center"
-              >
-                <div>
-                  <div className="font-semibold text-orange-900">Base Unit (Pieces)</div>
-                  <div className="text-sm text-orange-700">Ksh {selectedProductForUnits.base_price}</div>
-                </div>
-                <Plus className="text-orange-600" />
-              </button>
-              
-              {selectedProductForUnits.alternative_units.map(unit => (
-                <button 
-                  key={unit.id}
-                  onClick={() => confirmAddProduct(selectedProductForUnits, unit.id, unit.price, unit.unit_name)}
-                  className="w-full text-left p-4 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 transition flex justify-between items-center"
-                >
-                  <div>
-                    <div className="font-semibold text-blue-900">{unit.unit_name} ({unit.quantity_in_base_unit} pieces)</div>
-                    <div className="text-sm text-blue-700">Ksh {unit.price}</div>
-                  </div>
-                  <Plus className="text-blue-600" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

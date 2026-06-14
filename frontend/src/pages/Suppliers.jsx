@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Truck, Plus, Edit2, Trash2, Search, X, FileText, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Truck, Plus, Edit2, Trash2, Search, X, FileText, CheckCircle, ChevronDown, ChevronUp, Wallet, ChevronRight } from 'lucide-react';
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
@@ -16,8 +16,25 @@ export default function Suppliers() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [receiveModal, setReceiveModal] = useState({ show: false, order: null, items: [], agreed_price: '', paid_amount: '' });
   const [receiving, setReceiving] = useState(false);
+  const [activeTab, setActiveTab] = useState('directory');
+  const [allOrders, setAllOrders] = useState([]);
+  const [expandedSupplierId, setExpandedSupplierId] = useState(null);
+  const [paymentModal, setPaymentModal] = useState({ show: false, order: null, amount: '', notes: '' });
+  const [processingPayment, setProcessingPayment] = useState(false);
 
-  useEffect(() => { fetchSuppliers(); }, []);
+  useEffect(() => { 
+    fetchSuppliers(); 
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const res = await api.get('/purchase-orders');
+      setAllOrders(res.data);
+    } catch (err) {
+      console.error('Failed to load orders', err);
+    }
+  };
 
   const fetchSuppliers = async () => {
     try {
@@ -173,32 +190,94 @@ export default function Suppliers() {
     }
   };
 
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    if (!paymentModal.amount || paymentModal.amount <= 0) {
+      return toast.error('Please enter a valid amount greater than 0');
+    }
+    
+    setProcessingPayment(true);
+    try {
+      await api.post(`/purchase-orders/${paymentModal.order.id}/pay`, {
+        amount: parseFloat(paymentModal.amount),
+        notes: paymentModal.notes
+      });
+      toast.success('Payment recorded successfully!');
+      setPaymentModal({ show: false, order: null, amount: '', notes: '' });
+      fetchOrders(); // Refresh orders to recalculate balances
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to record payment');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   const filtered = suppliers.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.contact_person && s.contact_person.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const calculateBalances = () => {
+    const balances = {};
+    suppliers.forEach(s => {
+      balances[s.id] = { supplier: s, total_agreed: 0, total_paid: 0, total_owed: 0, received_orders: [] };
+    });
+    
+    const receivedOrders = allOrders.filter(o => o.status === 'received');
+    receivedOrders.forEach(o => {
+      if (balances[o.supplier_id]) {
+        balances[o.supplier_id].received_orders.push(o);
+        balances[o.supplier_id].total_agreed += parseFloat(o.agreed_price) || 0;
+        balances[o.supplier_id].total_paid += parseFloat(o.paid_amount) || 0;
+        balances[o.supplier_id].total_owed += parseFloat(o.balance) || 0;
+      }
+    });
+
+    return Object.values(balances).filter(b => b.received_orders.length > 0);
+  };
+
+  const supplierBalances = calculateBalances();
+
   if (loading) return <PageLoader message="Loading suppliers..." />;
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <Truck className="text-orange-600" /> Suppliers
         </h1>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search suppliers..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-600"
-          />
-        </div>
+        {activeTab === 'directory' && (
+          <div className="relative w-full sm:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search suppliers..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 border w-full sm:w-auto rounded-xl focus:ring-2 focus:ring-orange-600"
+            />
+          </div>
+        )}
       </div>
 
-      <div className="mb-8 space-y-6">
+      <div className="flex border-b mb-6">
+        <button
+          className={`px-6 py-3 font-semibold text-sm transition border-b-2 ${activeTab === 'directory' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+          onClick={() => setActiveTab('directory')}
+        >
+          <div className="flex items-center gap-2"><FileText size={18} /> Directory</div>
+        </button>
+        <button
+          className={`px-6 py-3 font-semibold text-sm transition border-b-2 ${activeTab === 'balances' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+          onClick={() => setActiveTab('balances')}
+        >
+          <div className="flex items-center gap-2"><Wallet size={18} /> Balances & Ledger</div>
+        </button>
+      </div>
+
+      {activeTab === 'directory' && (
+        <>
+          <div className="mb-8 space-y-6">
         <div className="flex items-center gap-2">
           <Plus className="text-orange-600 w-6 h-6" />
           <h2 className="text-xl font-bold text-gray-800">{editing ? 'Edit' : 'Add'} Supplier</h2>
@@ -456,6 +535,149 @@ export default function Suppliers() {
           </div>
         </div>
       )}
+        </>
+      )}
+
+      {activeTab === 'balances' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="p-4 text-left font-semibold text-gray-600">Supplier Name</th>
+                  <th className="p-4 text-left font-semibold text-gray-600">Total Agreed</th>
+                  <th className="p-4 text-left font-semibold text-gray-600">Total Paid</th>
+                  <th className="p-4 text-left font-semibold text-gray-600">Total Owed</th>
+                  <th className="p-4 text-left font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              {supplierBalances.length === 0 ? (
+                <tbody>
+                  <tr><td colSpan="5" className="text-center p-8 text-gray-400">No delivery data available for balances.</td></tr>
+                </tbody>
+              ) : (
+                supplierBalances.map(b => (
+                  <tbody key={b.supplier.id} className="divide-y divide-gray-100">
+                    <tr className="hover:bg-gray-50 transition">
+                      <td className="p-4 font-bold text-gray-800">{b.supplier.name}</td>
+                      <td className="p-4 text-gray-600 font-medium">Ksh {b.total_agreed.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                      <td className="p-4 text-green-600 font-medium">Ksh {b.total_paid.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                      <td className="p-4 text-red-600 font-bold text-lg">Ksh {b.total_owed.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                      <td className="p-4">
+                        <button onClick={() => setExpandedSupplierId(expandedSupplierId === b.supplier.id ? null : b.supplier.id)} className="flex items-center gap-1 text-orange-600 hover:text-orange-800 font-semibold text-sm transition">
+                          {expandedSupplierId === b.supplier.id ? <ChevronDown size={18} /> : <ChevronRight size={18} />} 
+                          {expandedSupplierId === b.supplier.id ? 'Hide Ledger' : 'View Ledger'}
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedSupplierId === b.supplier.id && (
+                      <tr>
+                        <td colSpan="5" className="p-0 bg-gray-50 border-t-0 shadow-inner">
+                          <div className="p-6">
+                            <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wide mb-3 border-b pb-2">Delivery Ledger</h4>
+                            <table className="w-full text-sm text-left bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                              <thead className="bg-gray-100 border-b">
+                                <tr>
+                                  <th className="p-3 font-semibold text-gray-600">Date</th>
+                                  <th className="p-3 font-semibold text-gray-600">PO Number</th>
+                                  <th className="p-3 font-semibold text-gray-600">Agreed Amount</th>
+                                  <th className="p-3 font-semibold text-gray-600">Amount Paid</th>
+                                  <th className="p-3 font-semibold text-gray-600">Balance Owed</th>
+                                  <th className="p-3 font-semibold text-gray-600">Payment Notes</th>
+                                  <th className="p-3 font-semibold text-gray-600 text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {b.received_orders.map(order => (
+                                  <tr key={order.id} className="hover:bg-gray-50">
+                                    <td className="p-3 text-gray-600">{new Date(order.updated_at).toLocaleDateString()}</td>
+                                    <td className="p-3 font-medium text-gray-800">{order.po_number}</td>
+                                    <td className="p-3 text-gray-600">Ksh {Number(order.agreed_price).toLocaleString()}</td>
+                                    <td className="p-3 text-green-600">Ksh {Number(order.paid_amount).toLocaleString()}</td>
+                                    <td className="p-3 font-bold text-red-600">Ksh {Number(order.balance).toLocaleString()}</td>
+                                    <td className="p-3 text-gray-500 max-w-[200px] truncate" title={order.notes}>{order.notes || '-'}</td>
+                                    <td className="p-3 text-right">
+                                      {parseFloat(order.balance) > 0 ? (
+                                        <button 
+                                          onClick={() => setPaymentModal({ show: true, order, amount: order.balance, notes: '' })}
+                                          className="text-sm bg-orange-100 text-orange-700 hover:bg-orange-200 px-3 py-1.5 rounded-lg font-semibold transition"
+                                        >
+                                          Pay Balance
+                                        </button>
+                                      ) : (
+                                        <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1.5 rounded-lg">Settled</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                ))
+              )}
+            </table>
+          </div>
+        </div>
+      )}
+      {/* Payment Modal */}
+      {paymentModal.show && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold">Make Payment</h2>
+              <button onClick={() => setPaymentModal({ show: false, order: null, amount: '', notes: '' })} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full"><X size={20} /></button>
+            </div>
+            <form onSubmit={handlePaymentSubmit} className="p-6 space-y-4">
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-orange-800">Order</span>
+                  <span className="font-bold text-orange-900">{paymentModal.order?.po_number}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-orange-800">Current Balance</span>
+                  <span className="font-bold text-red-600 text-lg">Ksh {Number(paymentModal.order?.balance).toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Amount (Ksh) <span className="text-red-500">*</span></label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  max={paymentModal.order?.balance} 
+                  required 
+                  value={paymentModal.amount} 
+                  onChange={e => setPaymentModal({...paymentModal, amount: e.target.value})} 
+                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none font-semibold text-lg" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method / Notes</label>
+                <textarea 
+                  placeholder="e.g., Paid via M-Pesa Ref XYZ123..." 
+                  value={paymentModal.notes} 
+                  onChange={e => setPaymentModal({...paymentModal, notes: e.target.value})} 
+                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" 
+                  rows="3" 
+                />
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setPaymentModal({ show: false, order: null, amount: '', notes: '' })} className="px-6 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-100 transition font-medium">Cancel</button>
+                <button type="submit" disabled={processingPayment} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2.5 rounded-xl font-semibold shadow-md transition flex items-center gap-2">
+                  {processingPayment ? 'Processing...' : 'Confirm Payment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

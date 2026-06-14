@@ -13,7 +13,7 @@ class PurchaseOrderController extends Controller
 {
     public function index()
     {
-        $orders = PurchaseOrder::with(['supplier', 'creator', 'items.product', 'items.alternativeUnit'])
+        $orders = PurchaseOrder::with(['supplier', 'creator', 'items.product'])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($order) {
@@ -36,7 +36,6 @@ class PurchaseOrderController extends Controller
             'expected_delivery_date' => 'nullable|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.alternative_unit_id' => 'nullable|exists:alternative_units,id',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.cost_price' => 'required|numeric|min:0',
             'agreed_price' => 'nullable|numeric|min:0',
@@ -59,14 +58,14 @@ class PurchaseOrderController extends Controller
                 'status' => 'pending',
                 'agreed_price' => $agreed,
                 'paid_amount' => $paid,
-                'balance' => $balance
+                'balance' => $balance,
+                'branch_id' => app('current_branch_id') ?? 1
             ]);
 
             foreach ($request->items as $item) {
                 PurchaseOrderItem::create([
                     'purchase_order_id' => $po->id,
                     'product_id' => $item['product_id'],
-                    'alternative_unit_id' => $item['alternative_unit_id'] ?? null,
                     'quantity' => $item['quantity'],
                     'cost_price' => $item['cost_price'],
                 ]);
@@ -92,7 +91,6 @@ class PurchaseOrderController extends Controller
             'expected_delivery_date' => 'nullable|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.alternative_unit_id' => 'nullable|exists:alternative_units,id',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.cost_price' => 'required|numeric|min:0',
             'agreed_price' => 'nullable|numeric|min:0',
@@ -121,7 +119,6 @@ class PurchaseOrderController extends Controller
                 PurchaseOrderItem::create([
                     'purchase_order_id' => $purchaseOrder->id,
                     'product_id' => $item['product_id'],
-                    'alternative_unit_id' => $item['alternative_unit_id'] ?? null,
                     'quantity' => $item['quantity'],
                     'cost_price' => $item['cost_price'],
                 ]);
@@ -137,7 +134,7 @@ class PurchaseOrderController extends Controller
 
     public function show(PurchaseOrder $purchaseOrder)
     {
-        $purchaseOrder->load('items.product', 'items.alternativeUnit', 'supplier', 'creator');
+        $purchaseOrder->load('items.product', 'supplier', 'creator');
         $purchaseOrder->total_quantity = $purchaseOrder->items->sum('quantity');
         $purchaseOrder->total_amount = $purchaseOrder->items->sum(function ($item) {
             return $item->quantity * $item->cost_price;
@@ -171,7 +168,7 @@ class PurchaseOrderController extends Controller
                 // Increase stock quantity in branch_stocks
                 $branchId = app('current_branch_id') ?? 1;
                 $stockRecord = \App\Models\BranchStock::firstOrCreate(
-                    ['branch_id' => $branchId, 'product_id' => $product->id, 'alternative_unit_id' => $poItem->alternative_unit_id],
+                    ['branch_id' => $branchId, 'product_id' => $product->id],
                     ['quantity' => 0]
                 );
                 $stockRecord->increment('quantity', $poItem->quantity);
@@ -234,5 +231,42 @@ class PurchaseOrderController extends Controller
             ->orderBy('expected_delivery_date', 'asc')
             ->get();
         return response()->json($overdue);
+    }
+
+    public function pay(Request $request, PurchaseOrder $purchaseOrder)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'notes' => 'nullable|string'
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            $paid = $purchaseOrder->paid_amount + $request->amount;
+            $balance = $purchaseOrder->agreed_price - $paid;
+
+            // Optional: append payment notes to existing notes
+            $newNotes = $purchaseOrder->notes;
+            if ($request->filled('notes')) {
+                $newNotes = $newNotes ? $newNotes . "\nPayment Note: " . $request->notes : "Payment Note: " . $request->notes;
+            }
+
+            $purchaseOrder->update([
+                'paid_amount' => $paid,
+                'balance' => $balance,
+                'notes' => $newNotes
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Payment recorded successfully', 
+                'order' => $purchaseOrder->load('items.product', 'supplier')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Payment failed: '.$e->getMessage());
+            return response()->json(['message' => 'Failed to record payment'], 500);
+        }
     }
 }

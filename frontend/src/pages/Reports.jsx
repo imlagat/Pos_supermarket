@@ -12,20 +12,21 @@ export default function Reports() {
   const [topProducts, setTopProducts] = useState([]);
   const [salesByCategory, setSalesByCategory] = useState([]);
   const [lowStock, setLowStock] = useState([]);
+  const [expiringProducts, setExpiringProducts] = useState([]);
   const [returnedItems, setReturnedItems] = useState([]);
   const [returnTotals, setReturnTotals] = useState({ total_refund: 0, total_quantity: 0 });
   const [loading, setLoading] = useState(false);
   const [weeklyTrend, setWeeklyTrend] = useState([]);
 
   const COLORS = [
-    '#f59e0b', // orange-600
-    '#f97316', // orange-600
-    '#fbbf24', // orange-400
-    '#ea580c', // orange-700
-    '#fcd34d', // orange-300
-    '#c2410c', // orange-800
-    '#fb923c', // orange-400
-    '#d97706', // orange-700
+    '#3b82f6', // blue
+    '#10b981', // green
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#8b5cf6', // purple
+    '#ec4899', // pink
+    '#14b8a6', // teal
+    '#f97316', // orange
   ];
 
   useEffect(() => {
@@ -35,13 +36,14 @@ export default function Reports() {
   const fetchAllReports = async () => {
     setLoading(true);
     try {
-      const [dailyRes, weeklyRes, monthlyRes, topRes, categoryRes, lowStockRes, weeklyTrendRes, returnedRes] = await Promise.all([
+      const [dailyRes, weeklyRes, monthlyRes, topRes, categoryRes, lowStockRes, expiringRes, weeklyTrendRes, returnedRes] = await Promise.all([
         api.get('/reports/daily-sales'),
         api.get('/reports/weekly-sales'),
         api.get('/reports/monthly-sales'),
         api.get('/reports/top-products?limit=5'),
         api.get('/reports/sales-by-category'),
         api.get('/reports/low-stock'),
+        api.get('/reports/expiring-products'),
         api.get('/reports/sales'),
         api.get('/reports/returned-items')
       ]);
@@ -51,6 +53,7 @@ export default function Reports() {
       setTopProducts(topRes.data);
       setSalesByCategory(categoryRes.data);
       setLowStock(lowStockRes.data);
+      setExpiringProducts(expiringRes.data);
       setWeeklyTrend(weeklyTrendRes.data.weekly_sales || []);
       setReturnedItems(returnedRes.data.items || []);
       setReturnTotals({
@@ -123,12 +126,13 @@ export default function Reports() {
             </ResponsiveContainer>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="flex flex-col gap-6">
-              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col max-h-[500px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
+            {/* Left Column */}
+            <div className="flex flex-col gap-6 w-full">
+              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col max-h-[600px]">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 shrink-0"><Package className="text-orange-600" /> Top Selling Products</h2>
                 {topProducts.length === 0 ? <p className="text-gray-500">No data yet</p> : (
-                  <div className="space-y-3 overflow-y-auto pr-2">
+                  <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                     {topProducts.map((p, idx) => (
                       <div key={idx} className="flex justify-between items-center border-b pb-2">
                         <div><span className="font-medium text-sm">{p.name}</span><div className="text-xs text-gray-500">{p.sku}</div></div>
@@ -139,72 +143,121 @@ export default function Reports() {
                 )}
               </div>
 
-              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 shrink-0"><Package className="text-orange-600" /> Sales by Category</h2>
-                {salesByCategory.length === 0 ? <p className="text-gray-500">No data yet</p> : (
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="w-1/2">
-                      <ResponsiveContainer width="100%" height={220}>
-                        <PieChart>
-                          <Pie 
-                            data={salesByCategory} 
-                            dataKey="revenue" 
-                            nameKey="category" 
-                            cx="50%" 
-                            cy="50%" 
-                            innerRadius={50} 
-                            outerRadius={80}
-                            label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
-                          >
-                            {salesByCategory.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                          </Pie>
-                          <Tooltip formatter={(value) => `Ksh ${value.toLocaleString()}`} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="w-1/2 flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
-                      {salesByCategory.map((cat, idx) => (
-                        <div key={idx} className="text-xs flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <div className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                            <span className="font-medium text-gray-700 truncate" title={cat.category || 'Uncategorized'}>{cat.category || 'Uncategorized'}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col max-h-[600px]">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 shrink-0"><AlertCircle className="text-orange-600" /> Low Stock Products</h2>
+                {lowStock.length === 0 ? <p className="text-gray-500">All products have sufficient stock ✅</p> : (
+                  <div className="overflow-x-auto overflow-y-auto pr-2 custom-scrollbar">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b sticky top-0 z-10">
+                        <tr>
+                          <th className="p-2 text-left font-semibold text-gray-600">Product Name & SKU</th>
+                          <th className="p-2 text-left font-semibold text-gray-600">Current Stock</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lowStock.map(p => (
+                          <tr key={p.id} className="border-b hover:bg-gray-50">
+                            <td className="p-3">
+                              <div className="font-medium text-gray-800">{p.name}</div>
+                              <div className="text-xs text-gray-500">{p.sku}</div>
+                            </td>
+                            <td className="p-3">
+                              <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded-md">{p.stock_quantity}</span>
+                              <span className="text-xs text-gray-400 ml-1">/ Min: {p.min_stock_threshold}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col max-h-[600px]">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 shrink-0"><AlertCircle className="text-red-600" /> Expiring Products (30 Days)</h2>
+                {expiringProducts.length === 0 ? <p className="text-gray-500">No products expiring soon ✅</p> : (
+                  <div className="overflow-x-auto overflow-y-auto pr-2 custom-scrollbar">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b sticky top-0 z-10">
+                        <tr>
+                          <th className="p-2 text-left font-semibold text-gray-600">Product Name & SKU</th>
+                          <th className="p-2 text-left font-semibold text-gray-600">Batch / Expiry</th>
+                          <th className="p-2 text-left font-semibold text-gray-600">Qty</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {expiringProducts.map(p => {
+                          const daysLeft = Math.ceil((new Date(p.expiry_date) - new Date()) / (1000 * 60 * 60 * 24));
+                          const isVeryClose = daysLeft <= 7;
+                          return (
+                            <tr key={p.batch_id} className="border-b hover:bg-gray-50">
+                              <td className="p-3">
+                                <div className="font-medium text-gray-800">{p.name}</div>
+                                <div className="text-xs text-gray-500">{p.sku}</div>
+                              </td>
+                              <td className="p-3">
+                                <div className="text-xs text-gray-500 font-mono">{p.batch_number}</div>
+                                <div className={`font-bold ${isVeryClose ? 'text-red-600' : 'text-orange-500'}`}>
+                                  {new Date(p.expiry_date).toLocaleDateString()}
+                                  <span className="text-xs ml-1 opacity-75">({daysLeft} days)</span>
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <span className="font-medium bg-gray-100 px-2 py-1 rounded-md">{p.quantity}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col max-h-[800px]">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 shrink-0"><AlertCircle className="text-orange-600" /> Low Stock Products</h2>
-              {lowStock.length === 0 ? <p className="text-gray-500">All products have sufficient stock ✅</p> : (
-                <div className="overflow-x-auto overflow-y-auto pr-2">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b sticky top-0">
-                      <tr>
-                        <th className="p-2 text-left font-semibold text-gray-600">Product Name & SKU</th>
-                        <th className="p-2 text-left font-semibold text-gray-600">Current Stock</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {lowStock.map(p => (
-                        <tr key={p.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3">
-                            <div className="font-medium text-gray-800">{p.name}</div>
-                            <div className="text-xs text-gray-500">{p.sku}</div>
-                          </td>
-                          <td className="p-3">
-                            <span className="text-red-600 font-bold bg-red-50 px-2 py-1 rounded-md">{p.stock_quantity}</span>
-                            <span className="text-xs text-gray-400 ml-1">/ Min: {p.min_stock_threshold}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            {/* Right Column */}
+            <div className="flex flex-col gap-6 w-full">
+              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 shrink-0"><Package className="text-orange-600" /> Sales by Category</h2>
+              {salesByCategory.length === 0 ? <p className="text-gray-500">No data yet</p> : (
+                <div className="flex flex-col items-center gap-6">
+                  <div className="w-full flex justify-center items-center" style={{ minHeight: '260px' }}>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie 
+                          data={salesByCategory} 
+                          dataKey="revenue" 
+                          nameKey="category" 
+                          cx="50%" 
+                          cy="50%" 
+                          innerRadius={60} 
+                          outerRadius={100}
+                          label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                        >
+                          {salesByCategory.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip formatter={(value) => `Ksh ${value.toLocaleString()}`} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-full flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="flex justify-between items-center text-xs font-semibold text-gray-500 uppercase px-1 pb-1 border-b">
+                      <span>Categories</span>
+                      <span>Amount</span>
+                    </div>
+                    {salesByCategory.map((cat, idx) => (
+                      <div key={idx} className="text-xs flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <div className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                          <span className="font-medium text-gray-700 truncate" title={cat.category || 'Uncategorized'}>{cat.category || 'Uncategorized'}</span>
+                        </div>
+                        <span className="font-bold text-gray-900 ml-2 whitespace-nowrap">Ksh {cat.revenue?.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+            </div>
             </div>
           </div>
         </>

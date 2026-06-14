@@ -53,8 +53,19 @@ class RemoteScannerController extends Controller
      */
     public function getLocalIp()
     {
+        $ip = '127.0.0.1';
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $ip = gethostbyname(gethostname());
+        } else {
+            $command = "ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1";
+            $ip = trim(shell_exec($command));
+            if (!$ip) {
+                $ip = gethostbyname(gethostname());
+            }
+        }
+
         return response()->json([
-            'ip' => gethostbyname(gethostname())
+            'ip' => $ip
         ]);
     }
 }

@@ -6,30 +6,39 @@ export default function BarcodeScannerModal({ onScan, onClose }) {
   const videoRef = useRef(null);
   const [error, setError] = useState('');
 
+  const onScanRef = useRef(onScan);
+  useEffect(() => {
+    onScanRef.current = onScan;
+  }, [onScan]);
+
   useEffect(() => {
     let isActive = true;
     let codeReaderInstance = null;
+    let activeStream = null;
+    const currentVideoElement = videoRef.current;
 
     const startScanner = async () => {
       try {
         codeReaderInstance = new BrowserMultiFormatReader();
         
-        // Find best camera
-        const videoInputDevices = await codeReader.listVideoInputDevices();
-        if (!videoInputDevices.length) {
-           if (isActive) setError('No camera found on this device.');
-           return;
+        // Request the camera stream manually
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        
+        // If component unmounted while waiting for permissions, kill it instantly
+        if (!isActive) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
         }
 
-        // Prefer back camera
-        let selectedDeviceId = videoInputDevices[0].deviceId;
-        const backCamera = videoInputDevices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
-        if (backCamera) selectedDeviceId = backCamera.deviceId;
+        activeStream = stream;
 
-        codeReaderInstance.decodeFromVideoDevice(selectedDeviceId, videoRef.current, (result, err) => {
+        // Pass our manually managed stream to ZXing
+        codeReaderInstance.decodeFromStream(stream, currentVideoElement, (result, err) => {
           if (!isActive) return;
           if (result) {
-            onScan(result.getText());
+            onScanRef.current(result.getText());
           }
         });
 
@@ -43,14 +52,20 @@ export default function BarcodeScannerModal({ onScan, onClose }) {
 
     return () => {
       isActive = false;
+      // Force kill our manually managed stream
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+      }
+      if (currentVideoElement && currentVideoElement.srcObject) {
+        const tracks = currentVideoElement.srcObject.getTracks ? currentVideoElement.srcObject.getTracks() : [];
+        tracks.forEach(track => track.stop());
+        currentVideoElement.srcObject = null;
+      }
       if (codeReaderInstance) {
-        // Run reset asynchronously so it doesn't block UI thread on close
-        setTimeout(() => {
-          try { codeReaderInstance.reset(); } catch(e){}
-        }, 0);
+        try { codeReaderInstance.reset(); } catch(e){}
       }
     };
-  }, [onScan]);
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">

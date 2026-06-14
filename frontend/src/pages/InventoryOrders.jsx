@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Package, AlertTriangle, Plus, CheckCircle, X, ShoppingCart, Truck, Calendar, Bell, Box, ClipboardCheck } from 'lucide-react';
+import { Package, AlertTriangle, Plus, CheckCircle, X, ShoppingCart, Truck, Calendar, Bell, Box, ClipboardCheck, Edit, Eye } from 'lucide-react';
 import PageLoader from '../components/common/PageLoader';
 
 export default function InventoryOrders() {
@@ -22,7 +22,7 @@ export default function InventoryOrders() {
     notes: '',
     agreed_price: '',
     paid_amount: '',
-    items: [{ product_id: '', alternative_unit_id: '', quantity: 1, cost_price: '', current_price: 0 }]
+    items: [{ product_id: '', quantity: 1, cost_price: '', current_price: 0 }]
   });
   const [savingPO, setSavingPO] = useState(false);
   const [editingPoId, setEditingPoId] = useState(null);
@@ -31,9 +31,9 @@ export default function InventoryOrders() {
   const [receiveModal, setReceiveModal] = useState({ show: false, order: null, items: [] });
   const [receiving, setReceiving] = useState(false);
 
-  // Unbox modal state
-  const [unboxModal, setUnboxModal] = useState({ show: false, product: null, alternative_unit_id: '', quantity: 1 });
-  const [unboxing, setUnboxing] = useState(false);
+  // ---------- Product Actions State ----------
+  const [viewProduct, setViewProduct] = useState(null);
+  const [editProduct, setEditProduct] = useState(null);
 
   // ---------- Tab state ----------
   const [activeTab, setActiveTab] = useState('inventory');
@@ -71,29 +71,39 @@ export default function InventoryOrders() {
       toast.error('Failed to load purchase orders');
     }
   };
+  const calculateTotalAgreedPrice = (items) => {
+    const total = items.reduce((sum, item) => sum + ((parseInt(item.quantity) || 0) * (parseFloat(item.cost_price) || 0)), 0);
+    return total > 0 ? total : '';
+  };
 
   const addPOItem = () => {
-    setPoForm(prev => ({ ...prev, items: [...prev.items, { product_id: '', alternative_unit_id: '', quantity: 1, cost_price: '', current_price: 0 }] }));
+    setPoForm(prev => ({ ...prev, items: [...prev.items, { product_id: '', quantity: 1, cost_price: '', current_price: 0 }] }));
   };
+  
   const removePOItem = (idx) => {
     if (poForm.items.length === 1) return;
-    setPoForm(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== idx) }));
+    setPoForm(prev => {
+      const newItems = prev.items.filter((_, i) => i !== idx);
+      return { ...prev, items: newItems, agreed_price: calculateTotalAgreedPrice(newItems) };
+    });
   };
+
   const updatePOItem = (idx, field, value) => {
-    const newItems = [...poForm.items];
-    newItems[idx][field] = value;
-    if (field === 'product_id') {
-      const product = products.find(p => p.id == value);
-      newItems[idx].current_price = product ? product.base_price : 0;
-    }
-    setPoForm(prev => ({ ...prev, items: newItems }));
+    setPoForm(prev => {
+      const newItems = [...prev.items];
+      newItems[idx] = { ...newItems[idx], [field]: value };
+      if (field === 'product_id') {
+        const product = products.find(p => p.id == value);
+        newItems[idx].current_price = product ? product.base_price : 0;
+      }
+      return { ...prev, items: newItems, agreed_price: calculateTotalAgreedPrice(newItems) };
+    });
   };
 
   const openReceiveModal = (order) => {
     const items = order.items.map(item => ({
       id: item.id,
       product_name: item.product?.name || 'Unknown',
-      alternative_unit: item.alternative_unit,
       quantity: item.quantity,
       expiry_date: ''
     }));
@@ -115,7 +125,6 @@ export default function InventoryOrders() {
       notes: order.notes || '',
       items: order.items.map(i => ({
         product_id: i.product_id,
-        alternative_unit_id: i.alternative_unit_id || '',
         quantity: i.quantity,
         cost_price: i.cost_price,
         current_price: i.product?.base_price || 0
@@ -192,23 +201,25 @@ export default function InventoryOrders() {
     }
   };
 
-  const handleUnbox = async () => {
-    if (!unboxModal.alternative_unit_id || unboxModal.quantity < 1) {
-      return toast.error('Select a unit and enter a valid quantity.');
-    }
-    setUnboxing(true);
+  const handleEditProductSave = async (e) => {
+    e.preventDefault();
     try {
-      await api.post(`/products/${unboxModal.product.id}/unbox`, {
-        alternative_unit_id: unboxModal.alternative_unit_id,
-        quantity: unboxModal.quantity
-      });
-      toast.success('Unboxed successfully');
-      setUnboxModal({ show: false, product: null, alternative_unit_id: '', quantity: 1 });
+      await api.put(`/products/${editProduct.id}`, { min_stock_threshold: editProduct.min_stock_threshold });
+      
+      if (editProduct.batches && editProduct.batches.length > 0) {
+        await Promise.all(editProduct.batches.map(batch => 
+          api.put(`/batches/${batch.id}`, {
+            expiry_date: batch.expiry_date,
+            created_at: batch.created_at
+          })
+        ));
+      }
+
+      toast.success('Product and batches updated successfully');
+      setEditProduct(null);
       fetchInventoryData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to unbox');
-    } finally {
-      setUnboxing(false);
+      toast.error('Failed to update product details');
     }
   };
 
@@ -238,7 +249,7 @@ export default function InventoryOrders() {
           notes: poForm.notes,
           agreed_price: poForm.agreed_price || 0,
           paid_amount: poForm.paid_amount || 0,
-          items: validItems.map(({ product_id, alternative_unit_id, quantity, cost_price }) => ({ product_id, alternative_unit_id: alternative_unit_id || null, quantity, cost_price }))
+          items: validItems.map(({ product_id, quantity, cost_price }) => ({ product_id, quantity, cost_price }))
         });
         toast.success('Purchase order updated');
       } else {
@@ -249,7 +260,7 @@ export default function InventoryOrders() {
           notes: poForm.notes,
           agreed_price: poForm.agreed_price || 0,
           paid_amount: poForm.paid_amount || 0,
-          items: validItems.map(({ product_id, alternative_unit_id, quantity, cost_price }) => ({ product_id, alternative_unit_id: alternative_unit_id || null, quantity, cost_price }))
+          items: validItems.map(({ product_id, quantity, cost_price }) => ({ product_id, quantity, cost_price }))
         });
         toast.success('Purchase order created');
       }
@@ -262,7 +273,7 @@ export default function InventoryOrders() {
         notes: '',
         agreed_price: '',
         paid_amount: '',
-        items: [{ product_id: '', alternative_unit_id: '', quantity: 1, cost_price: '', current_price: 0 }]
+        items: [{ product_id: '', quantity: 1, cost_price: '', current_price: 0 }]
       });
       fetchPurchaseData();
     } catch (err) {
@@ -359,24 +370,8 @@ export default function InventoryOrders() {
                     ? new Date(Math.max(...p.batches.map(b => new Date(b.created_at)))).toLocaleDateString()
                     : '-';
                   
-                  // Compute composite stock string
-                  let stockString = '';
-                  if (p.branch_stocks && p.branch_stocks.length > 0) {
-                    const parts = [];
-                    p.branch_stocks.forEach(bs => {
-                      if (bs.alternative_unit_id === null) {
-                        parts.push(`${bs.quantity} Pieces`);
-                      } else {
-                        const altUnit = p.alternative_units?.find(au => au.id === bs.alternative_unit_id);
-                        if (altUnit) {
-                          parts.push(`${bs.quantity} ${altUnit.unit_name}s`);
-                        }
-                      }
-                    });
-                    stockString = parts.join(', ') || '0 Pieces';
-                  } else {
-                    stockString = `${p.stock_quantity || 0} Pieces`;
-                  }
+                  // Compute stock string
+                  const stockString = `${p.stock_quantity || 0} Pieces`;
 
                   return (
                     <tr key={p.id} className="border-b hover:bg-gray-50 transition">
@@ -388,15 +383,13 @@ export default function InventoryOrders() {
                       <td className="p-3">{p.min_stock_threshold}</td>
                       <td className="p-3 font-semibold text-red-600">{nearestExpiry}</td>
                       <td className="p-3 text-green-600">{latestDelivery}</td>
-                      <td className="p-3">
-                        {p.alternative_units && p.alternative_units.length > 0 && (
-                          <button 
-                            onClick={() => setUnboxModal({ show: true, product: p, alternative_unit_id: p.alternative_units[0].id, quantity: 1 })}
-                            className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-sm font-semibold hover:bg-blue-200 transition flex items-center gap-1"
-                          >
-                            <Box size={14} /> Unbox
-                          </button>
-                        )}
+                      <td className="p-3 flex gap-2">
+                        <button onClick={() => setEditProduct(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Adjust Threshold">
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => setViewProduct(p)} className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition" title="View Details">
+                          <Eye size={16} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -414,7 +407,7 @@ export default function InventoryOrders() {
           <div className="bg-white rounded-2xl shadow-xl overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b"><tr><th className="p-4 text-left">PO Number</th><th className="p-4 text-left">Supplier</th><th className="p-4 text-left">Order Date</th><th className="p-4 text-left">Total Qty</th><th className="p-4 text-left">Total Amount</th><th className="p-4 text-left">Expected Delivery</th><th className="p-4 text-left">Status</th><th className="p-4 text-left">Actions</th></tr></thead>
-              <tbody>{orders.map(order => (<tr key={order.id} className="border-b hover:bg-gray-50"><td className="p-4 font-medium">{order.po_number}</td><td>{order.supplier?.name}</td><td>{new Date(order.order_date).toLocaleDateString()}</td><td>{order.total_quantity || 0}</td><td>Ksh {order.total_amount ? order.total_amount.toLocaleString() : 0}</td><td>{order.expected_delivery_date ? new Date(order.expected_delivery_date).toLocaleDateString() : '-'}</td><td><span className={`px-2 py-1 rounded-full text-xs ${order.status === 'received' ? 'bg-green-100 text-green-700' : order.status === 'cancelled' ? 'bg-red-100 text-red-700' : order.status === 'draft' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700'}`}>{order.status}</span></td><td className="p-4 flex gap-2">
+              <tbody>{orders.filter(o => o.status !== 'received').map(order => (<tr key={order.id} className="border-b hover:bg-gray-50"><td className="p-4 font-medium">{order.po_number}</td><td>{order.supplier?.name}</td><td>{new Date(order.order_date).toLocaleDateString()}</td><td>{order.total_quantity || 0}</td><td>Ksh {order.total_amount ? order.total_amount.toLocaleString() : 0}</td><td>{order.expected_delivery_date ? new Date(order.expected_delivery_date).toLocaleDateString() : '-'}</td><td><span className={`px-2 py-1 rounded-full text-xs ${order.status === 'received' ? 'bg-green-100 text-green-700' : order.status === 'cancelled' ? 'bg-red-100 text-red-700' : order.status === 'draft' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700'}`}>{order.status}</span></td><td className="p-4 flex gap-2">
                 {order.status === 'draft' && (
                   <>
                     <button onClick={() => handleEditPO(order)} className="text-orange-700 hover:text-orange-900 font-medium text-sm" title="Edit Order">Edit</button>
@@ -423,7 +416,11 @@ export default function InventoryOrders() {
                   </>
                 )}
                 {order.status === 'pending' && <button onClick={() => openReceiveModal(order)} className="text-green-600 hover:text-green-800" title="Receive Order"><CheckCircle size={18} /></button>}
-              </td></tr>))}</tbody>
+              </td></tr>))}
+              {orders.filter(o => o.status !== 'received').length === 0 && (
+                <tr><td colSpan="8" className="text-center p-8 text-gray-400">No pending purchase orders found.</td></tr>
+              )}
+              </tbody>
             </table>
           </div>
         </div>
@@ -451,8 +448,8 @@ export default function InventoryOrders() {
                     <td className="p-4 font-bold text-gray-800">{order.po_number}</td>
                     <td className="p-4 text-gray-600">{new Date(order.updated_at).toLocaleDateString()}</td>
                     <td className="p-4 text-gray-600">
-                      <div className="font-medium text-gray-800 mb-1 max-w-[250px] truncate" title={order.items.map(i => `${i.product?.name} (${i.alternative_unit ? i.alternative_unit.unit_name : 'Pieces'})`).filter(Boolean).join(', ')}>
-                        {order.items.map(i => `${i.product?.name} (${i.alternative_unit ? i.alternative_unit.unit_name : 'Pieces'})`).filter(Boolean).join(', ')}
+                      <div className="font-medium text-gray-800 mb-1 max-w-[250px] truncate" title={order.items.map(i => `${i.product?.name}`).filter(Boolean).join(', ')}>
+                        {order.items.map(i => `${i.product?.name}`).filter(Boolean).join(', ')}
                       </div>
                       <div className="text-xs text-gray-400">
                         {order.items.length} items ({order.total_quantity} qty)
@@ -477,7 +474,7 @@ export default function InventoryOrders() {
       {showPOModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-auto">
-            <div className="flex justify-between items-center p-6 border-b"><h2 className="text-xl font-bold">{editingPoId ? 'Edit Purchase Order' : 'Create Purchase Order'}</h2><button onClick={() => { setShowPOModal(false); setEditingPoId(null); setPoForm({supplier_id: '', order_date: new Date().toISOString().slice(0, 10), expected_delivery_date: '', notes: '', agreed_price: '', paid_amount: '', items: [{ product_id: '', alternative_unit_id: '', quantity: 1, cost_price: '', current_price: 0 }]}); }} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full"><X size={20} /></button></div>
+            <div className="flex justify-between items-center p-6 border-b"><h2 className="text-xl font-bold">{editingPoId ? 'Edit Purchase Order' : 'Create Purchase Order'}</h2><button onClick={() => { setShowPOModal(false); setEditingPoId(null); setPoForm({supplier_id: '', order_date: new Date().toISOString().slice(0, 10), expected_delivery_date: '', notes: '', agreed_price: '', paid_amount: '', items: [{ product_id: '', quantity: 1, cost_price: '', current_price: 0 }]}); }} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full"><X size={20} /></button></div>
             <form onSubmit={handleCreatePO} className="p-6 space-y-6 bg-gray-50 rounded-b-2xl">
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Order Details</h3>
@@ -514,11 +511,11 @@ export default function InventoryOrders() {
                     return (
                       <div key={idx} className="flex gap-3 items-end border-b pb-3 flex-wrap">
                         <div className="flex-1 min-w-[200px]"><label className="block text-xs font-medium text-gray-700 mb-1">Product</label><select value={item.product_id} onChange={e => updatePOItem(idx, 'product_id', e.target.value)} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required><option value="">Select Product</option>{products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-                        <div className="w-32"><label className="block text-xs font-medium text-gray-700 mb-1">Unit</label><select value={item.alternative_unit_id} onChange={e => updatePOItem(idx, 'alternative_unit_id', e.target.value)} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none"><option value="">Pieces</option>{selectedProduct?.alternative_units?.map(u => <option key={u.id} value={u.id}>{u.unit_name}</option>)}</select></div>
                         <div className="w-24"><label className="block text-xs font-medium text-gray-700 mb-1">Qty</label><input type="number" min="1" value={item.quantity} onChange={e => updatePOItem(idx, 'quantity', parseInt(e.target.value))} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required /></div>
+                        <div className="w-28"><label className="block text-xs font-medium text-gray-700 mb-1">Retail Price</label><div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 p-2 rounded-xl text-center">Ksh {selectedProduct ? parseFloat(selectedProduct.base_price).toFixed(2) : '0.00'}</div></div>
                         <div className="w-32"><label className="block text-xs font-medium text-gray-700 mb-1">Agreed Price (Ksh)</label><input type="number" step="0.01" value={item.cost_price} onChange={e => updatePOItem(idx, 'cost_price', parseFloat(e.target.value))} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required /></div>
                         <div className="w-28"><label className="block text-xs font-medium text-gray-700 mb-1">Line Total</label><div className="text-sm font-semibold bg-gray-50 border border-gray-200 p-2 rounded-xl text-center">Ksh {lineTotal.toFixed(2)}</div></div>
-                        <button type="button" onClick={() => removePOItem(idx)} className="text-red-500 hover:text-red-700 p-2"><X size={20} /></button>
+                        <button type="button" onClick={() => removePOItem(idx)} className="text-red-500 hover:text-red-700 p-2 mb-0.5"><X size={20} /></button>
                       </div>
                     );
                   })}
@@ -526,7 +523,7 @@ export default function InventoryOrders() {
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => { setShowPOModal(false); setEditingPoId(null); setPoForm({supplier_id: '', order_date: new Date().toISOString().slice(0, 10), expected_delivery_date: '', notes: '', agreed_price: '', paid_amount: '', items: [{ product_id: '', alternative_unit_id: '', quantity: 1, cost_price: '', current_price: 0 }]}); }} className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-100 transition">Cancel</button>
+                <button type="button" onClick={() => { setShowPOModal(false); setEditingPoId(null); setPoForm({supplier_id: '', order_date: new Date().toISOString().slice(0, 10), expected_delivery_date: '', notes: '', agreed_price: '', paid_amount: '', items: [{ product_id: '', quantity: 1, cost_price: '', current_price: 0 }]}); }} className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-100 transition">Cancel</button>
                 <button type="submit" disabled={savingPO} className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white px-8 py-2 rounded-xl font-semibold shadow-md transition">{savingPO ? 'Saving...' : (editingPoId ? 'Update PO' : 'Create PO')}</button>
               </div>
             </form>
@@ -572,7 +569,7 @@ export default function InventoryOrders() {
                     <tbody className="divide-y divide-gray-100">
                       {receiveModal.items.map((item, idx) => (
                         <tr key={idx} className="hover:bg-gray-50">
-                          <td className="p-3 font-medium">{item.product_name} ({item.alternative_unit ? item.alternative_unit.unit_name : 'Pieces'})</td>
+                          <td className="p-3 font-medium">{item.product_name}</td>
                           <td className="p-3">{item.quantity}</td>
                           <td className="p-3"><input type="date" value={item.expiry_date} onChange={(e) => updateExpiryDate(idx, e.target.value)} className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-green-500 outline-none" /></td>
                         </tr>
@@ -589,50 +586,157 @@ export default function InventoryOrders() {
           </div>
         </div>
       )}
-      {/* Unbox Modal */}
-      {unboxModal.show && (
+
+      {/* Edit Product Settings & Batches Modal */}
+      {editProduct && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold flex items-center gap-2"><Box className="text-blue-600" /> Unbox Stock</h2>
-              <button onClick={() => setUnboxModal({ show: false, product: null, alternative_unit_id: '', quantity: 1 })} className="text-gray-500 hover:bg-gray-100 p-1 rounded-full"><X size={20} /></button>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center p-6 border-b shrink-0">
+              <h2 className="text-xl font-bold">Edit Product Settings</h2>
+              <button onClick={() => setEditProduct(null)} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full"><X size={20} /></button>
             </div>
-            <p className="text-sm text-gray-600 mb-4">Convert packaged units (e.g. Crates) into base pieces for <strong>{unboxModal.product?.name}</strong>.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Unit to Unbox</label>
-                <select 
-                  value={unboxModal.alternative_unit_id} 
-                  onChange={e => setUnboxModal({...unboxModal, alternative_unit_id: e.target.value})}
-                  className="w-full border p-2 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none"
-                >
-                  {unboxModal.product?.alternative_units?.map(u => {
-                    const unitStock = unboxModal.product.branch_stocks?.find(bs => bs.alternative_unit_id === u.id)?.quantity || 0;
-                    return (
-                      <option key={u.id} value={u.id}>
-                        {u.unit_name} (Avail: {unitStock})
-                      </option>
-                    );
-                  })}
-                </select>
+            <form onSubmit={handleEditProductSave} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 font-medium">
+                    {editProduct.name}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Stock Threshold</label>
+                  <input type="number" required min="0" value={editProduct.min_stock_threshold || ''} onChange={e => setEditProduct({...editProduct, min_stock_threshold: e.target.value})} className="w-full border border-gray-300 p-2.5 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" />
+                  <p className="text-xs text-gray-500 mt-2">Alerts will trigger when stock falls below this amount.</p>
+                </div>
+
+                <div className="mt-6 border-t pt-5">
+                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><Package className="text-orange-600 w-5 h-5"/> Edit Batch Dates</h3>
+                  {editProduct.batches?.filter(b => b.quantity > 0).length > 0 ? (
+                    <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th className="p-3 font-medium text-gray-600 text-xs uppercase">Batch No</th>
+                            <th className="p-3 font-medium text-gray-600 text-xs uppercase">Qty</th>
+                            <th className="p-3 font-medium text-gray-600 text-xs uppercase">Arrival Date</th>
+                            <th className="p-3 font-medium text-gray-600 text-xs uppercase">Expiry Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {editProduct.batches.filter(b => b.quantity > 0).map((batch) => (
+                            <tr key={batch.id} className="border-b last:border-0 hover:bg-gray-50">
+                              <td className="p-3 text-gray-800 font-mono text-xs">{batch.batch_number}</td>
+                              <td className="p-3 font-medium text-gray-800">{batch.quantity}</td>
+                              <td className="p-3">
+                                <input 
+                                  type="date" 
+                                  value={batch.created_at ? batch.created_at.split('T')[0] : ''} 
+                                  onChange={(e) => {
+                                    const newBatches = [...editProduct.batches];
+                                    const bIdx = newBatches.findIndex(b => b.id === batch.id);
+                                    newBatches[bIdx] = {...newBatches[bIdx], created_at: e.target.value};
+                                    setEditProduct({...editProduct, batches: newBatches});
+                                  }}
+                                  className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-orange-500 outline-none text-sm" 
+                                />
+                              </td>
+                              <td className="p-3">
+                                <input 
+                                  type="date" 
+                                  value={batch.expiry_date ? batch.expiry_date.split('T')[0] : ''} 
+                                  onChange={(e) => {
+                                    const newBatches = [...editProduct.batches];
+                                    const bIdx = newBatches.findIndex(b => b.id === batch.id);
+                                    newBatches[bIdx] = {...newBatches[bIdx], expiry_date: e.target.value};
+                                    setEditProduct({...editProduct, batches: newBatches});
+                                  }}
+                                  className="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-orange-500 outline-none text-sm" 
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
+                      <p className="text-sm text-gray-500">No active batches to edit dates for.</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity to Unbox</label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  value={unboxModal.quantity} 
-                  onChange={e => setUnboxModal({...unboxModal, quantity: parseInt(e.target.value) || 1})}
-                  className="w-full border p-2 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none" 
-                />
+
+              <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+                <button type="button" onClick={() => setEditProduct(null)} className="px-6 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-100 transition">Cancel</button>
+                <button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-2.5 rounded-xl font-semibold shadow-md transition">Save Changes</button>
               </div>
-              <button 
-                onClick={handleUnbox} 
-                disabled={unboxing} 
-                className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl shadow-md hover:bg-blue-700 transition"
-              >
-                {unboxing ? 'Processing...' : 'Confirm Unbox'}
-              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b shrink-0">
+              <h2 className="text-xl font-bold">Product Details: {viewProduct.name}</h2>
+              <button onClick={() => setViewProduct(null)} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full"><X size={20} /></button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <div className="text-xs text-gray-500 mb-1 uppercase font-semibold">SKU</div>
+                  <div className="font-bold text-gray-800">{viewProduct.sku}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <div className="text-xs text-gray-500 mb-1 uppercase font-semibold">Price</div>
+                  <div className="font-bold text-gray-800">Ksh {viewProduct.base_price}</div>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                  <div className="text-xs text-orange-600 mb-1 uppercase font-semibold">Total Stock</div>
+                  <div className="font-bold text-orange-700 text-lg">{viewProduct.stock_quantity || 0}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <div className="text-xs text-gray-500 mb-1 uppercase font-semibold">Threshold</div>
+                  <div className="font-bold text-gray-800">{viewProduct.min_stock_threshold || 0}</div>
+                </div>
+              </div>
+
+              <h3 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2"><Package className="text-orange-600 w-5 h-5"/> Active Batches</h3>
+              <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="p-3 font-semibold text-gray-600">Batch Number</th>
+                      <th className="p-3 font-semibold text-gray-600">Quantity</th>
+                      <th className="p-3 font-semibold text-gray-600">Expiry Date</th>
+                      <th className="p-3 font-semibold text-gray-600">Arrival Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewProduct.batches?.filter(b => b.quantity > 0).length > 0 ? (
+                      viewProduct.batches.filter(b => b.quantity > 0).map(batch => (
+                        <tr key={batch.id} className="border-b last:border-0 hover:bg-gray-50">
+                          <td className="p-3 font-mono text-gray-600">{batch.batch_number}</td>
+                          <td className="p-3 font-medium">{batch.quantity}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-1 rounded-md text-xs font-semibold ${new Date(batch.expiry_date) < new Date(new Date().setDate(new Date().getDate() + 30)) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                              {new Date(batch.expiry_date).toLocaleDateString()}
+                            </span>
+                          </td>
+                          <td className="p-3 text-gray-500">{new Date(batch.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr><td colSpan="4" className="p-4 text-center text-gray-500">No active batches found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="p-6 border-t shrink-0 flex justify-end">
+              <button onClick={() => setViewProduct(null)} className="px-6 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition">Close</button>
             </div>
           </div>
         </div>

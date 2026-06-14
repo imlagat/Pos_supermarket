@@ -108,25 +108,27 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user?.name} 👋</h1>
-        <p className="text-gray-500 mt-1">Here's what's happening with your store today.</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((card, idx) => {
-          const Icon = card.icon;
-          return (
-            <div key={idx} className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className={`bg-gradient-to-r ${card.color} p-4 flex justify-between items-center`}>
-                <div>
-                  <p className="text-white/80 text-sm">{card.title}</p>
-                  <p className="text-white text-2xl font-bold">{card.value}</p>
+      <div className="sticky top-0 -mt-4 -mx-4 pt-4 px-4 md:-mt-6 md:-mx-6 md:pt-6 md:px-6 bg-gray-100 z-20 pb-4 border-b border-gray-200 shadow-sm mb-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user?.name} 👋</h1>
+          <p className="text-gray-500 mt-1">Here's what's happening with your store today.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statCards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <div key={idx} className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div className={`bg-gradient-to-r ${card.color} p-4 flex justify-between items-center`}>
+                  <div>
+                    <p className="text-white/80 text-sm">{card.title}</p>
+                    <p className="text-white text-2xl font-bold">{card.value}</p>
+                  </div>
+                  <Icon className="w-8 h-8 text-white/60" />
                 </div>
-                <Icon className="w-8 h-8 text-white/60" />
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
@@ -238,35 +240,35 @@ export default function Dashboard() {
 
       {/* Enterprise AI Command Center */}
       {(user?.role === 'admin' || user?.role === 'manager') && (
-      <div className="bg-gradient-to-r from-amber-800 to-orange-800 rounded-2xl shadow-xl p-4 md:p-5 mb-8 text-white relative overflow-hidden max-w-4xl mx-auto md:mx-0">
+      <div className="bg-white border border-orange-200 rounded-2xl shadow-lg p-4 md:p-5 mb-8 text-gray-800 relative overflow-hidden w-full">
         {/* Decorative background elements */}
-        <div className="absolute -top-16 -right-16 w-48 h-48 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-40"></div>
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60"></div>
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-amber-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60"></div>
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-              <Bot size={22} className="text-white" />
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Bot size={22} className="text-orange-600" />
             </div>
             <div>
               <h2 className="text-lg font-bold leading-tight">Enterprise AI Command Center</h2>
-              <p className="text-orange-200 text-xs mt-0.5">Run autonomous infrastructure jobs instantly.</p>
+              <p className="text-gray-500 text-xs mt-0.5">Run autonomous infrastructure jobs instantly.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Auto Reorder Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/15 transition flex flex-col justify-between">
+            <div className="bg-orange-50/50 backdrop-blur-md border border-orange-100 rounded-xl p-4 hover:bg-orange-50 transition flex flex-col justify-between">
               <div className="mb-3">
                 <h3 className="font-semibold text-base flex items-center gap-2">
-                  <RefreshCw size={16} className="text-white" /> Auto-Reordering
+                  <RefreshCw size={16} className="text-orange-600" /> Auto-Reordering
                 </h3>
-                <p className="text-xs text-orange-100 mt-1">Predicts demand and drafts POs for low stock.</p>
+                <p className="text-xs text-gray-500 mt-1">Predicts demand and drafts POs for low stock.</p>
               </div>
               <button 
                 onClick={runAiReorder}
                 disabled={aiLoading.reorder}
-                className="w-full py-2 bg-white text-orange-700 hover:bg-orange-50 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-70 mt-auto"
+                className="w-full py-2 bg-white hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-70 mt-auto"
               >
                 {aiLoading.reorder ? <RefreshCw size={18} className="animate-spin" /> : <RefreshCw size={18} />}
                 {aiLoading.reorder ? 'Analyzing Stock...' : 'Execute AI Reorder'}
@@ -274,17 +276,17 @@ export default function Dashboard() {
             </div>
 
             {/* Dynamic Pricing Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 hover:bg-white/15 transition flex flex-col justify-between">
+            <div className="bg-orange-50/50 backdrop-blur-md border border-orange-100 rounded-xl p-4 hover:bg-orange-50 transition flex flex-col justify-between">
               <div className="mb-3">
                 <h3 className="font-semibold text-base flex items-center gap-2">
-                  <TrendingUp size={16} className="text-white" /> Dynamic Pricing
+                  <TrendingUp size={16} className="text-orange-600" /> Dynamic Pricing
                 </h3>
-                <p className="text-xs text-orange-100 mt-1">Optimizes base price based on recent sales velocity.</p>
+                <p className="text-xs text-gray-500 mt-1">Optimizes base price based on recent sales velocity.</p>
               </div>
               <button 
                 onClick={runAiPricing}
                 disabled={aiLoading.pricing}
-                className="w-full py-2 bg-white text-orange-700 hover:bg-orange-50 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-70 mt-auto"
+                className="w-full py-2 bg-white hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-70 mt-auto"
               >
                 {aiLoading.pricing ? <TrendingUp size={16} className="animate-spin" /> : <TrendingUp size={16} />}
                 {aiLoading.pricing ? 'Optimizing Prices...' : 'Run Pricing AI'}

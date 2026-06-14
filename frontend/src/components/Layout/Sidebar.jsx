@@ -74,6 +74,17 @@ export default function Sidebar() {
         })}
       </nav>
 
+      {/* System Status Widget */}
+      <div className="hidden md:block px-4 mb-4">
+        <div className="bg-amber-900/50 rounded-xl p-3 border border-amber-700/50">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            <span className="text-xs font-semibold text-amber-100">System Online</span>
+          </div>
+          <p className="text-[10px] text-amber-300">Last Sync: Just now</p>
+        </div>
+      </div>
+
       {/* User section */}
       <div className="p-4 border-t border-amber-700/50">
         <div className="flex items-center justify-center md:justify-between gap-2">

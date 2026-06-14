@@ -279,7 +279,7 @@ class AIChatbotController extends Controller
                     ->orWhere('sku', 'like', "%{$query}%")
                     ->orWhere('barcode', 'like', "%{$query}%")
                     ->take(5)
-                    ->get(['id', 'name', 'sku', 'base_price', 'stock_quantity', 'category']);
+                    ->get(['id', 'name', 'sku', 'base_price', 'category']);
                 
                 if ($products->isEmpty()) {
                     return ['status' => 'not_found', 'message' => 'No products found matching the query.'];
@@ -287,9 +287,10 @@ class AIChatbotController extends Controller
                 return ['status' => 'success', 'data' => $products];
 
             case 'get_low_stock':
-                $lowStock = Product::whereColumn('stock_quantity', '<=', 'min_stock_threshold')
+                $lowStock = Product::join('branch_stocks', 'products.id', '=', 'branch_stocks.product_id')
+                    ->whereColumn('branch_stocks.quantity', '<=', 'branch_stocks.min_stock_threshold')
                     ->take(20)
-                    ->get(['id', 'name', 'sku', 'stock_quantity', 'min_stock_threshold']);
+                    ->get(['products.id', 'products.name', 'products.sku', 'branch_stocks.quantity as stock_quantity', 'branch_stocks.min_stock_threshold']);
                 return ['status' => 'success', 'data' => $lowStock];
 
             case 'get_sales_report':

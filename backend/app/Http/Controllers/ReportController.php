@@ -223,6 +223,35 @@ class ReportController extends Controller
         return response()->json($lowStockData);
     }
 
+    public function expiringProducts(Request $request)
+    {
+        $branchId = $request->header('X-Branch-ID');
+        
+        $query = \App\Models\Batch::with('product')
+            ->whereNotNull('expiry_date')
+            ->where('quantity', '>', 0)
+            ->whereDate('expiry_date', '<=', now()->addDays(30))
+            ->orderBy('expiry_date', 'asc');
+            
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        
+        $expiringData = $query->get()->map(function($batch) {
+            return [
+                'batch_id' => $batch->id,
+                'product_id' => $batch->product_id,
+                'batch_number' => $batch->batch_number,
+                'name' => $batch->product->name ?? 'Unknown',
+                'sku' => $batch->product->sku ?? '',
+                'quantity' => (float)$batch->quantity,
+                'expiry_date' => \Carbon\Carbon::parse($batch->expiry_date)->format('Y-m-d')
+            ];
+        });
+        
+        return response()->json($expiringData);
+    }
+
     public function returnedItems()
     {
         $items = ReturnedItem::with(['product', 'return.order.customer'])

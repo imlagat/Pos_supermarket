@@ -33,7 +33,6 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/products/lookup/{barcode}', [ProductController::class, 'lookup']);
-    Route::post('products/{product}/unbox', [ProductController::class, 'unbox']);
     Route::apiResource('products', ProductController::class);
 
     Route::post('/cart/calculate', [OrderController::class, 'calculateCart']);
@@ -48,6 +47,7 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::apiResource('discount-rules', DiscountRuleController::class)->middleware('role:admin,manager');
     Route::get('/reports/sales', [ReportController::class, 'sales'])->middleware('role:admin,manager');
     Route::get('/reports/low-stock', [ReportController::class, 'lowStock'])->middleware('role:admin,manager');
+    Route::get('/reports/expiring-products', [ReportController::class, 'expiringProducts'])->middleware('role:admin,manager');
 
     Route::get('/inventory/alerts', [InventoryController::class, 'alerts']);
     Route::post('/mpesa/stkpush', [MpesaController::class, 'stkPush']);
@@ -58,6 +58,7 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::apiResource('branches', \App\Http\Controllers\BranchController::class)->middleware('role:admin');
     Route::get('/batches', [InventoryController::class, 'getBatches'])->middleware('role:admin,manager');
     Route::post('/batches', [InventoryController::class, 'addBatch'])->middleware('role:admin,manager');
+    Route::put('/batches/{batch}', [InventoryController::class, 'updateBatch'])->middleware('role:admin,manager');
     
     // AI Chatbot
     Route::post('/chat', [App\Http\Controllers\AIChatbotController::class, 'chat']);
@@ -136,10 +137,8 @@ Route::middleware('auth:sanctum')->get('/customers/export', [App\Http\Controller
     Route::get("/customers/export", [App\Http\Controllers\CustomerController::class, "export"]);
 Route::middleware('auth:sanctum')->get('/profile', [App\Http\Controllers\UserController::class, 'profile']);
 Route::middleware('auth:sanctum')->put('/profile', [App\Http\Controllers\UserController::class, 'updateProfile']);
-Route::middleware('auth:sanctum')->get('/products/{product}/units', [App\Http\Controllers\AlternativeUnitController::class, 'index']);
 Route::middleware('auth:sanctum')->post('/returns', [App\Http\Controllers\ReturnController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/returns', [App\Http\Controllers\ReturnController::class, 'index']);
-Route::middleware('auth:sanctum')->get('/products/{product}/units', [App\Http\Controllers\AlternativeUnitController::class, 'index']);
 Route::middleware('auth:sanctum')->get('/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->middleware('role:admin');
 Route::middleware('auth:sanctum')->get('/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->middleware('role:admin');
     Route::get('/promotions/active', [App\Http\Controllers\DiscountRuleController::class, 'active']);
@@ -148,6 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('suppliers', App\Http\Controllers\SupplierController::class);
     Route::apiResource('purchase-orders', App\Http\Controllers\PurchaseOrderController::class);
     Route::post('/purchase-orders/{purchaseOrder}/receive', [App\Http\Controllers\PurchaseOrderController::class, 'receive']);
+    Route::post('/purchase-orders/{purchaseOrder}/pay', [App\Http\Controllers\PurchaseOrderController::class, 'pay']);
     Route::post('/purchase-orders/{purchaseOrder}/approve', [App\Http\Controllers\PurchaseOrderController::class, 'approve'])->middleware('role:admin,manager');
 });
 Route::middleware('auth:sanctum')->post('/returns/search-order', [App\Http\Controllers\ReturnController::class, 'getOrder']);

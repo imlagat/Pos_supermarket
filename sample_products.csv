@@ -1,0 +1,151 @@
+name,sku,barcode,category,base_price,stock_quantity,min_stock_threshold
+Apple,FOD-001,81111111111,Food,1.50,100,20
+Bread,FOD-002,81111111112,Food,2.99,50,10
+Laptop,ELE-001,82222222221,Electronics,899.00,10,2
+Smartphone,ELE-002,82222222222,Electronics,599.00,15,3
+Paracetamol,MED-001,83333333331,Medicine,5.00,200,50
+Vitamin C,SUP-001,84444444441,Supplements,12.50,80,15
+Oak Table,FUR-001,85555555551,Furniture,150.00,5,1
+Wooden Chair,FUR-002,85555555552,Furniture,45.00,24,4
+Pine Shelf,WOO-001,86666666661,Woodwork,35.00,30,5
+Maize Flour 2kg,SKU-GRO-001,84738291038,Groceries,200,150,20
+Wheat Flour 2kg,SKU-GRO-002,84738291039,Groceries,220,100,15
+Sugar 1kg,SKU-GRO-003,84738291040,Groceries,150,300,50
+Cooking Oil 1L,SKU-GRO-004,84738291041,Groceries,350,80,10
+Rice 5kg,SKU-GRO-005,84738291042,Groceries,900,40,5
+Salt 500g,SKU-GRO-006,84738291043,Groceries,30,200,30
+Groceries Box (Assorted 10 Pcs),SKU-GRO-BOX-1,84738291044,Groceries,2500,20,5
+Rice Bag 50kg,SKU-GRO-BAG-1,84738291045,Groceries,8500,15,3
+Apples 1kg,SKU-FRE-001,84738291138,Fresh Foods,300,50,10
+Bananas 1kg,SKU-FRE-002,84738291139,Fresh Foods,150,60,15
+Onions 1kg,SKU-FRE-003,84738291140,Fresh Foods,120,80,20
+Tomatoes 1kg,SKU-FRE-004,84738291141,Fresh Foods,100,100,20
+Eggs Tray (30 Pcs),SKU-FRE-TRY-1,84738291142,Fresh Foods,450,150,30
+Beef 1kg,SKU-FRE-005,84738291143,Fresh Foods,600,30,10
+Chicken Whole,SKU-FRE-006,84738291144,Fresh Foods,700,40,10
+Fresh Milk 1L,SKU-FRE-007,84738291145,Fresh Foods,120,200,50
+Coca Cola 500ml,SKU-BEV-001,84738291238,Beverages,60,300,50
+Fanta 500ml,SKU-BEV-002,84738291239,Beverages,60,250,50
+Sprite 500ml,SKU-BEV-003,84738291240,Beverages,60,200,50
+Mineral Water 1L,SKU-BEV-004,84738291241,Beverages,50,400,100
+Mango Juice 1L,SKU-BEV-005,84738291242,Beverages,150,120,20
+Coca Cola Crate (24 Pcs),SKU-BEV-CRT-1,84738291243,Beverages,1300,50,10
+Fanta Crate (24 Pcs),SKU-BEV-CRT-2,84738291244,Beverages,1300,40,10
+Energy Drink Pack (6 Pcs),SKU-BEV-PCK-1,84738291245,Beverages,900,80,15
+Potato Chips 50g,SKU-SNA-001,84738291338,Snacks & Confectionery,50,200,40
+Chocolate Bar 100g,SKU-SNA-002,84738291339,Snacks & Confectionery,150,150,30
+Biscuits 200g,SKU-SNA-003,84738291340,Snacks & Confectionery,80,180,30
+Lollipops Box (50 Pcs),SKU-SNA-BOX-1,84738291341,Snacks & Confectionery,500,40,10
+Chewing Gum Box,SKU-SNA-BOX-2,84738291342,Snacks & Confectionery,400,60,15
+Peanuts 100g,SKU-SNA-004,84738291343,Snacks & Confectionery,60,120,25
+Detergent 1kg,SKU-HOU-001,84738291438,Household & Cleaning,250,100,20
+Bleach 500ml,SKU-HOU-002,84738291439,Household & Cleaning,120,80,15
+Dishwashing Liquid 500ml,SKU-HOU-003,84738291440,Household & Cleaning,180,150,30
+Sponges (Pack of 3),SKU-HOU-PCK-1,84738291441,Household & Cleaning,100,200,40
+Trash Bags (Roll),SKU-HOU-004,84738291442,Household & Cleaning,150,120,20
+Tissue Paper Bale (10 Packs),SKU-HOU-BLE-1,84738291443,Household & Cleaning,3000,50,10
+Toothpaste 100g,SKU-PER-001,84738291538,Personal Care & Beauty,150,200,40
+Toothbrush (Pack of 2),SKU-PER-PCK-1,84738291539,Personal Care & Beauty,120,150,30
+Body Lotion 200ml,SKU-PER-002,84738291540,Personal Care & Beauty,350,90,15
+Shampoo 400ml,SKU-PER-003,84738291541,Personal Care & Beauty,450,70,10
+Bath Soap 150g,SKU-PER-004,84738291542,Personal Care & Beauty,80,300,50
+Bath Soap Dozen (12 Pcs),SKU-PER-DOZ-1,84738291543,Personal Care & Beauty,900,40,5
+Painkillers (Pack of 10),SKU-HEA-001,84738291638,Health & Pharmacy,100,300,50
+Vitamins (30 Caps),SKU-HEA-002,84738291639,Health & Pharmacy,600,100,15
+Bandages (Box of 50),SKU-HEA-BOX-1,84738291640,Health & Pharmacy,250,80,20
+Antiseptic Liquid 250ml,SKU-HEA-003,84738291641,Health & Pharmacy,300,90,15
+First Aid Kit,SKU-HEA-004,84738291642,Health & Pharmacy,1500,20,5
+Face Masks (Box of 50),SKU-HEA-BOX-2,84738291643,Health & Pharmacy,500,150,30
+Hand Sanitizer 500ml,SKU-HEA-005,84738291644,Health & Pharmacy,350,120,20
+Diapers (Pack of 40),SKU-BAB-001,84738291738,Baby Products,850,100,20
+Baby Wipes (80 Pcs),SKU-BAB-002,84738291739,Baby Products,300,150,30
+Baby Powder 200g,SKU-BAB-003,84738291740,Baby Products,250,80,15
+Baby Lotion 200ml,SKU-BAB-004,84738291741,Baby Products,350,70,15
+Formula Milk 400g,SKU-BAB-005,84738291742,Baby Products,1200,60,10
+Dog Food 5kg,SKU-PET-001,84738291838,Pet Supplies,1800,40,10
+Cat Food 2kg,SKU-PET-002,84738291839,Pet Supplies,900,50,10
+Cat Litter 5kg,SKU-PET-003,84738291840,Pet Supplies,700,60,15
+Pet Shampoo 250ml,SKU-PET-004,84738291841,Pet Supplies,450,40,10
+AA Batteries (Pack of 4),SKU-ELE-001,84738291938,Electronics,200,200,40
+AAA Batteries (Box of 24),SKU-ELE-BOX-1,84738291939,Electronics,1100,50,10
+Extension Cord 3m,SKU-ELE-002,84738291940,Electronics,800,80,15
+USB Cable,SKU-ELE-003,84738291941,Electronics,350,150,30
+LED Bulb 9W,SKU-ELE-004,84738291942,Electronics,250,200,40
+Power Bank 10000mAh,SKU-ELE-005,84738291943,Electronics,2500,40,5
+Plastic Chair,SKU-FUR-001,84738292038,Furniture,800,100,20
+Plastic Chairs Set (6 Pcs),SKU-FUR-SET-1,84738292039,Furniture,4500,20,5
+Foldable Table,SKU-FUR-002,84738292040,Furniture,3500,30,5
+Shoe Rack,SKU-FUR-003,84738292041,Furniture,1500,40,10
+Wooden Stool,SKU-FUR-004,84738292042,Furniture,1200,50,10
+Frying Pan 24cm,SKU-HOM-001,84738292138,Home & Kitchen,1500,60,15
+Plates Set (6 Pcs),SKU-HOM-SET-1,84738292139,Home & Kitchen,900,80,20
+Glass Cups Dozen (12 Pcs),SKU-HOM-DOZ-1,84738292140,Home & Kitchen,1200,50,10
+Plastic Basin,SKU-HOM-002,84738292141,Home & Kitchen,300,150,30
+Thermos Flask 1L,SKU-HOM-003,84738292142,Home & Kitchen,1800,40,10
+Cutlery Set (24 Pcs),SKU-HOM-SET-2,84738292143,Home & Kitchen,2500,30,5
+Kitchen Towels (Pack of 3),SKU-HOM-PCK-1,84738292144,Home & Kitchen,400,100,20
+Mens T-Shirt,SKU-CLO-001,84738292238,Clothing & Fashion,600,150,30
+Womens Socks (Pack of 3),SKU-CLO-PCK-1,84738292239,Clothing & Fashion,350,200,40
+Umbrella,SKU-CLO-002,84738292240,Clothing & Fashion,500,100,20
+Kids T-Shirt Box (10 Pcs),SKU-CLO-BOX-1,84738292241,Clothing & Fashion,5000,30,5
+Notebook A4,SKU-STA-001,84738292338,Stationery & Office,150,300,50
+Pens Box (50 Pcs),SKU-STA-BOX-1,84738292339,Stationery & Office,1200,80,15
+Pencils Dozen (12 Pcs),SKU-STA-DOZ-1,84738292340,Stationery & Office,200,150,30
+Printer Paper Ream,SKU-STA-002,84738292341,Stationery & Office,650,200,40
+Stapler,SKU-STA-003,84738292342,Stationery & Office,350,80,15
+Playing Cards,SKU-TOY-001,84738292438,Toys & Games,150,200,40
+Puzzle (100 Pcs),SKU-TOY-002,84738292439,Toys & Games,800,60,10
+Toy Cars Box (12 Pcs),SKU-TOY-BOX-1,84738292440,Toys & Games,2400,40,10
+Building Blocks Set,SKU-TOY-SET-1,84738292441,Toys & Games,1500,50,10
+Car Wash Shampoo 1L,SKU-AUT-001,84738292538,Automotive,450,100,20
+Microfiber Cloth (Pack of 3),SKU-AUT-PCK-1,84738292539,Automotive,350,120,25
+Air Freshener,SKU-AUT-002,84738292540,Automotive,250,150,30
+Engine Oil 4L,SKU-AUT-003,84738292541,Automotive,3500,40,10
+Gardening Gloves,SKU-GAR-001,84738292638,Garden & Outdoor,300,100,20
+Watering Can,SKU-GAR-002,84738292639,Garden & Outdoor,450,80,15
+Fertilizer 1kg,SKU-GAR-003,84738292640,Garden & Outdoor,250,150,30
+Charcoal Bag 5kg,SKU-GAR-BAG-1,84738292641,Garden & Outdoor,600,100,20
+Hose Pipe 10m,SKU-GAR-004,84738292642,Garden & Outdoor,1200,50,10
+Lentils 1kg,SKU-GRO-007,84738291046,Groceries,200,150,20
+Beans 1kg,SKU-GRO-008,84738291047,Groceries,220,120,20
+Spaghetti 500g,SKU-GRO-009,84738291048,Groceries,120,200,40
+Tea Leaves 250g,SKU-GRO-010,84738291049,Groceries,180,180,30
+Carrots 1kg,SKU-FRE-008,84738291146,Fresh Foods,150,80,15
+Oranges 1kg,SKU-FRE-009,84738291147,Fresh Foods,200,100,20
+Cabbage 1pc,SKU-FRE-010,84738291148,Fresh Foods,80,150,30
+Potatoes 2kg,SKU-FRE-011,84738291149,Fresh Foods,250,120,20
+Energy Drink 250ml,SKU-BEV-006,84738291246,Beverages,150,200,40
+Coffee 250g,SKU-BEV-007,84738291247,Beverages,450,100,20
+Cookies Pack,SKU-SNA-PCK-1,84738291344,Snacks & Confectionery,120,150,30
+Popcorn 100g,SKU-SNA-005,84738291345,Snacks & Confectionery,80,180,30
+Broom,SKU-HOU-005,84738291444,Household & Cleaning,250,100,20
+Mop,SKU-HOU-006,84738291445,Household & Cleaning,350,80,15
+Deodorant Spray,SKU-PER-005,84738291544,Personal Care & Beauty,400,120,20
+Hair Gel 200g,SKU-PER-006,84738291545,Personal Care & Beauty,250,100,20
+Cough Syrup 100ml,SKU-HEA-006,84738291645,Health & Pharmacy,450,80,15
+Baby Shampoo 200ml,SKU-BAB-006,84738291743,Baby Products,350,100,20
+Pacifier (Pack of 2),SKU-BAB-PCK-1,84738291744,Baby Products,250,80,15
+Bird Seed 1kg,SKU-PET-005,84738291842,Pet Supplies,300,50,10
+Dog Biscuits 500g,SKU-PET-006,84738291843,Pet Supplies,450,60,15
+Dog Collar,SKU-PET-007,84738291844,Pet Supplies,500,40,10
+Pet Toy,SKU-PET-008,84738291845,Pet Supplies,350,80,15
+Earphones,SKU-ELE-006,84738291944,Electronics,800,100,20
+Flash Drive 32GB,SKU-ELE-007,84738291945,Electronics,1200,80,15
+Office Chair,SKU-FUR-005,84738292043,Furniture,8500,20,5
+Bookshelf (3 Tier),SKU-FUR-006,84738292044,Furniture,6500,15,3
+Cooking Spoon,SKU-HOM-004,84738292145,Home & Kitchen,250,120,20
+Canvas Belt,SKU-CLO-003,84738292242,Clothing & Fashion,450,100,20
+Slippers (Pair),SKU-CLO-004,84738292243,Clothing & Fashion,300,150,30
+Cap,SKU-CLO-005,84738292244,Clothing & Fashion,350,120,20
+Erasers (Pack of 5),SKU-STA-PCK-1,84738292343,Stationery & Office,100,200,40
+Paper Clips Box,SKU-STA-BOX-2,84738292344,Stationery & Office,150,150,30
+Markers Set (4 Colors),SKU-STA-SET-1,84738292345,Stationery & Office,350,100,20
+Toy Car,SKU-TOY-003,84738292442,Toys & Games,400,120,20
+Doll,SKU-TOY-004,84738292443,Toys & Games,600,80,15
+Board Game,SKU-TOY-005,84738292444,Toys & Games,1200,50,10
+Jumper Cables,SKU-AUT-004,84738292542,Automotive,1500,30,5
+Tire Foam,SKU-AUT-005,84738292543,Automotive,600,60,10
+Car Polish 500ml,SKU-AUT-006,84738292544,Automotive,800,50,10
+Pruning Shears,SKU-GAR-005,84738292643,Garden & Outdoor,750,40,10
+Flower Pot,SKU-GAR-006,84738292644,Garden & Outdoor,350,100,20
+BBQ Grill Small,SKU-GAR-007,84738292645,Garden & Outdoor,3500,15,3

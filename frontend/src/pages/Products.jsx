@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Package, Plus, Edit2, Trash2, Search, Upload, Download, X, Smartphone, Camera } from 'lucide-react';
+import { Package, Plus, Edit2, Trash2, Search, Upload, Download, X, Smartphone, Camera, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
 import BarcodeScannerModal from '../components/POS/BarcodeScannerModal';
 
 export default function Products() {
@@ -11,8 +11,7 @@ export default function Products() {
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
     name: '', sku: '', barcode: '', category: '',
-    base_price: '', stock_quantity: '', min_stock_threshold: 5,
-    alternativeUnits: []
+    base_price: '', stock_quantity: '', min_stock_threshold: 5
   });
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -106,7 +105,7 @@ export default function Products() {
   };
 
   const resetForm = () => {
-    setForm({ name: '', sku: '', barcode: '', category: '', base_price: '', stock_quantity: '', min_stock_threshold: 5, alternativeUnits: [] });
+    setForm({ name: '', sku: '', barcode: '', category: '', base_price: '', stock_quantity: '', min_stock_threshold: 5 });
     setEditing(null);
     setShowForm(false);
   };
@@ -132,8 +131,7 @@ export default function Products() {
       category: product.category || '',
       base_price: product.base_price,
       stock_quantity: product.stock_quantity,
-      min_stock_threshold: product.min_stock_threshold,
-      alternativeUnits: product.alternative_units || []
+      min_stock_threshold: product.min_stock_threshold
     });
   };
 
@@ -206,6 +204,11 @@ export default function Products() {
   if (loading) return <PageLoader message="Loading products..." />;
   if (error) return <div className="bg-red-50 p-6 text-center text-red-600">{error} <button onClick={fetchProducts} className="underline">Retry</button></div>;
 
+  // Calculate Summary Statistics
+  const totalProducts = products.length;
+  const lowStockProducts = products.filter(p => Number(p.stock_quantity) <= Number(p.min_stock_threshold)).length;
+  const totalValue = products.reduce((sum, p) => sum + (parseFloat(p.base_price) * parseInt(p.stock_quantity || 0)), 0);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
@@ -232,153 +235,164 @@ export default function Products() {
         </div>
       </div>
 
-      {/* Add/Edit Form */}
+      {/* Add/Edit Form Modal */}
       {showForm && (
-      <div className="mb-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Plus className="text-orange-600 w-6 h-6" />
-            <h2 className="text-xl font-bold text-gray-800">{editing ? 'Edit' : 'Add'} Product</h2>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
+            <div className="flex items-center gap-2">
+              <Plus className="text-orange-600 w-6 h-6" />
+              <h2 className="text-xl font-bold text-gray-800">{editing ? 'Edit' : 'Add'} Product</h2>
+            </div>
+            <button onClick={resetForm} className="text-gray-500 hover:text-gray-700"><X size={24} /></button>
           </div>
-          <button onClick={resetForm} className="text-gray-500 hover:text-gray-700"><X size={24} /></button>
+          <div className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="bg-gray-50 rounded-xl border border-gray-100 p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                    <input type="text" placeholder="e.g., Organic Apples" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <input type="text" placeholder="e.g., Produce" value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">SKU { !editing && <span className="text-xs text-orange-600 font-normal ml-1">(Auto-generated)</span> }</label>
+                    <input type="text" placeholder="e.g., PROD-001" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-gray-100" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="Enter barcode" value={form.barcode} onChange={e => setForm({...form, barcode: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" required />
+                      <button type="button" onClick={() => setShowScanner(true)} className="flex items-center justify-center gap-1 bg-orange-100 text-orange-800 px-3 py-2 rounded-xl hover:bg-orange-200 transition whitespace-nowrap text-sm font-medium" title="Scan with Webcam">
+                        <Camera size={18} /> Webcam
+                      </button>
+                      <button type="button" onClick={handleRemotePair} className="flex items-center justify-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl hover:bg-indigo-200 transition whitespace-nowrap text-sm font-medium" title="Scan with Phone">
+                        <Smartphone size={18} /> Phone
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl border border-gray-100 p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">Pricing & Stock</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (Ksh)</label>
+                    <input type="number" step="0.01" placeholder="0.00" value={form.base_price} onChange={e => setForm({...form, base_price: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Stock</label>
+                    <input type="number" placeholder="0" value={form.stock_quantity} onChange={e => setForm({...form, stock_quantity: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+                    <input type="number" placeholder="5" value={form.min_stock_threshold} onChange={e => setForm({...form, min_stock_threshold: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-8">
+                <button type="button" onClick={resetForm} className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-100 transition">Cancel</button>
+                <button type="submit" disabled={saving} className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white px-8 py-2 rounded-xl font-semibold shadow-md transition">{saving ? 'Saving...' : (editing ? 'Update Product' : 'Create Product')}</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">Basic Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-                <input type="text" placeholder="e.g., Organic Apples" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <input type="text" placeholder="e.g., Produce" value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SKU { !editing && <span className="text-xs text-orange-600 font-normal ml-1">(Auto-generated)</span> }</label>
-                <input type="text" placeholder="e.g., PROD-001" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-gray-50" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
-                <div className="flex gap-2">
-                  <input type="text" placeholder="Enter barcode" value={form.barcode} onChange={e => setForm({...form, barcode: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required />
-                  <button type="button" onClick={() => setShowScanner(true)} className="flex items-center justify-center gap-1 bg-orange-100 text-orange-800 px-3 py-2 rounded-xl hover:bg-orange-200 transition whitespace-nowrap text-sm font-medium" title="Scan with Webcam">
-                    <Camera size={18} /> Webcam
-                  </button>
-                  <button type="button" onClick={handleRemotePair} className="flex items-center justify-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl hover:bg-indigo-200 transition whitespace-nowrap text-sm font-medium" title="Scan with Phone">
-                    <Smartphone size={18} /> Phone
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">Pricing & Stock</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (Ksh)</label>
-                <input type="number" step="0.01" placeholder="0.00" value={form.base_price} onChange={e => setForm({...form, base_price: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Current Stock</label>
-                <input type="number" placeholder="0" value={form.stock_quantity} onChange={e => setForm({...form, stock_quantity: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
-                <input type="number" placeholder="5" value={form.min_stock_threshold} onChange={e => setForm({...form, min_stock_threshold: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex justify-between items-center mb-4 border-b pb-3">
-              <h3 className="text-lg font-semibold text-gray-800">Alternative Units (Packaging)</h3>
-              <button 
-                type="button" 
-                onClick={() => setForm({...form, alternativeUnits: [...form.alternativeUnits, { unit_name: '', quantity_in_base_unit: '', price: '' }]})}
-                className="text-orange-600 text-sm font-semibold flex items-center gap-1 hover:text-orange-700"
-              >
-                <Plus size={16} /> Add Unit
-              </button>
-            </div>
-            
-            {form.alternativeUnits.length === 0 && (
-              <p className="text-gray-500 text-sm italic">No alternative units defined. (e.g., Crate, Box)</p>
-            )}
-
-            {form.alternativeUnits.map((unit, index) => (
-              <div key={index} className="flex gap-3 mb-3 items-end">
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Unit Name (e.g., Crate)</label>
-                  <input type="text" value={unit.unit_name} onChange={e => {
-                    const newUnits = [...form.alternativeUnits];
-                    newUnits[index].unit_name = e.target.value;
-                    setForm({...form, alternativeUnits: newUnits});
-                  }} className="w-full border p-2 rounded-lg text-sm" required />
-                </div>
-                <div className="w-24">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Base Qty</label>
-                  <input type="number" value={unit.quantity_in_base_unit} onChange={e => {
-                    const newUnits = [...form.alternativeUnits];
-                    newUnits[index].quantity_in_base_unit = e.target.value;
-                    setForm({...form, alternativeUnits: newUnits});
-                  }} className="w-full border p-2 rounded-lg text-sm" required />
-                </div>
-                <div className="w-32">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Price (Ksh)</label>
-                  <input type="number" step="0.01" value={unit.price} onChange={e => {
-                    const newUnits = [...form.alternativeUnits];
-                    newUnits[index].price = e.target.value;
-                    setForm({...form, alternativeUnits: newUnits});
-                  }} className="w-full border p-2 rounded-lg text-sm" required />
-                </div>
-                <button type="button" onClick={() => {
-                  const newUnits = form.alternativeUnits.filter((_, i) => i !== index);
-                  setForm({...form, alternativeUnits: newUnits});
-                }} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 mb-0.5">
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <button type="button" onClick={resetForm} className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition">Cancel</button>
-            <button type="submit" disabled={saving} className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white px-8 py-2 rounded-xl font-semibold shadow-md transition">{saving ? 'Saving...' : (editing ? 'Update Product' : 'Create Product')}</button>
-          </div>
-        </form>
       </div>
       )}
 
-      {/* Products Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-x-auto max-h-[60vh] overflow-y-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b sticky top-0 z-10">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Name</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">SKU</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Price</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Stock</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(p => (
-              <tr key={p.id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium">{p.name}</td>
-                <td className="px-4 py-2 text-gray-500">{p.sku}</td>
-                <td className="px-4 py-2 text-orange-700 font-semibold">Ksh {p.base_price}</td>
-                <td className="px-4 py-2">{p.stock_quantity}</td>
-                <td className="px-4 py-2 flex gap-3">
-                  <button onClick={() => handleEdit(p)} className="text-blue-500 hover:text-blue-700 transition"><Edit2 size={16} /></button>
-                  <button onClick={() => handleDelete(p.id)} className="text-red-500 hover:text-red-700 transition"><Trash2 size={16} /></button>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && <tr><td colSpan="5" className="text-center py-6 text-gray-400">No products found</td></tr>}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[65vh] overflow-y-auto p-2">
+        {filtered.map(p => {
+          let nearestExpiry = null;
+          let isExpiringSoon = false;
+          if (p.batches && p.batches.length > 0) {
+             const activeBatches = p.batches.filter(b => b.expiry_date && parseFloat(b.quantity) > 0);
+             if (activeBatches.length > 0) {
+                 const earliest = new Date(Math.min(...activeBatches.map(b => new Date(b.expiry_date))));
+                 nearestExpiry = earliest.toLocaleDateString();
+                 const daysLeft = Math.ceil((earliest - new Date()) / (1000 * 60 * 60 * 24));
+                 isExpiringSoon = daysLeft <= 30;
+             }
+          }
+          return (
+          <div key={p.id} className={`border ${isExpiringSoon ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'} rounded-xl p-4 hover:shadow-lg transition-all hover:-translate-y-0.5 flex flex-col justify-between`}>
+            <div>
+              <div className="font-semibold text-gray-800 truncate" title={p.name}>{p.name}</div>
+              <div className="text-sm text-gray-500">{p.sku}</div>
+              <div className="text-lg font-bold text-orange-500 mt-2">Ksh {p.base_price}</div>
+              <div className="text-xs text-gray-500 mt-1 flex justify-between items-center">
+                <span>Stock: {p.stock_quantity}</span>
+                {nearestExpiry && <span className={`${isExpiringSoon ? 'text-red-600 font-bold' : 'text-orange-600 font-medium'}`} title="Nearest Expiry Date">Exp: {nearestExpiry}</span>}
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="mt-4 flex gap-2">
+              <button 
+                onClick={() => handleEdit(p)} 
+                className="flex-1 bg-blue-50 text-blue-600 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-100 transition flex items-center justify-center gap-1"
+                title="Edit Product"
+              >
+                <Edit2 size={14} /> Edit
+              </button>
+              <button 
+                onClick={() => handleDelete(p.id)} 
+                className="flex-1 bg-red-50 text-red-600 py-1.5 rounded-lg text-sm font-medium hover:bg-red-100 transition flex items-center justify-center gap-1"
+                title="Delete Product"
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+          </div>
+        );
+        })}
+        {filtered.length === 0 && (
+          <div className="col-span-full text-center py-12 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+            <Package size={48} className="mx-auto mb-3 opacity-30" />
+            <p className="font-medium text-gray-500">No products found</p>
+            <p className="text-sm mt-1">Try adjusting your search</p>
+          </div>
+        )}
+      </div>
+
+      {/* Inventory Summary Dashboard */}
+      <div className="mt-6 bg-white border border-gray-100 py-6 px-8 rounded-2xl shadow-md flex flex-wrap justify-between items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-orange-100 p-3 rounded-xl text-orange-600">
+            <Package size={28} />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">Total Products</p>
+            <p className="text-2xl font-bold text-gray-800">{totalProducts} Items</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className={`p-3 rounded-xl ${lowStockProducts > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+            {lowStockProducts > 0 ? <AlertTriangle size={28} /> : <CheckCircle size={28} />}
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">Stock Status</p>
+            <p className={`text-2xl font-bold ${lowStockProducts > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {lowStockProducts > 0 ? `${lowStockProducts} Low Stock` : 'All Stocked'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="bg-blue-100 p-3 rounded-xl text-blue-600">
+            <TrendingUp size={28} />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">Total Value</p>
+            <p className="text-2xl font-bold text-gray-800">Ksh {totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          </div>
+        </div>
       </div>
 
       {/* Import CSV Modal */}

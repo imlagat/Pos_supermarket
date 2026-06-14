@@ -238,58 +238,70 @@ export default function Discounts() {
         </form>
       </div>
       )}
-      <div className="bg-white rounded-xl shadow-lg overflow-x-auto max-h-[60vh] overflow-y-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b sticky top-0 z-10">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Name</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Type</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Target</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Details</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((d) => {
-              const isExpired = d.ends_at && new Date(d.ends_at) < new Date();
-              return (
-              <tr key={d.id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium">
-                  {d.name}
-                  {(d?.name?.startsWith('Flash Sale:') || d?.name?.startsWith('Clearance:')) ? (
-                    <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase font-bold">AI</span>
-                  ) : null}
-                </td>
-                <td className="px-4 py-2 capitalize text-gray-600">{d.type.replace('_', ' ')}</td>
-                <td className="px-4 py-2 text-gray-600">{getTarget(d)}</td>
-                <td className="px-4 py-2 font-medium text-gray-700">
-                  {getDetails(d)}
-                  {d.ends_at && <div className="text-xs text-gray-400 font-normal mt-0.5">Ends: {new Date(d.ends_at).toLocaleDateString()}</div>}
-                </td>
-                <td className="px-4 py-2">
-                  <div className="flex flex-col gap-1 items-start">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${d.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {d.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                    {isExpired && (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Expired</span>
-                    )}
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Tag className="text-orange-500 w-5 h-5" />
+          <h2 className="font-bold text-gray-800 text-lg">Active Promotions & Discounts</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((d) => {
+            const isExpired = d.ends_at && new Date(d.ends_at) < new Date();
+            const isAI = d?.name?.startsWith('Flash Sale:') || d?.name?.startsWith('Clearance:');
+            
+            return (
+              <div key={d.id} className={`border rounded-xl p-4 flex flex-col justify-between ${d.is_active ? 'bg-green-50/70 border-green-100' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${d.is_active ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
+                    <Tag size={20} />
                   </div>
-                </td>
-                <td className="px-4 py-2 flex gap-3">
-                  <button onClick={() => toggleActive(d)} className={`text-xs font-medium ${d.is_active ? 'text-orange-700 hover:text-orange-900' : 'text-green-600 hover:text-green-800'}`}>
-                    {d.is_active ? 'Deactivate' : 'Activate'}
+                  <div className="flex-1">
+                    <h3 className={`font-bold flex items-center gap-2 ${d.is_active ? 'text-green-900' : 'text-gray-700'}`}>
+                      {d.name}
+                      {isAI && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase font-bold">AI</span>}
+                    </h3>
+                    <p className={`text-sm mt-1 capitalize ${d.is_active ? 'text-green-800' : 'text-gray-600'}`}>Type: {d.type.replace('_', ' ')}</p>
+                    <p className="text-sm font-bold text-gray-900 mt-1">
+                      Discount: {d.type === 'percentage' || d.type === 'expiry_markdown' || d.type === 'seasonal' || d.type === 'member_tier' 
+                        ? (d.value ? `${d.value}%` : `${d.discount_percentage}%`) 
+                        : (d.type === 'fixed' ? `Ksh ${d.value}` : `${d.discount_percentage}%`)}
+                    </p>
+                    {d.type === 'bogo' && (
+                      <p className="text-sm font-bold text-orange-600 mt-1">Buy {d.min_quantity}, Get {d.free_quantity} Free</p>
+                    )}
+                    {d.ends_at && (
+                      <p className="text-xs text-gray-500 mt-2">Ends: {new Date(d.ends_at).toLocaleDateString()}</p>
+                    )}
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {isExpired && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 uppercase">Expired</span>
+                      )}
+                      {!d.is_active && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-600 uppercase">Inactive</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className={`border-t mt-4 pt-3 flex justify-end gap-2 ${d.is_active ? 'border-green-100' : 'border-gray-200'}`}>
+                  <button onClick={() => handleEdit(d)} className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition">
+                    Edit
                   </button>
-                  <button onClick={() => handleEdit(d)} className="text-blue-500 hover:text-blue-700"><Edit2 size={16} /></button>
-                  <button onClick={() => handleDelete(d.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16} /></button>
-                </td>
-              </tr>
-              );
-            })}
-            {filtered.length === 0 && <tr><td colSpan="6" className="text-center py-6 text-gray-400">No promotion rules found</td></tr>}
-          </tbody>
-        </table>
+                  <button onClick={() => toggleActive(d)} className="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-100 transition">
+                    {d.is_active ? 'Inactivate' : 'Activate'}
+                  </button>
+                  <button onClick={() => handleDelete(d.id)} className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {filtered.length === 0 && (
+          <div className="text-center py-10 bg-gray-50 rounded-xl border border-gray-100">
+            <p className="text-gray-500">No promotion rules found.</p>
+          </div>
+        )}
       </div>
     </div>
   );

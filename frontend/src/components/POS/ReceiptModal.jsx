@@ -182,7 +182,7 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
 
           <div className="text-center text-xs text-gray-500 mt-2">
             <p>{receiptFooter}</p>
-            <p className="mt-1">Goods once sold are non‑refundable.</p>
+            <p className="mt-1">Goods once sold can be refunded within 3 days.</p>
           </div>
         </div>
         <div className="p-3 border-t flex gap-3 bg-gray-50">
