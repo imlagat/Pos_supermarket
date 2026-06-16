@@ -67,6 +67,13 @@ class TransactionController extends Controller
             }
         }
 
+        if ($request->input('payment_method') && $request->input('payment_method') !== 'all') {
+            $paymentMethod = $request->input('payment_method');
+            $query->whereHas('payments', function($q) use ($paymentMethod) {
+                $q->where('method', $paymentMethod);
+            });
+        }
+
         $orders = $query->orderBy('created_at', 'desc')->get();
 
         $csvData = [];

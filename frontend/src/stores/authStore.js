@@ -48,14 +48,38 @@ export const useAuthStore = create((set, get) => ({
         try {
             const res = await api.post('/verify-otp', { email, otp_code });
             localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            
             const user = res.data.user;
-            let activeBranch = get().activeBranchId;
+            let activeBranch = null;
             if (user.role !== 'admin' && user.branch_id) {
                 activeBranch = String(user.branch_id);
                 localStorage.setItem('activeBranchId', activeBranch);
             }
+
             set({ user, token: res.data.token, activeBranchId: activeBranch, isLoading: false });
-            return true;
+        } catch (error) {
+            set({ isLoading: false });
+            throw error;
+        }
+    },
+
+    switchAccount: async (targetUserId, pin) => {
+        set({ isLoading: true });
+        try {
+            const res = await api.post('/switch-account', { target_user_id: targetUserId, pin });
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            
+            const user = res.data.user;
+            let activeBranch = null;
+            if (user.role !== 'admin' && user.branch_id) {
+                activeBranch = String(user.branch_id);
+                localStorage.setItem('activeBranchId', activeBranch);
+            }
+
+            set({ user, token: res.data.token, activeBranchId: activeBranch, isLoading: false });
+            return { success: true };
         } catch (error) {
             set({ isLoading: false });
             throw error;

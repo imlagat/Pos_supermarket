@@ -12,6 +12,7 @@ export default function Transactions() {
   const [period, setPeriod] = useState('all');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('all');
   const [exporting, setExporting] = useState(false);
   const [returns, setReturns] = useState([]);
   const [systemSettings, setSystemSettings] = useState({});
@@ -61,6 +62,7 @@ export default function Transactions() {
         params.append('start_date', customStart);
         params.append('end_date', customEnd);
       }
+      if (paymentMethod !== 'all') params.append('payment_method', paymentMethod);
       if ([...params].length) url += '?' + params.toString();
       const response = await api.get(url, { responseType: 'blob' });
       const blob = new Blob([response.data], { type: 'text/csv' });
@@ -85,11 +87,16 @@ export default function Transactions() {
     return returns.some(r => r.order_id === orderId);
   };
 
-  const filtered = transactions.filter(t =>
-    t.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.cashier?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = transactions.filter(t => {
+    const matchesSearch = t.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.cashier?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesPayment = paymentMethod === 'all' || 
+      t.payments?.some(p => p.method.toLowerCase() === paymentMethod);
+      
+    return matchesSearch && matchesPayment;
+  });
 
   const viewReceipt = (transaction) => {
     setSelectedTransaction(transaction);
@@ -151,6 +158,16 @@ export default function Transactions() {
             />
           </>
         )}
+        <select
+          value={paymentMethod}
+          onChange={e => setPaymentMethod(e.target.value)}
+          className="border rounded-xl px-3 py-2"
+        >
+          <option value="all">All Payments</option>
+          <option value="mpesa">Mpesa</option>
+          <option value="card">Card</option>
+          <option value="cash">Cash</option>
+        </select>
         <button
           onClick={exportCSV}
           disabled={exporting}

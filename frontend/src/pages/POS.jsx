@@ -5,10 +5,15 @@ import toast from 'react-hot-toast';
 import PaymentModal from '../components/POS/PaymentModal';
 import ReceiptModal from '../components/POS/ReceiptModal';
 import BarcodeScannerModal from '../components/POS/BarcodeScannerModal';
-import { Search, Barcode, Scale, Trash2, Plus, Minus, ShoppingBag, Award, User, Camera, Smartphone, X } from 'lucide-react';
+import StartShiftModal from '../components/POS/StartShiftModal';
+import CloseRegisterModal from '../components/POS/CloseRegisterModal';
+import HeldTransactionsModal from '../components/POS/HeldTransactionsModal';
+import { useAuthStore } from '../stores/authStore';
+import { Search, Barcode, Scale, Trash2, Plus, Minus, ShoppingBag, Award, User, Camera, Smartphone, X, Lock, Clock, PauseCircle } from 'lucide-react';
 
 export default function POS() {
-  const { items, total, addItem, removeItem, updateQuantity, clearCart, setCustomer, customerId } = useCartStore();
+  const { items, total, addItem, removeItem, updateQuantity, clearCart, setCustomer, customerId, heldTransactions, holdTransaction } = useCartStore();
+  const { user, logout } = useAuthStore();
   const [barcode, setBarcode] = useState('');
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -30,6 +35,11 @@ export default function POS() {
   const [showRemoteScanner, setShowRemoteScanner] = useState(false);
   const [remoteSessionId, setRemoteSessionId] = useState('');
   const [remoteIpUrl, setRemoteIpUrl] = useState('');
+  const [activeShift, setActiveShift] = useState(null);
+  const [showStartShift, setShowStartShift] = useState(false);
+  const [showCloseRegister, setShowCloseRegister] = useState(false);
+  const [showHeldModal, setShowHeldModal] = useState(false);
+  const [shiftLoading, setShiftLoading] = useState(true);
 
   const playBeep = () => {
     try {
@@ -56,7 +66,25 @@ export default function POS() {
   useEffect(() => { 
     fetchProducts();
     api.get('/settings').then(res => setSystemSettings(res.data)).catch(() => {});
-  }, []);
+    
+    if (user?.role !== 'cashier') {
+      setShiftLoading(false);
+      return;
+    }
+
+    api.get('/shifts/current')
+      .then(res => {
+        if (res.data.shift) {
+          setActiveShift(res.data.shift);
+        } else {
+          setShowStartShift(true);
+        }
+      })
+      .catch(err => {
+        setShowStartShift(true);
+      })
+      .finally(() => setShiftLoading(false));
+  }, [user]);
 
   // Recalculate cart with promotions whenever items or customer changes
   useEffect(() => {
@@ -311,8 +339,8 @@ export default function POS() {
   const vat = finalTotal * (taxRate / 100);
 
   return (
-    <div className="grid grid-cols-12 gap-6">
-      <div className="col-span-7 bg-white rounded-2xl shadow-xl p-6">
+    <div className="grid grid-cols-12 gap-6 relative">
+      <div className="col-span-7 bg-white rounded-2xl shadow-xl p-6 print:hidden">
         <div className="mb-6">
           <div className="flex gap-3 mb-4">
             <div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search products..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500" /></div>
@@ -379,11 +407,26 @@ export default function POS() {
           ))}
         </div>
       </div>
-      <div className="col-span-5 bg-white rounded-2xl shadow-xl flex flex-col h-[calc(100vh-120px)]">
+      <div className="col-span-5 bg-white rounded-2xl shadow-xl flex flex-col h-[calc(100vh-120px)] print:hidden">
         <div className="p-6 border-b border-gray-100">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><ShoppingBag size={20} /> Cart</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <ShoppingBag size={20} /> Cart
+              {heldTransactions.length > 0 && (
+                <button 
+                  onClick={() => setShowHeldModal(true)}
+                  className="ml-2 text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-bold flex items-center gap-1 hover:bg-orange-200"
+                >
+                  <Clock size={12} /> {heldTransactions.length} Held
+                </button>
+              )}
+            </h2>
             <div className="flex gap-2 items-center">
+              {activeShift && (
+                <button onClick={() => setShowCloseRegister(true)} className="mr-2 text-xs bg-gray-800 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-gray-700">
+                  <Lock size={12} /> Close Register
+                </button>
+              )}
               <div className="relative"><User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="tel" placeholder="Phone number" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="pl-10 pr-2 py-1 border rounded-full text-sm w-36" /><button onClick={searchCustomer} className="ml-1 text-xs bg-orange-500 text-white px-2 py-1 rounded-full">Find</button>{customerSearchResult && <button onClick={clearCustomer} className="ml-1 text-xs text-red-500">X</button>}</div>
             </div>
           </div>
@@ -397,8 +440,22 @@ export default function POS() {
           {appliedDiscounts.map((d, idx) => (<div key={idx} className="flex justify-between text-sm text-green-600 mb-2"><span>{d.name}</span><span>- Ksh {d.amount.toFixed(2)}</span></div>))}
           {discountFromPoints > 0 && <div className="flex justify-between text-sm text-blue-600 mb-2"><span>Points redeemed</span><span>- Ksh {discountFromPoints.toFixed(2)}</span></div>}
           <div className="flex justify-between text-2xl font-bold text-gray-800 mb-4"><span>Total</span><span>Ksh {finalTotal.toFixed(2)}</span></div>
-          <div className="flex justify-between text-sm text-gray-600 mb-2"><span>VAT ({taxRate}%)</span><span>Ksh {vat.toFixed(2)}</span></div>
-          <button onClick={() => setShowPayment(true)} disabled={items.length === 0} className={`w-full py-3 rounded-xl font-semibold transition-all ${items.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-[#f09a56] hover:from-orange-500 hover:to-orange-500 text-white shadow-lg'}`}>Complete Sale</button>
+          <div className="flex justify-between text-sm text-gray-600 mb-4"><span>VAT ({taxRate}%)</span><span>Ksh {vat.toFixed(2)}</span></div>
+          <div className="grid grid-cols-3 gap-2">
+            <button 
+              onClick={() => {
+                if (items.length > 0) {
+                  const note = prompt("Enter a note/name for this held transaction (optional):");
+                  if (note !== null) holdTransaction(note);
+                }
+              }} 
+              disabled={items.length === 0} 
+              className={`col-span-1 py-3 rounded-xl font-semibold flex items-center justify-center gap-1 transition-all ${items.length === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 shadow-sm'}`}
+            >
+              <PauseCircle size={18} /> Hold
+            </button>
+            <button onClick={() => setShowPayment(true)} disabled={items.length === 0} className={`col-span-2 py-3 rounded-xl font-semibold transition-all ${items.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-[#f09a56] hover:from-orange-500 hover:to-orange-500 text-white shadow-lg'}`}>Complete Sale</button>
+          </div>
         </div>
       </div>
       {showPayment && <PaymentModal total={finalTotal} onPay={handleCompleteSale} onClose={() => setShowPayment(false)} />}
@@ -418,6 +475,9 @@ export default function POS() {
           onScan={handleScanBarcode} 
           onClose={() => setShowScanner(false)} 
         />
+      )}
+      {showHeldModal && (
+        <HeldTransactionsModal onClose={() => setShowHeldModal(false)} />
       )}
       {showRemoteScanner && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -447,6 +507,39 @@ export default function POS() {
         </div>
       )}
       
+      {shiftLoading && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-orange-600 font-bold text-xl animate-pulse">Loading Register...</div>
+        </div>
+      )}
+
+      {showStartShift && !shiftLoading && (
+        <StartShiftModal 
+          branchId={1} 
+          onShiftStarted={(shift) => {
+            setActiveShift(shift);
+            setShowStartShift(false);
+          }}
+          onCancel={() => {
+            logout();
+          }}
+        />
+      )}
+
+      {showCloseRegister && (
+        <CloseRegisterModal
+          onClose={() => setShowCloseRegister(false)}
+          onShiftClosed={() => {
+            setActiveShift(null);
+            setShowCloseRegister(false);
+            if (user?.role === 'cashier') {
+              logout();
+            } else {
+              setShowStartShift(true);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

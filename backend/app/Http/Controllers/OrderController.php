@@ -48,10 +48,24 @@ class OrderController extends Controller
         try {
             \DB::beginTransaction();
 
+            $user = auth()->user();
+            $activeShift = null;
+            
+            if ($user->role === 'cashier') {
+                $activeShift = \App\Models\Shift::where('user_id', $user->id)
+                    ->where('status', 'open')
+                    ->first();
+
+                if (!$activeShift) {
+                    return response()->json(['message' => 'You must open a shift before completing an order'], 400);
+                }
+            }
+
             $order = Order::create([
                 'order_number' => 'ORD-'.Str::upper(Str::random(8)),
                 'customer_id' => $request->customer_id,
                 'user_id' => auth()->id(),
+                'shift_id' => $activeShift ? $activeShift->id : null,
                 'total_amount' => $request->total,
                 'status' => 'completed',
                 'branch_id' => app('current_branch_id') ?? 1,
@@ -71,16 +85,18 @@ class OrderController extends Controller
             ]);
 
             foreach ($request->items as $item) {
+                $product = Product::find($item['product_id']);
+                if (!$product) continue;
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['price'],
-                    'total' => $item['price'] * $item['quantity']
+                    'total' => $item['price'] * $item['quantity'],
+                    'unit_cost' => $product->cost_price,
+                    'total_cost' => $product->cost_price * $item['quantity']
                 ]);
-
-                $product = Product::find($item['product_id']);
-                if (!$product) continue;
 
                 if (isset($item['is_open_box']) && $item['is_open_box'] && isset($item['returned_item_id'])) {
                     $returnedItem = \App\Models\ReturnedItem::find($item['returned_item_id']);

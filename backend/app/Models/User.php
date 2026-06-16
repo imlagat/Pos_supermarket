@@ -9,8 +9,8 @@ use App\Traits\Auditable;
 class User extends Authenticatable
 {
     use HasApiTokens, Notifiable, Auditable;
-    protected $fillable = ['name', 'email', 'password', 'role', 'branch_id'];
-    protected $hidden = ['password'];
+    protected $fillable = ['name', 'email', 'password', 'pin', 'role', 'branch_id'];
+    protected $hidden = ['password', 'pin'];
 
     public function isAdmin() { return $this->role === 'admin'; }
     public function isManager() { return $this->role === 'manager'; }

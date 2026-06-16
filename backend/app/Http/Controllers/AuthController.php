@@ -111,4 +111,36 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out']);
     }
+
+    public function switchAccount(Request $request)
+    {
+        $request->validate([
+            'target_user_id' => 'required|exists:users,id',
+            'pin' => 'required|string'
+        ]);
+
+        $adminUser = $request->user();
+
+        if ($adminUser->role !== 'admin') {
+            throw ValidationException::withMessages(['pin' => ['Only admins can switch accounts.']]);
+        }
+
+        if (!$adminUser->pin || $adminUser->pin !== $request->pin) {
+            throw ValidationException::withMessages(['pin' => ['Invalid PIN.']]);
+        }
+
+        $targetUser = User::find($request->target_user_id);
+        
+        if ($targetUser->role === 'admin' && $targetUser->id !== $adminUser->id) {
+             throw ValidationException::withMessages(['pin' => ['Cannot switch to another admin account.']]);
+        }
+
+        // Issue token for target user
+        $token = $targetUser->createToken('pos-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $targetUser,
+            'token' => $token
+        ]);
+    }
 }

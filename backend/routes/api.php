@@ -31,6 +31,7 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get("/customers/export", [App\Http\Controllers\CustomerController::class, "export"]);
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/switch-account', [AuthController::class, 'switchAccount']);
 
     Route::get('/products/lookup/{barcode}', [ProductController::class, 'lookup']);
     Route::apiResource('products', ProductController::class);
@@ -40,6 +41,13 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/transactions/export', [App\Http\Controllers\TransactionController::class, 'export']);
 
+    Route::get('/shifts/current', [\App\Http\Controllers\ShiftController::class, 'current']);
+    Route::post('/shifts/open', [\App\Http\Controllers\ShiftController::class, 'open']);
+    Route::post('/shifts/close', [\App\Http\Controllers\ShiftController::class, 'close']);
+    Route::get('/shifts/drawer-status', [\App\Http\Controllers\ShiftController::class, 'drawerStatus']);
+    Route::post('/shifts/deposit', [\App\Http\Controllers\ShiftController::class, 'deposit']);
+    Route::get('/shifts', [\App\Http\Controllers\ShiftController::class, 'index'])->middleware('role:admin,manager');
+
     Route::apiResource('customers', CustomerController::class);
     Route::post('/customers/{customer}/redeem-points', [CustomerController::class, 'redeemPoints']);
 
@@ -48,6 +56,7 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get('/reports/sales', [ReportController::class, 'sales'])->middleware('role:admin,manager');
     Route::get('/reports/low-stock', [ReportController::class, 'lowStock'])->middleware('role:admin,manager');
     Route::get('/reports/expiring-products', [ReportController::class, 'expiringProducts'])->middleware('role:admin,manager');
+    Route::get('/finance/pnl', [\App\Http\Controllers\FinanceController::class, 'getPnL'])->middleware('role:admin,manager');
 
     Route::get('/inventory/alerts', [InventoryController::class, 'alerts']);
     Route::post('/mpesa/stkpush', [MpesaController::class, 'stkPush']);

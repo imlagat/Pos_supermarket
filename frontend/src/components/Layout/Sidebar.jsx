@@ -4,14 +4,16 @@ import { useAuthStore } from '../../stores/authStore';
 import { 
   LayoutDashboard, ShoppingCart, Package, Tag, Users, 
   AlertTriangle, Receipt, UserPlus, BarChart3, Settings, LogOut, UserCircle, FileText,
-  Truck, RefreshCw
+  Truck, RefreshCw, Wallet, UserCog, Banknote
 } from 'lucide-react';
 
 import BranchSelector from './BranchSelector';
+import SwitchAccountModal from '../Auth/SwitchAccountModal';
 
 const menuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'manager', 'cashier'] },
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'manager'] },
   { name: 'POS', path: '/pos', icon: ShoppingCart, roles: ['admin', 'manager', 'cashier'] },
+  { name: 'Cash Drawer', path: '/cash-drawer', icon: Banknote, roles: ['manager', 'cashier'] },
   { name: 'Products', path: '/products', icon: Package, roles: ['admin', 'manager'] },
   { name: 'Discounts', path: '/discounts', icon: Tag, roles: ['admin', 'manager'] },
   { name: 'Customers', path: '/customers', icon: Users, roles: ['admin', 'manager', 'cashier'] },
@@ -20,18 +22,20 @@ const menuItems = [
   { name: 'Suppliers', path: '/suppliers', icon: Truck, roles: ['admin', 'manager'] },
   { name: 'Returns', path: '/returns', icon: RefreshCw, roles: ['admin', 'manager', 'cashier'] },
   { name: 'Reports', path: '/reports', icon: BarChart3, roles: ['admin', 'manager'] },
-  { name: 'Users', path: '/users', icon: UserPlus, roles: ['admin'] },
+  { name: 'Finance & P&L', path: '/finance', icon: BarChart3, roles: ['admin', 'manager'] },
+  { name: 'Users & Shifts', path: '/users', icon: UserPlus, roles: ['admin'] },
   { name: 'Audit Logs', path: '/audit-logs', icon: FileText, roles: ['admin'] },
   { name: 'Settings', path: '/settings', icon: Settings, roles: ['admin', 'manager'] },
 ];
 
 export default function Sidebar() {
   const [loadingPath, setLoadingPath] = useState(null);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
   const { user, logout } = useAuthStore();
   const allowed = menuItems.filter(item => item.roles.includes(user?.role));
 
   return (
-    <aside className="bg-gradient-to-b from-amber-800 to-orange-800 text-white flex flex-col shadow-2xl h-screen sticky top-0 w-20 md:w-72 transition-all duration-300">
+    <aside className="bg-gradient-to-b from-amber-800 to-orange-800 text-white flex flex-col shadow-2xl h-screen sticky top-0 w-20 md:w-72 transition-all duration-300 print:hidden">
       {/* Logo section */}
       <div className="p-4 border-b border-amber-700/50 flex justify-center md:justify-start">
         <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-amber-200 to-orange-200 bg-clip-text text-transparent">
@@ -98,6 +102,11 @@ export default function Sidebar() {
             </div>
           </div>
           <div className="flex gap-1">
+            {user?.role === 'admin' && (
+              <button onClick={() => setShowSwitchModal(true)} className="p-1 text-amber-200 hover:text-white transition-colors" title="Switch Account">
+                <UserCog size={18} />
+              </button>
+            )}
             <NavLink to="/profile" className="p-1 text-amber-200 hover:text-white transition-colors" title="Profile">
               <UserCircle size={18} />
             </NavLink>
@@ -107,6 +116,7 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
+      <SwitchAccountModal isOpen={showSwitchModal} onClose={() => setShowSwitchModal(false)} />
     </aside>
   );
 }

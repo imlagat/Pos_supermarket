@@ -9,7 +9,7 @@ class Product extends Model
 {
     use Auditable;
     protected $fillable = [
-        'name', 'sku', 'barcode', 'category', 'base_price',
+        'name', 'sku', 'barcode', 'category', 'base_price', 'cost_price',
         'selling_by_weight', 'weight_in_grams', 'unit', 'min_stock_threshold'
     ];
 

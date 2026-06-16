@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Users as UsersIcon, Plus, Edit2, Trash2, Search, BarChart3, Filter } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import ShiftsReport from './ShiftsReport';
 
 const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4'];
 
@@ -118,18 +119,30 @@ export default function Users() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2"><UsersIcon className="text-orange-600" /> User Management</h1>
           {(user?.role === 'admin' || user?.role === 'manager') && (
-            <div className="flex gap-6 mt-4 border-b">
-              <button 
-                onClick={() => setActiveTab('manage')} 
-                className={`pb-2 font-medium transition-colors ${activeTab === 'manage' ? 'text-orange-700 border-b-2 border-orange-700' : 'text-gray-500 hover:text-gray-700'}`}
+            <div className="flex gap-2 mb-6 mt-4 bg-white p-1 rounded-xl w-fit shadow-sm border border-gray-100">
+              <button
+                onClick={() => setActiveTab('manage')}
+                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'manage' ? 'bg-orange-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+                }`}
               >
                 Manage Users
               </button>
-              <button 
-                onClick={() => setActiveTab('performance')} 
-                className={`pb-2 font-medium flex items-center gap-1 transition-colors ${activeTab === 'performance' ? 'text-orange-700 border-b-2 border-orange-700' : 'text-gray-500 hover:text-gray-700'}`}
+              <button
+                onClick={() => setActiveTab('performance')}
+                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                  activeTab === 'performance' ? 'bg-orange-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+                }`}
               >
-                <BarChart3 size={18} /> Performance Reports
+                <BarChart3 size={16} /> Performance
+              </button>
+              <button
+                onClick={() => setActiveTab('shifts')}
+                className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                  activeTab === 'shifts' ? 'bg-orange-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart3 size={16} /> Past Shifts
               </button>
             </div>
           )}
@@ -302,7 +315,11 @@ export default function Users() {
           </tbody>
         </table>
       </div>
-      </>
+        </>
+      )}
+
+      {activeTab === 'shifts' && (
+        <ShiftsReport />
       )}
     </div>
   );

@@ -74,5 +74,43 @@ export const useCartStore = create((set, get) => ({
         get().calculateCart();
     },
 
-    clearCart: () => set({ items: [], customerId: null, total: 0 })
+    clearCart: () => set({ items: [], customerId: null, total: 0 }),
+
+    heldTransactions: [],
+
+    holdTransaction: (note = '') => {
+        const { items, customerId, total } = get();
+        if (items.length === 0) return;
+        
+        const newHeld = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            note: note || `Held at ${new Date().toLocaleTimeString()}`,
+            items: [...items],
+            customerId,
+            total
+        };
+        
+        set({ heldTransactions: [...get().heldTransactions, newHeld] });
+        get().clearCart();
+    },
+
+    resumeTransaction: (id) => {
+        const transaction = get().heldTransactions.find(t => t.id === id);
+        if (!transaction) return;
+        
+        // Before resuming, if there's an active cart, we don't automatically hold it here, 
+        // the UI should prompt or we just overwrite. Overwriting is standard if they explicitly clicked resume.
+        set({ 
+            items: transaction.items, 
+            customerId: transaction.customerId,
+            total: transaction.total,
+            heldTransactions: get().heldTransactions.filter(t => t.id !== id)
+        });
+        get().calculateCart();
+    },
+
+    removeHeldTransaction: (id) => {
+        set({ heldTransactions: get().heldTransactions.filter(t => t.id !== id) });
+    }
 }));

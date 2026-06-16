@@ -88,6 +88,10 @@ class UserController extends Controller
             $rules['password'] = 'required|string|min:6|confirmed';
         }
 
+        if ($request->has('pin') && !empty($request->pin)) {
+            $rules['pin'] = 'string|size:4';
+        }
+
         $validated = $request->validate($rules);
 
         // Verify current password if updating password
@@ -96,6 +100,10 @@ class UserController extends Controller
                 return response()->json(['message' => 'Current password is incorrect'], 422);
             }
             $validated['password'] = Hash::make($request->password);
+        }
+
+        if ($request->has('pin') && !empty($request->pin)) {
+            $validated['pin'] = $request->pin;
         }
 
         $user->update($validated);

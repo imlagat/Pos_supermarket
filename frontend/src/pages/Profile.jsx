@@ -6,7 +6,7 @@ import PageLoader from '../components/common/PageLoader';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
-  const [form, setForm] = useState({ name: '', email: '', current_password: '', password: '', password_confirmation: '' });
+  const [form, setForm] = useState({ name: '', email: '', current_password: '', password: '', password_confirmation: '', pin: '' });
   const [loading, setLoading] = useState(false);
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -20,7 +20,7 @@ export default function Profile() {
     try {
       const res = await api.get('/profile');
       setUser(res.data);
-      setForm({ ...form, name: res.data.name, email: res.data.email, current_password: '', password: '', password_confirmation: '' });
+      setForm({ ...form, name: res.data.name, email: res.data.email, pin: '', current_password: '', password: '', password_confirmation: '' });
     } catch (err) {
       toast.error('Failed to load profile');
     }
@@ -53,10 +53,13 @@ export default function Profile() {
         payload.password = form.password;
         payload.password_confirmation = form.password_confirmation;
       }
+      if (form.pin) {
+        payload.pin = form.pin;
+      }
       const res = await api.put('/profile', payload);
       setUser(res.data.user);
       toast.success('Profile updated');
-      setForm({ ...form, current_password: '', password: '', password_confirmation: '' });
+      setForm({ ...form, pin: '', current_password: '', password: '', password_confirmation: '' });
     } catch (err) {
       const msg = err.response?.data?.message || 'Update failed';
       toast.error(msg);
@@ -104,6 +107,24 @@ export default function Profile() {
               </div>
             </div>
           </div>
+
+          {user?.role === 'admin' && (
+            <div className="mt-5 border-t border-gray-100 pt-5">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Switch Account PIN</label>
+              <div className="relative md:w-1/2">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="password"
+                  maxLength={4}
+                  value={form.pin}
+                  onChange={e => setForm({...form, pin: e.target.value.replace(/\D/g, '')})}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none"
+                  placeholder="Enter 4-digit PIN to update"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Leave blank to keep your current PIN unchanged.</p>
+            </div>
+          )}
         </div>
 
         {/* Change Password Card */}

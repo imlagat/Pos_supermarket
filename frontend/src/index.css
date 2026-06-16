@@ -2,7 +2,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 body {
   font-family: 'Inter', sans-serif;
   background: #f3f4f6;
+}
+
+@media print {
+  body {
+    background: white;
+    margin: 0;
+    padding: 0;
+  }
+  @page {
+    margin: 0;
+    size: auto;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #receipt-content, #receipt-content * {
+    visibility: visible;
+  }
+  #receipt-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    page-break-after: avoid;
+  }
+  .max-h-\[90vh\] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .bg-black\/60 {
+    background: transparent !important;
+  }
 }

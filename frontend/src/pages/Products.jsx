@@ -11,7 +11,7 @@ export default function Products() {
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
     name: '', sku: '', barcode: '', category: '',
-    base_price: '', stock_quantity: '', min_stock_threshold: 5
+    base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5
   });
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -104,7 +104,7 @@ export default function Products() {
   };
 
   const resetForm = () => {
-    setForm({ name: '', sku: '', barcode: '', category: '', base_price: '', stock_quantity: '', min_stock_threshold: 5 });
+    setForm({ name: '', sku: '', barcode: '', category: '', base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5 });
     setEditing(null);
     setShowForm(false);
   };
@@ -129,6 +129,7 @@ export default function Products() {
       barcode: product.barcode || '',
       category: product.category || '',
       base_price: product.base_price,
+      cost_price: product.cost_price || '',
       stock_quantity: product.stock_quantity,
       min_stock_threshold: product.min_stock_threshold
     });
@@ -169,13 +170,20 @@ export default function Products() {
   // CSV Import handlers
   const downloadTemplate = () => {
     const headers = ['name', 'sku', 'barcode', 'category', 'base_price', 'stock_quantity', 'min_stock_threshold'];
-    const sampleRow = ['Sample Product', 'SP001', '123456', 'Category', '100', '50', '5'];
-    const csvContent = [headers, sampleRow].map(row => row.join(',')).join('\n');
+    const sampleRows = [
+      ['Whole Milk 500ml', 'DAIRY-001', '616110001234', 'Dairy', '60', '100', '20'],
+      ['White Bread 400g', 'BAKERY-001', '616110001235', 'Bakery', '65', '50', '10'],
+      ['Sugar 1kg', 'GROCERY-001', '616110001236', 'Groceries', '150', '200', '50'],
+      ['Maize Flour 2kg', 'GROCERY-002', '616110001237', 'Groceries', '200', '150', '30'],
+      ['Cooking Oil 1L', 'GROCERY-003', '616110001238', 'Groceries', '300', '80', '15']
+    ];
+    
+    const csvContent = [headers, ...sampleRows].map(row => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'product_template.csv';
+    a.download = 'product_import_template.csv';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -286,9 +294,13 @@ export default function Products() {
 
               <div className="bg-gray-50 rounded-xl border border-gray-100 p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">Pricing & Stock</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (Ksh)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (Buy)</label>
+                    <input type="number" step="0.01" placeholder="0.00" value={form.cost_price} onChange={e => setForm({...form, cost_price: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price</label>
                     <input type="number" step="0.01" placeholder="0.00" value={form.base_price} onChange={e => setForm({...form, base_price: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" required />
                   </div>
                   <div>

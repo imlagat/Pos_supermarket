@@ -27,6 +27,9 @@ const PurchaseOrders = React.lazy(() => import('./pages/PurchaseOrders'));
 const Returns = React.lazy(() => import('./pages/Returns'));
 const ReturnedItems = React.lazy(() => import('./pages/ReturnedItems'));
 const RemoteScannerApp = React.lazy(() => import('./pages/RemoteScannerApp'));
+const ShiftsReport = React.lazy(() => import('./pages/ShiftsReport'));
+const Finance = React.lazy(() => import('./pages/Finance'));
+const CashDrawer = React.lazy(() => import('./pages/CashDrawer'));
 
 function App() {
     return (
@@ -43,6 +46,7 @@ function App() {
                             <Route element={<Layout />}>
                                 <Route path="/" element={<Dashboard />} />
                                 <Route path="/pos" element={<POS />} />
+                                <Route path="/cash-drawer" element={<CashDrawer />} />
                                 <Route path="/products" element={<Products />} />
                                 <Route path="/discounts" element={<Discounts />} />
                                 <Route path="/customers" element={<Customers />} />
@@ -58,6 +62,8 @@ function App() {
                                 <Route path="/purchase-orders" element={<PurchaseOrders />} />
                                 <Route path="/returns" element={<Returns />} />
                                 <Route path="/returned-items" element={<ReturnedItems />} />
+                                <Route path="/shifts" element={<ShiftsReport />} />
+                                <Route path="/finance" element={<Finance />} />
                             </Route>
                         </Route>
                     </Routes>
