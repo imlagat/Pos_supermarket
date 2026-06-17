@@ -26,12 +26,15 @@ for ($i = 1; $i <= 100; $i++) {
         $subtotal = $qty * $price;
         $total += $subtotal;
         
+        $unitCost = $product->cost_price ?? 0;
         \App\Models\OrderItem::create([
             'order_id' => $order->id,
             'product_id' => $product->id,
             'quantity' => $qty,
             'unit_price' => $price,
             'total' => $subtotal,
+            'unit_cost' => $unitCost,
+            'total_cost' => $unitCost * $qty,
             'created_at' => $date,
             'updated_at' => $date,
         ]);

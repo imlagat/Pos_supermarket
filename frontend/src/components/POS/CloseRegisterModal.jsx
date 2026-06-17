@@ -67,7 +67,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-xl">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
           <p className="text-gray-600 font-medium">Calculating totals...</p>
         </div>
       </div>
@@ -152,7 +152,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
                     required
                     value={actualCash}
                     onChange={(e) => setActualCash(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono font-semibold text-gray-800"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800"
                     placeholder="0.00"
                   />
                 </div>
@@ -193,7 +193,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
                     required
                     value={actualMpesa}
                     onChange={(e) => setActualMpesa(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono font-semibold text-gray-800"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800"
                     placeholder="0.00"
                   />
                 </div>
@@ -234,7 +234,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
                     required
                     value={actualCard}
                     onChange={(e) => setActualCard(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all font-mono font-semibold text-gray-800"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800"
                     placeholder="0.00"
                   />
                 </div>
@@ -249,7 +249,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none text-sm text-gray-700"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all resize-none text-sm text-gray-700"
               placeholder="Any discrepancies, explanations, or shift notes..."
               rows={2}
             ></textarea>
@@ -267,7 +267,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-[#4f709c] hover:bg-[#3d5a80] text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex justify-center items-center"
+              className="flex-1 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md disabled:opacity-50 flex justify-center items-center"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
