@@ -50,7 +50,7 @@ class OrderController extends Controller
 
             $user = auth()->user();
             $activeShift = null;
-            
+
             if ($user->role === 'cashier') {
                 $activeShift = \App\Models\Shift::where('user_id', $user->id)
                     ->where('status', 'open')
@@ -88,14 +88,16 @@ class OrderController extends Controller
                 $product = Product::find($item['product_id']);
                 if (!$product) continue;
 
+                $unitCost = $product->cost_price ?? 0;
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['price'],
                     'total' => $item['price'] * $item['quantity'],
-                    'unit_cost' => $product->cost_price,
-                    'total_cost' => $product->cost_price * $item['quantity']
+                    'unit_cost' => $unitCost,
+                    'total_cost' => $unitCost * $item['quantity']
                 ]);
 
                 if (isset($item['is_open_box']) && $item['is_open_box'] && isset($item['returned_item_id'])) {
