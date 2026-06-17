@@ -63,7 +63,7 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get('/mpesa/status/{checkoutId}', [MpesaController::class, 'checkStatus']);
 
     Route::get('/users/performance', [UserController::class, 'performance'])->middleware('role:admin,manager');
-    Route::apiResource('users', UserController::class)->middleware('role:admin');
+    Route::apiResource('users', UserController::class)->middleware('role:admin,manager');
     Route::apiResource('branches', \App\Http\Controllers\BranchController::class)->middleware('role:admin');
     Route::get('/batches', [InventoryController::class, 'getBatches'])->middleware('role:admin,manager');
     Route::post('/batches', [InventoryController::class, 'addBatch'])->middleware('role:admin,manager');

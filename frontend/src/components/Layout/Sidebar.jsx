@@ -23,7 +23,7 @@ const menuItems = [
   { name: 'Returns', path: '/returns', icon: RefreshCw, roles: ['admin', 'manager', 'cashier'] },
   { name: 'Reports', path: '/reports', icon: BarChart3, roles: ['admin', 'manager'] },
   { name: 'Finance & P&L', path: '/finance', icon: BarChart3, roles: ['admin', 'manager'] },
-  { name: 'Users & Shifts', path: '/users', icon: UserPlus, roles: ['admin'] },
+  { name: 'Users & Shifts', path: '/users', icon: UserPlus, roles: ['admin', 'manager'] },
   { name: 'Audit Logs', path: '/audit-logs', icon: FileText, roles: ['admin'] },
   { name: 'Settings', path: '/settings', icon: Settings, roles: ['admin', 'manager'] },
 ];

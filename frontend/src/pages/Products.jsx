@@ -11,7 +11,7 @@ export default function Products() {
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
     name: '', sku: '', barcode: '', category: '',
-    base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5
+    base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5, expiry_date: ''
   });
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -104,7 +104,7 @@ export default function Products() {
   };
 
   const resetForm = () => {
-    setForm({ name: '', sku: '', barcode: '', category: '', base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5 });
+    setForm({ name: '', sku: '', barcode: '', category: '', base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5, expiry_date: '' });
     setEditing(null);
     setShowForm(false);
   };
@@ -123,6 +123,17 @@ export default function Products() {
   const handleEdit = (product) => {
     setEditing(product.id);
     setShowForm(true);
+    
+    let nearestExpiry = '';
+    if (product.batches && product.batches.length > 0) {
+        const activeBatches = product.batches.filter(b => b.expiry_date);
+        if (activeBatches.length > 0) {
+            // Sort to find nearest
+            const sorted = activeBatches.sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
+            nearestExpiry = sorted[0].expiry_date.split('T')[0]; // Get YYYY-MM-DD
+        }
+    }
+
     setForm({
       name: product.name,
       sku: product.sku,
@@ -131,7 +142,8 @@ export default function Products() {
       base_price: product.base_price,
       cost_price: product.cost_price || '',
       stock_quantity: product.stock_quantity,
-      min_stock_threshold: product.min_stock_threshold
+      min_stock_threshold: product.min_stock_threshold,
+      expiry_date: nearestExpiry
     });
   };
 
@@ -310,6 +322,10 @@ export default function Products() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
                     <input type="number" placeholder="5" value={form.min_stock_threshold} onChange={e => setForm({...form, min_stock_threshold: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date (Optional)</label>
+                    <input type="date" value={form.expiry_date} onChange={e => setForm({...form, expiry_date: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" />
                   </div>
                 </div>
               </div>
