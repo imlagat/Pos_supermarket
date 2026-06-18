@@ -11,7 +11,7 @@ import BranchSelector from './BranchSelector';
 import SwitchAccountModal from '../Auth/SwitchAccountModal';
 
 const menuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin', 'manager'] },
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'manager'] },
   { name: 'POS', path: '/pos', icon: ShoppingCart, roles: ['admin', 'manager', 'cashier'] },
   { name: 'Cash Drawer', path: '/cash-drawer', icon: Banknote, roles: ['manager', 'cashier'] },
   { name: 'Products', path: '/products', icon: Package, roles: ['admin', 'manager'] },

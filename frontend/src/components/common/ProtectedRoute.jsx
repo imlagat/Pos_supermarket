@@ -19,7 +19,7 @@ export default function ProtectedRoute() {
     if (isLoading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
 
     if (!token || !user) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/" replace />;
     }
 
     return <Outlet />;

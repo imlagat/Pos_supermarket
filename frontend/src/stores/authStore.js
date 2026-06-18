@@ -43,6 +43,21 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
+    register: async (name, email, password) => {
+        set({ isLoading: true });
+        try {
+            const res = await api.post('/register', { name, email, password });
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            
+            set({ user: res.data.user, token: res.data.token, activeBranchId: null, isLoading: false });
+            return { success: true };
+        } catch (error) {
+            set({ isLoading: false });
+            throw error;
+        }
+    },
+
     verifyOtp: async (email, otp_code) => {
         set({ isLoading: true });
         try {

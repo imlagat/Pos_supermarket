@@ -40,6 +40,32 @@ class AuthController extends Controller
         ]);
     }
 
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'admin',
+            'pin' => '0000',
+            'branch_id' => 1,
+        ]);
+
+        $token = $user->createToken('pos-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+            'message' => 'Registration successful.'
+        ]);
+    }
+
     public function verifyOtp(Request $request)
     {
         $request->validate([

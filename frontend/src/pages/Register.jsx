@@ -1,0 +1,137 @@
+import { useState } from 'react';
+import { useAuthStore } from '../stores/authStore';
+import toast from 'react-hot-toast';
+import { useNavigate, Link } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, User, UserPlus } from 'lucide-react';
+
+export default function Register() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const { register, isLoading } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name || !email || !password) {
+      toast.error('Please fill in all fields.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters.');
+      return;
+    }
+    
+    try {
+      await register(name, email, password);
+      toast.success('Registration successful!');
+      navigate('/pricing');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Registration failed. Email might be in use.');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#E3DAC9] flex items-center justify-center p-4 sm:p-8">
+      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-6xl flex flex-col md:flex-row min-h-[700px]">
+        
+        {/* Left Side: Form */}
+        <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center">
+          <div className="text-center md:text-left mb-10">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-orange-600 tracking-tight">Create Account</h1>
+            <p className="text-gray-500 mt-2 font-medium">Start your free trial today</p>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto md:mx-0">
+            <div className="mb-5">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
+                placeholder="John Doe"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
+                placeholder="Enter your email"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="mb-8">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-4 pr-12 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
+                  placeholder="Create a password"
+                  required
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600 transition-colors"
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#E55A2A] hover:bg-[#D44A1A] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-orange-500/30 flex items-center justify-center gap-2 mb-4"
+            >
+              {isLoading ? 'Creating account...' : 'Signup'}
+            </button>
+          </form>
+
+          <div className="w-full max-w-sm mx-auto md:mx-0 mt-8 text-center">
+            <p className="text-gray-600 font-medium">
+              Already have an account?{' '}
+              <Link to="/login" className="text-orange-600 hover:text-orange-800 font-bold underline transition-colors">
+                Sign in
+              </Link>
+            </p>
+            
+            <div className="mt-8 pt-6 border-t border-gray-200 text-xs text-gray-400 font-medium">
+              <p>By registering, you agree to our <span className="hover:text-gray-600 cursor-pointer">Terms</span> and <span className="hover:text-gray-600 cursor-pointer">Privacy Policy</span>.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Image */}
+        <div className="hidden md:block md:w-1/2 p-4">
+          <div 
+            className="w-full h-full rounded-[2rem] relative overflow-hidden bg-cover bg-center shadow-inner"
+            style={{ backgroundImage: `url('https://clotouch.com/wp-content/uploads/2025/10/a-practical-guide-how-to-optimize-pos-software-for-grocery-stores-featured.jpg')` }}
+          >
+            {/* Dark overlay for better text contrast if needed */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

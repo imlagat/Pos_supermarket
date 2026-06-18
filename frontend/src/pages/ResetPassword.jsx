@@ -52,57 +52,69 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-600 to-orange-700 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-orange-600 to-orange-600"></div>
-          <div className="p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-800">Set New Password</h1>
-              <p className="text-gray-500 mt-1">Please enter your new password below</p>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">New Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600"
-                    placeholder="••••••••"
-                    required
-                    minLength={8}
-                  />
-                </div>
-              </div>
-              <div className="mb-6">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="password"
-                    value={passwordConfirmation}
-                    onChange={(e) => setPasswordConfirmation(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600"
-                    placeholder="••••••••"
-                    required
-                    minLength={8}
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
+    <div className="min-h-screen bg-[#E3DAC9] flex items-center justify-center p-4 sm:p-8">
+      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-6xl flex flex-col md:flex-row min-h-[700px]">
+        
+        {/* Left Side: Form */}
+        <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center">
+          <div className="text-center md:text-left mb-10">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-orange-600 tracking-tight">Set New Password</h1>
+            <p className="text-gray-500 mt-2 font-medium">Please enter your new password below</p>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto md:mx-0">
+            <div className="mb-5">
+              <label className="block text-gray-700 text-sm font-bold mb-2">New Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
+                placeholder="••••••••"
+                required
+                minLength={8}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
-              >
-                {loading ? 'Resetting...' : <><Send size={18} /> Reset Password</>}
-              </button>
-            </form>
-            <div className="mt-6 text-center">
-              <Link to="/login" className="text-sm text-orange-700 hover:text-orange-800">Back to Login</Link>
+              />
             </div>
+
+            <div className="mb-8">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
+              <input
+                type="password"
+                value={passwordConfirmation}
+                onChange={(e) => setPasswordConfirmation(e.target.value)}
+                className="w-full px-4 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
+                placeholder="••••••••"
+                required
+                minLength={8}
+                disabled={loading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#E55A2A] hover:bg-[#D44A1A] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-orange-500/30 flex items-center justify-center gap-2 mb-4"
+            >
+              {loading ? 'Resetting...' : 'Reset Password'}
+            </button>
+          </form>
+
+          <div className="w-full max-w-sm mx-auto md:mx-0 mt-8 text-center">
+            <Link to="/login" className="text-orange-600 hover:text-orange-800 font-bold underline transition-colors">
+              Back to Login
+            </Link>
+          </div>
+        </div>
+
+        {/* Right Side: Image */}
+        <div className="hidden md:block md:w-1/2 p-4">
+          <div 
+            className="w-full h-full rounded-[2rem] relative overflow-hidden bg-cover bg-center shadow-inner"
+            style={{ backgroundImage: `url('https://clotouch.com/wp-content/uploads/2025/10/a-practical-guide-how-to-optimize-pos-software-for-grocery-stores-featured.jpg')` }}
+          >
+            {/* Dark overlay for better text contrast if needed */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
           </div>
         </div>
       </div>
