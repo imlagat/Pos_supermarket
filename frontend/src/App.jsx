@@ -4,8 +4,15 @@ import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PageLoader from './components/common/PageLoader';
+import MarketingLayout from './components/marketing/MarketingLayout';
 
-// Lazy loaded pages
+// Lazy loaded marketing pages
+const Home = React.lazy(() => import('./pages/marketing/Home'));
+const Features = React.lazy(() => import('./pages/marketing/Features'));
+const Pricing = React.lazy(() => import('./pages/marketing/Pricing'));
+const Register = React.lazy(() => import('./pages/Register'));
+
+// Lazy loaded app pages
 const Login = React.lazy(() => import('./pages/Login'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
@@ -38,13 +45,25 @@ function App() {
             <BrowserRouter>
                 <Suspense fallback={<PageLoader message="Loading page..." />}>
                     <Routes>
+                        {/* Marketing Routes */}
+                        <Route element={<MarketingLayout />}>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/features" element={<Features />} />
+                            <Route path="/pricing" element={<Pricing />} />
+                        </Route>
+
+                        {/* Auth Routes */}
                         <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
+                        
                         <Route path="/remote-scanner/:sessionId" element={<RemoteScannerApp />} />
+                        
+                        {/* Protected App Routes */}
                         <Route element={<ProtectedRoute />}>
                             <Route element={<Layout />}>
-                                <Route path="/" element={<Dashboard />} />
+                                <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/pos" element={<POS />} />
                                 <Route path="/cash-drawer" element={<CashDrawer />} />
                                 <Route path="/products" element={<Products />} />

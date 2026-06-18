@@ -47,7 +47,7 @@ export default function SwitchAccountModal({ isOpen, onClose }) {
       await switchAccount(selectedUser.id, pin);
       toast.success(`Switched to ${selectedUser.name}`);
       onClose();
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid PIN or switch failed');
     } finally {
