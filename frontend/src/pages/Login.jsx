@@ -47,7 +47,7 @@ export default function Login() {
         }
       } catch (error) {
         if (error.response && error.response.status === 500) {
-          toast.error('Server error: Could not send OTP email. Please check your SMTP settings.');
+          toast.error(error.response?.data?.message || 'Server error. Please check your database connection and logs.');
         } else {
           toast.error(error.response?.data?.message || 'Invalid credentials');
         }
