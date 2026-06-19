@@ -8,12 +8,17 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
+        $limit = $request->query('limit');
         $user = $request->user();
         $query = Order::with(['items.product', 'payments', 'customer', 'cashier'])
             ->orderBy('created_at', 'desc');
 
         if ($user && $user->role === 'cashier') {
             $query->where('user_id', $user->id);
+        }
+
+        if ($limit) {
+            $query->limit($limit);
         }
 
         $orders = $query->get()

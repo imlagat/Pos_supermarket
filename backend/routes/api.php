@@ -10,6 +10,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MpesaController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\SearchController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -40,6 +41,8 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get('/products/lookup/{barcode}', [ProductController::class, 'lookup']);
     Route::apiResource('products', ProductController::class);
 
+    Route::get('/search', [SearchController::class, 'globalSearch']);
+
     Route::post('/cart/calculate', [OrderController::class, 'calculateCart']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders', [OrderController::class, 'index']);
@@ -50,7 +53,9 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::delete('/transactions/held/{id}', [App\Http\Controllers\OrderController::class, 'resume']);
     Route::post('/transactions/{id}/email', [App\Http\Controllers\OrderController::class, 'emailReceipt']);
 
-    Route::apiResource('users', App\Http\Controllers\UserController::class)->middleware('role:admin');
+    Route::get('/users/performance', [App\Http\Controllers\UserController::class, 'performance'])->middleware('role:admin,manager');
+    Route::apiResource('users', App\Http\Controllers\UserController::class)->middleware('role:admin,manager');
+    
     Route::get('/shifts/current', [\App\Http\Controllers\ShiftController::class, 'current']);
     Route::post('/shifts/open', [\App\Http\Controllers\ShiftController::class, 'open']);
     Route::post('/shifts/close', [\App\Http\Controllers\ShiftController::class, 'close']);
@@ -72,8 +77,6 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::post('/mpesa/stkpush', [MpesaController::class, 'stkPush']);
     Route::get('/mpesa/status/{checkoutId}', [MpesaController::class, 'checkStatus']);
 
-    Route::get('/users/performance', [UserController::class, 'performance'])->middleware('role:admin,manager');
-    Route::apiResource('users', UserController::class)->middleware('role:admin,manager');
     Route::apiResource('branches', \App\Http\Controllers\BranchController::class)->middleware('role:admin');
     Route::get('/batches', [InventoryController::class, 'getBatches'])->middleware('role:admin,manager');
     Route::post('/batches', [InventoryController::class, 'addBatch'])->middleware('role:admin,manager');
@@ -102,6 +105,7 @@ Route::middleware('auth:sanctum')->get('/reports/weekly-sales', [App\Http\Contro
 Route::middleware('auth:sanctum')->get('/reports/monthly-sales', [App\Http\Controllers\ReportController::class, 'monthlySales']);
 Route::middleware('auth:sanctum')->get('/reports/top-products', [App\Http\Controllers\ReportController::class, 'topProducts']);
 Route::middleware('auth:sanctum')->get('/reports/sales-by-category', [App\Http\Controllers\ReportController::class, 'salesByCategory']);
+Route::middleware('auth:sanctum')->get('/reports/sales-by-payment-method', [App\Http\Controllers\ReportController::class, 'salesByPaymentMethod']);
 
 Route::middleware('auth:sanctum')->get('/settings', [App\Http\Controllers\SettingsController::class, 'index']);
 Route::middleware('auth:sanctum')->post('/settings', [App\Http\Controllers\SettingsController::class, 'update'])->middleware('role:admin');

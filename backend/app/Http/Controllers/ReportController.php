@@ -158,12 +158,24 @@ class ReportController extends Controller
     public function topProducts(Request $request)
     {
         $limit = $request->get('limit', 5);
+        $period = $request->query('period', 'all');
         $user = $request->user();
 
-        $query = OrderItem::select('order_items.product_id', DB::raw('SUM(order_items.quantity) as total_quantity'))
+        $query = OrderItem::select('order_items.product_id', DB::raw('SUM(order_items.quantity) as total_quantity'), DB::raw('SUM(order_items.total) as revenue'))
             ->with('product')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', 'completed');
+
+        if ($period !== 'all') {
+            if ($period === 'daily') {
+                $startDate = now()->startOfDay();
+            } elseif ($period === 'monthly') {
+                $startDate = now()->subDays(29)->startOfDay();
+            } else { // weekly
+                $startDate = now()->subDays(6)->startOfDay();
+            }
+            $query->where('orders.created_at', '>=', $startDate);
+        }
 
         if ($user && $user->role === 'cashier') {
             $query->where('orders.user_id', $user->id);
@@ -176,11 +188,12 @@ class ReportController extends Controller
             ->map(function ($item) {
                 return [
                     'name' => $item->product->name ?? 'Unknown',
-                    'sku' => $item->product->sku ?? '',
+                    'sku' => $item->product->sku ?? 'Unknown',
                     'total_quantity' => (int) $item->total_quantity,
-                    'revenue' => (float) ($item->product->base_price * $item->total_quantity)
+                    'revenue' => (float) $item->revenue
                 ];
             });
+
         return response()->json($top);
     }
 
@@ -282,5 +295,42 @@ class ReportController extends Controller
             'total_refund' => $totalRefund,
             'total_quantity' => $totalQuantity,
         ]);
+    }
+    public function salesByPaymentMethod(Request $request)
+    {
+        $period = $request->query('period', 'all');
+        $user = $request->user();
+
+        $query = DB::table('payments')
+            ->join('orders', 'payments.order_id', '=', 'orders.id')
+            ->select('payments.method', DB::raw('SUM(payments.amount) as revenue'))
+            ->where('payments.status', 'completed')
+            ->where('orders.status', 'completed');
+
+        if ($period !== 'all') {
+            if ($period === 'daily') {
+                $startDate = now()->startOfDay();
+            } elseif ($period === 'monthly') {
+                $startDate = now()->subDays(29)->startOfDay();
+            } else { // weekly
+                $startDate = now()->subDays(6)->startOfDay();
+            }
+            $query->where('payments.created_at', '>=', $startDate);
+        }
+
+        if ($user && $user->role === 'cashier') {
+            $query->where('orders.user_id', $user->id);
+        }
+
+        $methods = $query->groupBy('payments.method')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'method' => $item->method ?? 'Unknown',
+                    'revenue' => (float) $item->revenue
+                ];
+            });
+
+        return response()->json($methods);
     }
 }

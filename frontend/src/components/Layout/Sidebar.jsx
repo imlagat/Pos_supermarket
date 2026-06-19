@@ -39,16 +39,16 @@ export default function Sidebar() {
   const allowedPathsIfSuspended = ['/dashboard', '/transactions', '/reports'];
 
   return (
-    <aside className="bg-gradient-to-b from-amber-800 to-orange-800 text-white flex flex-col shadow-2xl h-screen sticky top-0 w-20 md:w-72 transition-all duration-300 print:hidden">
+    <aside className="bg-slate-900 text-white flex flex-col shadow-2xl h-screen sticky top-0 w-20 md:w-72 transition-all duration-300 print:hidden">
       {/* Logo section */}
-      <div className="p-4 border-b border-amber-700/50 flex justify-center md:justify-start">
+      <div className="p-4 border-b border-slate-800 flex justify-center md:justify-start">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#E55A2A] rounded-lg flex items-center justify-center shadow-sm">
+          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-sm">
             <ShoppingCart className="text-white w-4 h-4" strokeWidth={2.5} />
           </div>
           <h1 className="text-xl font-black tracking-tight hidden md:block">
             <span className="text-white">POS</span>
-            <span className="text-[#E55A2A]">super</span>
+            <span className="text-orange-500">super</span>
           </h1>
         </div>
       </div>
@@ -76,8 +76,8 @@ export default function Sidebar() {
               className={({ isActive }) =>
                 `flex items-center justify-center md:justify-start gap-3 px-2 md:px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive || isNavigating
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
-                    : 'text-amber-100 hover:bg-amber-700/50 hover:text-white'
+                    ? 'bg-orange-500 text-white shadow-md'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`
               }
             >
@@ -94,37 +94,36 @@ export default function Sidebar() {
 
       {/* System Status Widget */}
       <div className="hidden md:block px-4 mb-4">
-        <div className="bg-amber-900/50 rounded-xl p-3 border border-amber-700/50">
+        <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-            <span className="text-xs font-semibold text-amber-100">System Online</span>
+            <span className="text-xs font-semibold text-slate-300">System Online</span>
           </div>
-          <p className="text-[10px] text-amber-300">Last Sync: Just now</p>
+          <p className="text-[10px] text-slate-500">Last Sync: Just now</p>
         </div>
       </div>
 
-      {/* User section */}
-      <div className="p-4 border-t border-amber-700/50">
+      <div className="p-4 border-t border-slate-800">
         <div className="flex items-center justify-center md:justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
               <span className="text-sm font-bold text-white">{user?.name?.charAt(0)}</span>
             </div>
             <div className="hidden md:block text-sm">
               <p className="font-medium leading-tight">{user?.name}</p>
-              <p className="text-xs text-amber-200 capitalize">{user?.role}</p>
+              <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
             </div>
           </div>
           <div className="flex gap-1">
             {user?.role === 'admin' && (
-              <button onClick={() => setShowSwitchModal(true)} className="p-1 text-amber-200 hover:text-white transition-colors" title="Switch Account">
+              <button onClick={() => setShowSwitchModal(true)} className="p-1 text-slate-400 hover:text-white transition-colors" title="Switch Account">
                 <UserCog size={18} />
               </button>
             )}
-            <NavLink to="/profile" className="p-1 text-amber-200 hover:text-white transition-colors" title="Profile">
+            <NavLink to="/profile" className="p-1 text-slate-400 hover:text-white transition-colors" title="Profile">
               <UserCircle size={18} />
             </NavLink>
-            <button onClick={() => logout()} className="p-1 text-amber-200 hover:text-white transition-colors" title="Logout">
+            <button onClick={() => logout()} className="p-1 text-slate-400 hover:text-white transition-colors" title="Logout">
               <LogOut size={18} />
             </button>
           </div>

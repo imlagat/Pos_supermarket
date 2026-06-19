@@ -189,7 +189,7 @@ export default function Users() {
                     <tr key={perf.user_id} className="border-b hover:bg-gray-50">
                       <td className="p-4 font-medium text-gray-800">{perf.name}</td>
                       <td className="p-4 text-gray-500">{perf.email}</td>
-                      <td className="p-4 text-right font-bold text-blue-600">{perf.orders_taken}</td>
+                      <td className="p-4 text-right font-bold text-orange-600">{perf.orders_taken}</td>
                       <td className="p-4 text-right font-bold text-red-500">{perf.returns_taken || 0}</td>
                       <td className="p-4 text-right font-bold text-orange-700">Ksh {perf.total_sales ? parseFloat(perf.total_sales).toLocaleString() : 0}</td>
                       <td className="p-4 text-right font-bold text-red-600">Ksh {perf.total_returns_amount ? parseFloat(perf.total_returns_amount).toLocaleString() : 0}</td>
@@ -304,7 +304,7 @@ export default function Users() {
                 <td className="p-4">{u.email}</td>
                 <td className="p-4 capitalize">{u.role}</td>
                 <td className="p-4 flex gap-2">
-                  <button onClick={() => handleEdit(u)} className="text-blue-600"><Edit2 size={18} /></button>
+                  <button onClick={() => handleEdit(u)} className="text-orange-600"><Edit2 size={18} /></button>
                   <button onClick={() => handleDelete(u.id)} className="text-red-600"><Trash2 size={18} /></button>
                 </td>
               </tr>

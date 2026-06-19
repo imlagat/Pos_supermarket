@@ -258,7 +258,7 @@ export default function Discounts() {
                   <div className="flex-1">
                     <h3 className={`font-bold flex items-center gap-2 ${d.is_active ? 'text-green-900' : 'text-gray-700'}`}>
                       {d.name}
-                      {isAI && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase font-bold">AI</span>}
+                      {isAI && <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded uppercase font-bold">AI</span>}
                     </h3>
                     <p className={`text-sm mt-1 capitalize ${d.is_active ? 'text-green-800' : 'text-gray-600'}`}>Type: {d.type.replace('_', ' ')}</p>
                     <p className="text-sm font-bold text-gray-900 mt-1">
@@ -283,7 +283,7 @@ export default function Discounts() {
                   </div>
                 </div>
                 <div className={`border-t mt-4 pt-3 flex justify-end gap-2 ${d.is_active ? 'border-green-100' : 'border-gray-200'}`}>
-                  <button onClick={() => handleEdit(d)} className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 transition">
+                  <button onClick={() => handleEdit(d)} className="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-100 transition">
                     Edit
                   </button>
                   <button onClick={() => toggleActive(d)} className="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-100 transition">

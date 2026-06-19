@@ -90,7 +90,7 @@ export default function SuperAdminDashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><Building2 size={24} /></div>
+            <div className="p-3 bg-orange-50 text-orange-600 rounded-lg"><Building2 size={24} /></div>
             <div>
               <p className="text-sm font-medium text-gray-500">Total Stores</p>
               <h3 className="text-2xl font-bold text-gray-900">{totalTenants}</h3>

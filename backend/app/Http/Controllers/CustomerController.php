@@ -17,15 +17,25 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
+        $tenantId = auth()->user()->tenant_id;
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => [
                 'required',
                 'string',
                 'regex:/^(07|01|2547)\d{8}$/',
-                Rule::unique('customers')
+                Rule::unique('customers')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                })
             ],
-            'email' => 'nullable|email|max:255|unique:customers',
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('customers')->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                })
+            ],
             'points_balance' => 'nullable|integer|min:0',
             'tier' => 'nullable|in:bronze,silver,gold'
         ]);
@@ -40,15 +50,25 @@ class CustomerController extends Controller
 
     public function update(Request $request, Customer $customer)
     {
+        $tenantId = auth()->user()->tenant_id;
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'phone' => [
                 'sometimes',
                 'string',
                 'regex:/^(07|01|2547)\d{8}$/',
-                Rule::unique('customers')->ignore($customer->id)
+                Rule::unique('customers')->ignore($customer->id)->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                })
             ],
-            'email' => 'nullable|email|max:255|unique:customers,email,' . $customer->id,
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('customers')->ignore($customer->id)->where(function ($query) use ($tenantId) {
+                    return $query->where('tenant_id', $tenantId);
+                })
+            ],
             'points_balance' => 'nullable|integer|min:0',
             'tier' => 'nullable|in:bronze,silver,gold'
         ]);

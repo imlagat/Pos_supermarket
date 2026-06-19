@@ -234,7 +234,7 @@ export default function PurchaseOrders() {
                       <button onClick={(e) => { e.stopPropagation(); handleEdit(order); }} className="text-orange-700 hover:text-orange-900 font-medium text-sm" title="Edit Order">
                         Edit
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleApprove(order.id); }} className="text-blue-600 hover:text-blue-800 font-medium text-sm" title="Accept & Send">
+                      <button onClick={(e) => { e.stopPropagation(); handleApprove(order.id); }} className="text-orange-600 hover:text-orange-800 font-medium text-sm" title="Accept & Send">
                         Accept & Send
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }} className="text-red-600 hover:text-red-800 font-medium text-sm" title="Delete Order">

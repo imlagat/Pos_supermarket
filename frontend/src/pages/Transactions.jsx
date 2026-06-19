@@ -205,8 +205,8 @@ export default function Transactions() {
                   </td>
                   <td className="px-4 py-2">
                     {hasReturn(t.id) ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-blue-100 text-blue-800">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Returned
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-orange-100 text-orange-800">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Returned
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-green-100 text-green-800">
@@ -215,7 +215,7 @@ export default function Transactions() {
                     )}
                   </td>
                   <td className="px-4 py-2">
-                    <button onClick={() => viewReceipt(t)} className="text-blue-500 hover:text-blue-700 flex items-center gap-1 transition">
+                    <button onClick={() => viewReceipt(t)} className="text-orange-500 hover:text-orange-700 flex items-center gap-1 transition">
                       <Eye size={16} /> Receipt
                     </button>
                   </td>

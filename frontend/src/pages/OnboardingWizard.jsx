@@ -124,7 +124,7 @@ export default function OnboardingWizard() {
             {step === 2 && (
               <form onSubmit={handleAddProduct} className="space-y-6 animate-in fade-in slide-in-from-right-4">
                 <div className="flex justify-center mb-6">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
                     <Package size={32} />
                   </div>
                 </div>
@@ -136,7 +136,7 @@ export default function OnboardingWizard() {
                       type="text"
                       value={productData.name}
                       onChange={(e) => setProductData({...productData, name: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
                       placeholder="e.g. Coca-Cola 500ml"
                       required
                     />
@@ -148,7 +148,7 @@ export default function OnboardingWizard() {
                         type="number"
                         value={productData.price}
                         onChange={(e) => setProductData({...productData, price: e.target.value})}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
                         placeholder="0.00"
                         required
                       />
@@ -159,7 +159,7 @@ export default function OnboardingWizard() {
                         type="number"
                         value={productData.stock}
                         onChange={(e) => setProductData({...productData, stock: e.target.value})}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
                         placeholder="Optional"
                       />
                     </div>
@@ -176,7 +176,7 @@ export default function OnboardingWizard() {
                   <button
                     type="submit"
                     disabled={loading || !productData.name}
-                    className="flex-[2] py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                    className="flex-[2] py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                   >
                     {loading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Save Product'} <ArrowRight className="w-5 h-5" />
                   </button>
