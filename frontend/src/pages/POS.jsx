@@ -225,6 +225,38 @@ export default function POS() {
     return () => clearInterval(interval);
   }, [showRemoteScanner, remoteSessionId]);
 
+  // Global Barcode Scanner Listener
+  useEffect(() => {
+    let barcodeString = '';
+    let timeout;
+
+    const handleKeyDown = (e) => {
+      // Ignore if user is typing in an input field
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'Enter') {
+        if (barcodeString.length > 3) {
+          e.preventDefault();
+          lookupProduct(barcodeString);
+        }
+        barcodeString = '';
+      } else if (e.key.length === 1) { // Normal character
+        barcodeString += e.key;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          barcodeString = ''; // Clear if it's too slow (i.e. human typing)
+        }, 50); // 50ms timeout for scanner speed
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
+
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === '' || p.category === selectedCategory;

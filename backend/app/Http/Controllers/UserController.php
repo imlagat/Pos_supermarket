@@ -24,11 +24,20 @@ class UserController extends Controller
             'password' => 'required|string|min:6|confirmed',
             'role' => 'required|in:admin,manager,cashier'
         ]);
+        $authUser = $request->user();
+        if ($authUser && $authUser->tenant && $authUser->tenant->tier === 'bronze') {
+            $userCount = User::where('tenant_id', $authUser->tenant_id)->count();
+            if ($userCount >= 5) {
+                return response()->json(['message' => 'Bronze plan limit reached. You can only have up to 5 user accounts. Please upgrade your plan.'], 403);
+            }
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role
+            'role' => $request->role,
+            'branch_id' => $request->branch_id ?? null,
         ]);
         return response()->json($user, 201);
     }

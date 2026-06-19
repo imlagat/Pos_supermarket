@@ -4,6 +4,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class PurchaseOrder extends Model
 {
+    use \App\Traits\Tenantable;
+
     protected $fillable = ['po_number', 'supplier_id', 'order_date', 'expected_delivery_date', 'status', 'notes', 'created_by', 'agreed_price', 'paid_amount', 'balance', 'branch_id'];
     protected $casts = ['order_date' => 'date', 'expected_delivery_date' => 'date'];
 

@@ -4,6 +4,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReturnOrder extends Model
 {
+    use \App\Traits\Tenantable;
+
     protected $table = 'returns';
     protected $fillable = ['order_id', 'user_id', 'items', 'reason', 'refund_amount', 'refund_method', 'branch_id'];
     protected $casts = ['items' => 'array'];

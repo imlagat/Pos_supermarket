@@ -1,17 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, X, Building2, Zap, Headphones, BarChart3, Cloud, Layers } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import ContactSalesModal from '../../components/marketing/ContactSalesModal';
 
 export default function Pricing() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const handleSelectPlan = (planName) => {
-    // In a real application, this would redirect to a checkout page (e.g., Stripe, M-Pesa push)
-    // For now, we simulate selection and go to the dashboard.
-    navigate('/dashboard');
+    if (planName === 'Enterprise') {
+      setIsContactModalOpen(true);
+      return;
+    }
+    navigate(`/register?plan=${planName.toLowerCase()}`);
   };
 
   const plans = [
@@ -20,13 +24,13 @@ export default function Pricing() {
       price: '1,599',
       description: 'Perfect for small shops and single-location businesses just getting started.',
       features: [
-        { name: 'Up to 2 Branches', included: true },
+        { name: '1 Branch (Single Store)', included: true },
         { name: 'Up to 5 User Accounts', included: true },
         { name: 'Offline Mode Ready', included: true },
         { name: 'Standard Support', included: true },
         { name: 'Basic Analytics', included: true },
         { name: 'Auto-Reorder AI', included: false },
-        { name: 'Loyalty Programs', included: false },
+        { name: 'Loyalty Programs', included: true },
       ],
       icon: <Building2 className="w-8 h-8 text-orange-600" />,
       popular: false,
@@ -157,6 +161,10 @@ export default function Pricing() {
         </div>
 
       </div>
+      <ContactSalesModal 
+        isOpen={isContactModalOpen} 
+        onClose={() => setIsContactModalOpen(false)} 
+      />
     </div>
   );
 }

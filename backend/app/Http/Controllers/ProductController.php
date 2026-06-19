@@ -28,6 +28,14 @@ class ProductController extends Controller
                     'quantity' => $request->stock_quantity,
                     'expiry_date' => $request->expiry_date
                 ]);
+            } else if ($request->boolean('no_expiry')) {
+                \App\Models\Batch::create([
+                    'product_id' => $product->id,
+                    'branch_id' => app('current_branch_id') ?? 1,
+                    'batch_number' => 'B-' . strtoupper(\Illuminate\Support\Str::random(6)),
+                    'quantity' => $request->stock_quantity,
+                    'expiry_date' => null
+                ]);
             }
         }
         return $product->load('batches'); 
@@ -41,17 +49,18 @@ class ProductController extends Controller
                 ['quantity' => $request->stock_quantity, 'min_stock_threshold' => $request->min_stock_threshold ?? 5]
             );
 
-            if ($request->filled('expiry_date')) {
+            if ($request->filled('expiry_date') || $request->boolean('no_expiry')) {
                 $batch = \App\Models\Batch::where('product_id', $product->id)->first();
+                $newExpiry = $request->boolean('no_expiry') ? null : $request->expiry_date;
                 if ($batch) {
-                    $batch->update(['expiry_date' => $request->expiry_date, 'quantity' => $request->stock_quantity]);
+                    $batch->update(['expiry_date' => $newExpiry, 'quantity' => $request->stock_quantity]);
                 } else {
                     \App\Models\Batch::create([
                         'product_id' => $product->id,
                         'branch_id' => app('current_branch_id') ?? 1,
                         'batch_number' => 'B-' . strtoupper(\Illuminate\Support\Str::random(6)),
                         'quantity' => $request->stock_quantity,
-                        'expiry_date' => $request->expiry_date
+                        'expiry_date' => $newExpiry
                     ]);
                 }
             }

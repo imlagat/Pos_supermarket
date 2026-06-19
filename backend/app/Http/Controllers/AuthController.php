@@ -7,6 +7,9 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
 
+use App\Models\Tenant;
+use App\Models\Branch;
+
 class AuthController extends Controller
 {
     public function login(Request $request)
@@ -24,6 +27,12 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($user->tenant && !$user->tenant->is_active && $user->role !== 'admin') {
+            throw ValidationException::withMessages([
+                'email' => ['Please contact your admin. Your store account is currently suspended.'],
+            ]);
+        }
+
         // Generate OTP
         $otpCode = (string) rand(100000, 999999);
         $user->otp_code = $otpCode;
@@ -31,7 +40,7 @@ class AuthController extends Controller
         $user->save();
 
         // Send OTP email
-        Mail::to($user->email)->send(new OtpMail($otpCode));
+        Mail::to($user->email)->queue(new OtpMail($otpCode));
 
         return response()->json([
             'requires_2fa' => true,
@@ -46,6 +55,24 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
+            'tier' => 'nullable|string|in:bronze,silver,custom',
+        ]);
+
+        $tenantName = explode(' ', $request->name)[0] . "'s Store";
+        $tier = $request->tier ?? 'bronze';
+
+        $tenant = Tenant::create([
+            'name' => $tenantName,
+            'tier' => $tier,
+            'is_active' => true,
+            'trial_ends_at' => now()->addDays(3),
+        ]);
+
+        $branch = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+            'location' => 'Headquarters',
+            'status' => 'active',
         ]);
 
         $user = User::create([
@@ -54,13 +81,20 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role' => 'admin',
             'pin' => '0000',
-            'branch_id' => 1,
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
         ]);
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeTenantMail($tenant, $user));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send welcome email: ' . $e->getMessage());
+        }
 
         $token = $user->createToken('pos-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => $user->load('tenant'),
             'token' => $token,
             'message' => 'Registration successful.'
         ]);
@@ -96,7 +130,7 @@ class AuthController extends Controller
         $token = $user->createToken('pos-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => $user->load('tenant'),
             'token' => $token
         ]);
     }
@@ -120,7 +154,7 @@ class AuthController extends Controller
         $user->save();
 
         // Send OTP email
-        Mail::to($user->email)->send(new OtpMail($otpCode));
+        Mail::to($user->email)->queue(new OtpMail($otpCode));
 
         return response()->json([
             'message' => 'A new OTP has been sent to your email.'
@@ -129,7 +163,7 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
-        return $request->user();
+        return $request->user()->load('tenant');
     }
 
     public function logout(Request $request)
@@ -165,8 +199,24 @@ class AuthController extends Controller
         $token = $targetUser->createToken('pos-token')->plainTextToken;
 
         return response()->json([
-            'user' => $targetUser,
+            'user' => $targetUser->load('tenant'),
             'token' => $token
+        ]);
+    }
+
+    public function upgradeMock(Request $request)
+    {
+        $user = $request->user();
+        if ($user->tenant) {
+            $user->tenant->update([
+                'tier' => 'silver',
+                'trial_ends_at' => null, // Trial is over, they upgraded
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Successfully upgraded to premium tier!',
+            'user' => $user->load('tenant')
         ]);
     }
 }

@@ -4,8 +4,11 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { Save, Store, Receipt, Package, Settings as SettingsIcon, Gift, Printer, MapPin } from 'lucide-react';
 import BranchManagement from '../components/Settings/BranchManagement';
+import { useAuthStore } from '../stores/authStore';
 
 export default function Settings() {
+  const { user } = useAuthStore();
+  const isBronze = user?.tenant?.tier === 'bronze';
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,7 +45,8 @@ export default function Settings() {
         }
       }
     } else if (activeTab === 'tax') {
-      if (settings.tax_rate === undefined || settings.tax_rate === null || Number(settings.tax_rate) < 0) {
+      const tax = settings.tax_rate;
+      if (tax !== undefined && tax !== null && Number(tax) < 0) {
         return toast.error('Tax rate must be a valid number (0 or greater).');
       }
     }
@@ -76,14 +80,14 @@ export default function Settings() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b">
+      <div className="flex gap-2 mb-6 border-b overflow-x-auto pb-1">
         {[
           { id: 'store', label: 'Store Info', icon: Store },
-          { id: 'branches', label: 'Branches', icon: MapPin },
+          { id: 'branches', label: 'Branches', icon: MapPin, hidden: isBronze },
           { id: 'tax', label: 'Tax & Receipt', icon: Receipt },
           { id: 'inventory', label: 'Inventory', icon: Package },
           { id: 'loyalty', label: 'Loyalty', icon: Gift }
-        ].map(tab => {
+        ].filter(t => !t.hidden).map(tab => {
           const Icon = tab.icon;
           return (
             <button

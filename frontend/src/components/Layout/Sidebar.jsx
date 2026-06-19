@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import toast from 'react-hot-toast';
 import { 
   LayoutDashboard, ShoppingCart, Package, Tag, Users, 
   AlertTriangle, Receipt, UserPlus, BarChart3, Settings, LogOut, UserCircle, FileText,
@@ -33,18 +34,26 @@ export default function Sidebar() {
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const { user, logout } = useAuthStore();
   const allowed = menuItems.filter(item => item.roles.includes(user?.role));
+  
+  const isSuspended = user?.tenant && !user.tenant.is_active;
+  const allowedPathsIfSuspended = ['/dashboard', '/transactions', '/reports'];
 
   return (
     <aside className="bg-gradient-to-b from-amber-800 to-orange-800 text-white flex flex-col shadow-2xl h-screen sticky top-0 w-20 md:w-72 transition-all duration-300 print:hidden">
       {/* Logo section */}
       <div className="p-4 border-b border-amber-700/50 flex justify-center md:justify-start">
-        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-amber-200 to-orange-200 bg-clip-text text-transparent">
-          <span className="hidden md:inline">POS<span className="text-white">_super</span></span>
-          <span className="md:hidden text-white">P</span>
-        </h1>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-[#E55A2A] rounded-lg flex items-center justify-center shadow-sm">
+            <ShoppingCart className="text-white w-4 h-4" strokeWidth={2.5} />
+          </div>
+          <h1 className="text-xl font-black tracking-tight hidden md:block">
+            <span className="text-white">POS</span>
+            <span className="text-[#E55A2A]">super</span>
+          </h1>
+        </div>
       </div>
 
-      <BranchSelector />
+      {user?.tenant?.tier !== 'bronze' && <BranchSelector />}
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-1">
@@ -55,7 +64,12 @@ export default function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
-              onClick={() => {
+              onClick={(e) => {
+                if (isSuspended && !allowedPathsIfSuspended.includes(item.path)) {
+                  e.preventDefault();
+                  useAuthStore.getState().setSuspendedModal(true);
+                  return;
+                }
                 setLoadingPath(item.path);
                 setTimeout(() => setLoadingPath(null), 600);
               }}

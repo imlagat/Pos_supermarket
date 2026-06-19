@@ -5,17 +5,19 @@ import { ShoppingCart } from 'lucide-react';
 export default function MarketingLayout() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100">
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#E55A2A] via-yellow-400 to-orange-600 bg-[length:200%_auto] animate-gradient-x"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <ShoppingCart size={20} />
+            <Link to="/" className="flex items-center gap-2.5 group hover:opacity-90 transition-opacity">
+              <div className="w-10 h-10 bg-[#E55A2A] rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                <ShoppingCart className="text-white w-5 h-5" strokeWidth={2.5} />
               </div>
-              <span className="font-bold text-xl tracking-tight text-gray-900">
-                POS<span className="text-orange-600">super</span>
-              </span>
-            </div>
+              <h1 className="text-2xl font-black tracking-tight">
+                <span className="text-slate-900">POS</span>
+                <span className="text-[#E55A2A]">super</span>
+              </h1>
+            </Link>
             
             <nav className="hidden md:flex gap-8">
               <Link to="/" className="text-gray-600 hover:text-orange-600 font-medium transition">Home</Link>

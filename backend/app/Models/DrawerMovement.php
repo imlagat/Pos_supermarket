@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class DrawerMovement extends Model
 {
+    use \App\Traits\Tenantable;
+
     protected $fillable = [
         'shift_id',
         'type',

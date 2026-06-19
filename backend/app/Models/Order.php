@@ -6,6 +6,8 @@ use App\Traits\Auditable;
 
 class Order extends Model
 {
+    use \App\Traits\Tenantable;
+
     use Auditable;
     protected $fillable = ['order_number', 'customer_id', 'user_id', 'total_amount', 'status', 'discounts_applied', 'branch_id', 'shift_id'];
     protected static function booted() {

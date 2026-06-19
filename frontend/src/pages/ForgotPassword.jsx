@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Mail, Send } from 'lucide-react';
+import { Mail, Send, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ForgotPassword() {
@@ -32,8 +32,24 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-[#E3DAC9] flex items-center justify-center p-4 sm:p-8">
-      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-6xl flex flex-col md:flex-row min-h-[700px]">
+    <div className="min-h-screen bg-[#E3DAC9] flex flex-col">
+      {/* Navbar */}
+      <header className="w-full bg-white/80 backdrop-blur-md relative px-6 py-4 flex items-center justify-center md:justify-start sticky top-0 z-50 shadow-sm">
+        <div className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#E55A2A] via-yellow-400 to-orange-600 bg-[length:200%_auto] animate-gradient-x"></div>
+        <Link to="/" className="flex items-center gap-2.5 group hover:opacity-90 transition-opacity">
+          <div className="w-10 h-10 bg-[#E55A2A] rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+            <ShoppingCart className="text-white w-5 h-5" strokeWidth={2.5} />
+          </div>
+          <h1 className="text-2xl font-black tracking-tight">
+            <span className="text-slate-900">POS</span>
+            <span className="text-[#E55A2A]">super</span>
+          </h1>
+        </Link>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-6xl flex flex-col md:flex-row min-h-[700px]">
         
         {/* Left Side: Form */}
         <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center">
@@ -83,6 +99,7 @@ export default function ForgotPassword() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

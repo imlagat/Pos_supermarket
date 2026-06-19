@@ -7,10 +7,16 @@ use App\Traits\Auditable;
 
 class Product extends Model
 {
+    use \App\Traits\Tenantable;
+
     use Auditable;
     protected $fillable = [
         'name', 'sku', 'barcode', 'category', 'base_price', 'cost_price',
-        'selling_by_weight', 'weight_in_grams', 'unit', 'min_stock_threshold'
+        'selling_by_weight', 'weight_in_grams', 'unit', 'min_stock_threshold', 'no_expiry'
+    ];
+
+    protected $casts = [
+        'no_expiry' => 'boolean',
     ];
 
     protected $appends = ['stock_quantity'];

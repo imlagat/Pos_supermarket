@@ -1,4 +1,6 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
+import { useAuthStore } from '../stores/authStore';
 
 // Dynamically determine backend URL. We use /api to leverage Vite's proxy for HTTPS support
 const apiBaseUrl = '/api';
@@ -19,5 +21,15 @@ api.interceptors.request.use((config) => {
     }
     return config;
 });
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 403 && error.response.data?.error === 'tenant_suspended_readonly') {
+            useAuthStore.getState().setSuspendedModal(true);
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default api;

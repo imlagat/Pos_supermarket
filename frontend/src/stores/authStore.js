@@ -6,6 +6,9 @@ export const useAuthStore = create((set, get) => ({
     token: localStorage.getItem('token') || null,
     activeBranchId: localStorage.getItem('activeBranchId') || null,
     isLoading: false,
+    showSuspendedModal: false,
+
+    setSuspendedModal: (show) => set({ showSuspendedModal: show }),
 
     setActiveBranchId: (id) => {
         if (id) {
@@ -43,10 +46,10 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-    register: async (name, email, password) => {
+    register: async (name, email, password, tier) => {
         set({ isLoading: true });
         try {
-            const res = await api.post('/register', { name, email, password });
+            const res = await api.post('/register', { name, email, password, tier });
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
             
@@ -132,6 +135,19 @@ export const useAuthStore = create((set, get) => ({
             localStorage.removeItem('user');
             localStorage.removeItem('activeBranchId');
             set({ user: null, token: null, activeBranchId: null });
+        }
+    },
+
+    upgrade: async () => {
+        set({ isLoading: true });
+        try {
+            const res = await api.post('/upgrade');
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            set({ user: res.data.user, isLoading: false });
+            return { success: true, message: res.data.message };
+        } catch (error) {
+            set({ isLoading: false });
+            throw error;
         }
     }
 }));

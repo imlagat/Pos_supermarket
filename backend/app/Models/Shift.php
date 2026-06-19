@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Shift extends Model
 {
+    use \App\Traits\Tenantable;
+
     protected $fillable = [
         'branch_id',
         'user_id',
