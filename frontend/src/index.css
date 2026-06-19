@@ -16,7 +16,7 @@ body {
   }
   @page {
     margin: 0;
-    size: auto;
+    size: 80mm auto;
   }
   body * {
     visibility: hidden;
@@ -28,10 +28,12 @@ body {
     position: absolute;
     left: 0;
     top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+    width: 80mm;
+    margin: 0 auto;
+    padding: 2mm;
     page-break-after: avoid;
+    font-size: 12px;
+    color: black;
   }
   .max-h-\[90vh\] {
     max-height: none !important;

@@ -6,6 +6,8 @@ use App\Traits\Auditable;
 
 class DiscountRule extends Model
 {
+    use \App\Traits\Tenantable;
+
     use Auditable;
     protected $fillable = [
         'name', 'type', 'value', 'conditions', 'starts_at', 'ends_at', 'is_active',

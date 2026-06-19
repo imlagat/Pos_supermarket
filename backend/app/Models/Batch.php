@@ -4,6 +4,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Batch extends Model
 {
+    use \App\Traits\Tenantable;
+
     protected $fillable = ['product_id', 'batch_number', 'expiry_date', 'quantity', 'branch_id', 'created_at'];
 
     protected static function booted() {

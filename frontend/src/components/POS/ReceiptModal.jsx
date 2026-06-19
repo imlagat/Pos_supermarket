@@ -1,8 +1,25 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
+import toast from 'react-hot-toast';
 
 export default function ReceiptModal({ order, changeAmount, discounts = [], pointsDiscount = 0, customer = null, settings = {}, onClose }) {
   const [orderDetails, setOrderDetails] = useState(null);
+  const [email, setEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const handleEmailReceipt = async () => {
+    if (!email) return;
+    setSendingEmail(true);
+    try {
+      await api.post(`/transactions/${order.id}/email`, { email });
+      toast.success('Receipt emailed successfully!');
+      setEmail('');
+    } catch (err) {
+      toast.error('Failed to email receipt');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -16,7 +33,50 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
     fetchDetails();
   }, [order]);
 
-  const printReceipt = () => window.print();
+  const printReceipt = async () => {
+    try {
+      if ('serial' in navigator) {
+        const port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 9600 });
+        const writer = port.writable.getWriter();
+        const encoder = new TextEncoder();
+        
+        // Basic ESC/POS commands
+        const ESC = '\x1b';
+        const GS = '\x1d';
+        const LF = '\n';
+        const initialize = ESC + '@';
+        const center = ESC + 'a' + '\x01';
+        const left = ESC + 'a' + '\x00';
+        const boldOn = ESC + 'E' + '\x01';
+        const boldOff = ESC + 'E' + '\x00';
+        const cut = GS + 'V' + '\x41' + '\x03';
+
+        let receiptText = initialize + center + boldOn + receiptTitle + LF + boldOff;
+        receiptText += receiptSubtitle + LF + LF;
+        receiptText += left + 'Order: ' + orderDetails.order_number + LF;
+        receiptText += '--------------------------------' + LF; // 32 chars
+        
+        orderDetails.items.forEach(item => {
+            receiptText += `${item.product?.name}`.substring(0, 32) + LF;
+            receiptText += `${item.quantity} x ${item.unit_price} = ${item.total}` + LF;
+        });
+        
+        receiptText += '--------------------------------' + LF;
+        receiptText += boldOn + `TOTAL: ${currencySymbol} ${orderTotal}` + boldOff + LF;
+        receiptText += LF + LF + center + receiptFooter + LF + LF + LF + LF + cut;
+
+        await writer.write(encoder.encode(receiptText));
+        writer.releaseLock();
+        await port.close();
+      } else {
+        window.print();
+      }
+    } catch (err) {
+      console.warn("Serial printing failed, falling back to window.print", err);
+      window.print();
+    }
+  };
 
   if (!orderDetails) return <div className="p-6">Loading receipt...</div>;
 
@@ -185,10 +245,28 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
             <p className="mt-1">Goods once sold can be refunded within 3 days.</p>
           </div>
         </div>
-        <div className="p-3 border-t flex gap-3 bg-gray-50">
-          <button onClick={onClose} className="flex-1 py-2 border rounded-xl">Close</button>
-          <button onClick={printReceipt} className="flex-1 bg-gradient-to-r from-orange-500 to-[#f09a56] text-white py-2 rounded-xl">Print Receipt</button>
-        </div>
+          <div className="p-3 border-t flex gap-3 bg-gray-50 flex-col sm:flex-row">
+            <div className="flex flex-col sm:flex-row gap-2 flex-1 items-center">
+              <input 
+                type="email" 
+                placeholder="customer@email.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 w-full sm:w-auto py-2 px-3 border rounded-xl text-sm"
+              />
+              <button 
+                onClick={handleEmailReceipt} 
+                disabled={sendingEmail || !email}
+                className="w-full sm:w-auto px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 font-semibold disabled:opacity-50 text-sm whitespace-nowrap"
+              >
+                {sendingEmail ? 'Sending...' : 'Email Receipt'}
+              </button>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 border rounded-xl bg-white hover:bg-gray-50">Close</button>
+              <button onClick={printReceipt} className="flex-1 sm:flex-none px-6 bg-gradient-to-r from-orange-500 to-[#f09a56] text-white py-2 rounded-xl font-semibold shadow-lg hover:shadow-orange-500/20">Print</button>
+            </div>
+          </div>
       </div>
     </div>
   );

@@ -4,6 +4,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class PurchaseOrderItem extends Model
 {
+    use \App\Traits\Tenantable;
+
     protected $fillable = ['purchase_order_id', 'product_id', 'quantity', 'cost_price', 'expiry_date'];
     public function purchaseOrder() { return $this->belongsTo(PurchaseOrder::class); }
     public function product() { return $this->belongsTo(Product::class); }

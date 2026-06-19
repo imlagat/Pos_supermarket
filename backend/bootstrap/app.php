@@ -14,8 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'role' => RoleMiddleware::class,
+            'checkTier' => \App\Http\Middleware\CheckTierLimits::class,
         ]);
         $middleware->api(append: [
+            \App\Http\Middleware\CheckTenantStatusMiddleware::class,
             \App\Http\Middleware\BranchContextMiddleware::class,
             \App\Http\Middleware\AuditMiddleware::class,
         ]);

@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Branch extends Model
 {
+    use \App\Traits\Tenantable;
+
     protected $fillable = ['name', 'location', 'contact_number', 'status'];
 
     public function stocks()

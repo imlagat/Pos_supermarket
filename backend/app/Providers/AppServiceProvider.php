@@ -9,7 +9,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->bind('current_branch_id', function () {
+            return null;
+        });
     }
     public function boot(): void
     {

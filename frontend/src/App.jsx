@@ -37,11 +37,18 @@ const RemoteScannerApp = React.lazy(() => import('./pages/RemoteScannerApp'));
 const ShiftsReport = React.lazy(() => import('./pages/ShiftsReport'));
 const Finance = React.lazy(() => import('./pages/Finance'));
 const CashDrawer = React.lazy(() => import('./pages/CashDrawer'));
+const SuperAdminLogin = React.lazy(() => import('./pages/SuperAdminLogin'));
+const SuperAdminDashboard = React.lazy(() => import('./pages/SuperAdminDashboard'));
+const Billing = React.lazy(() => import('./pages/Billing'));
+const OnboardingWizard = React.lazy(() => import('./pages/OnboardingWizard'));
+
+import SuspendedModal from './components/common/SuspendedModal';
 
 function App() {
     return (
         <>
             <Toaster position="top-right" />
+            <SuspendedModal />
             <BrowserRouter>
                 <Suspense fallback={<PageLoader message="Loading page..." />}>
                     <Routes>
@@ -58,10 +65,15 @@ function App() {
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         
+                        {/* Super Admin Routes */}
+                        <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+                        <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+                        
                         <Route path="/remote-scanner/:sessionId" element={<RemoteScannerApp />} />
                         
                         {/* Protected App Routes */}
                         <Route element={<ProtectedRoute />}>
+                            <Route path="/onboarding" element={<OnboardingWizard />} />
                             <Route element={<Layout />}>
                                 <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/pos" element={<POS />} />
@@ -83,6 +95,7 @@ function App() {
                                 <Route path="/returned-items" element={<ReturnedItems />} />
                                 <Route path="/shifts" element={<ShiftsReport />} />
                                 <Route path="/finance" element={<Finance />} />
+                                <Route path="/billing" element={<Billing />} />
                             </Route>
                         </Route>
                     </Routes>

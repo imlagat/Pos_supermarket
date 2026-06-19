@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class BranchStock extends Model
 {
+    use \App\Traits\Tenantable;
+
     protected $fillable = ['branch_id', 'product_id', 'quantity', 'min_stock_threshold'];
 
     protected static function booted() {

@@ -11,7 +11,7 @@ export default function Products() {
   const [error, setError] = useState(null);
   const [form, setForm] = useState({
     name: '', sku: '', barcode: '', category: '',
-    base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5, expiry_date: ''
+    base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5, expiry_date: '', no_expiry: false
   });
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -104,7 +104,7 @@ export default function Products() {
   };
 
   const resetForm = () => {
-    setForm({ name: '', sku: '', barcode: '', category: '', base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5, expiry_date: '' });
+    setForm({ name: '', sku: '', barcode: '', category: '', base_price: '', cost_price: '', stock_quantity: '', min_stock_threshold: 5, expiry_date: '', no_expiry: false });
     setEditing(null);
     setShowForm(false);
   };
@@ -143,7 +143,8 @@ export default function Products() {
       cost_price: product.cost_price || '',
       stock_quantity: product.stock_quantity,
       min_stock_threshold: product.min_stock_threshold,
-      expiry_date: nearestExpiry
+      expiry_date: nearestExpiry,
+      no_expiry: !!product.no_expiry
     });
   };
 
@@ -324,8 +325,14 @@ export default function Products() {
                     <input type="number" placeholder="5" value={form.min_stock_threshold} onChange={e => setForm({...form, min_stock_threshold: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date (Optional)</label>
-                    <input type="date" value={form.expiry_date} onChange={e => setForm({...form, expiry_date: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" />
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-sm font-medium text-gray-700">Expiry Date (Optional)</label>
+                      <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 cursor-pointer hover:text-orange-600 select-none">
+                        <input type="checkbox" checked={form.no_expiry} onChange={e => setForm({...form, no_expiry: e.target.checked, expiry_date: e.target.checked ? '' : form.expiry_date})} className="rounded text-orange-600 focus:ring-orange-500 w-3.5 h-3.5" />
+                        No Expiry
+                      </label>
+                    </div>
+                    <input type="date" disabled={form.no_expiry} value={form.expiry_date} onChange={e => setForm({...form, expiry_date: e.target.value})} className={`w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none ${form.no_expiry ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'}`} />
                   </div>
                 </div>
               </div>
