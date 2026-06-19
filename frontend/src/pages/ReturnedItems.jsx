@@ -89,7 +89,7 @@ export default function ReturnedItems() {
                 <td className="p-4 flex gap-2">
                   {(item.status === 'pending' || item.status === 'open_box') && (
                     <>
-                      <button onClick={() => { setSelectedItem(item); setActionType('openbox'); setOpenBoxPrice(item.open_box_price || (item.product?.base_price * 0.5).toFixed(2)); }} className="text-blue-600 hover:text-blue-800"><Tag size={18} /> {item.status === 'open_box' ? 'Edit Price' : 'Open Box'}</button>
+                      <button onClick={() => { setSelectedItem(item); setActionType('openbox'); setOpenBoxPrice(item.open_box_price || (item.product?.base_price * 0.5).toFixed(2)); }} className="text-orange-600 hover:text-orange-800"><Tag size={18} /> {item.status === 'open_box' ? 'Edit Price' : 'Open Box'}</button>
                       <button onClick={() => { setSelectedItem(item); setActionType('dispose'); }} className="text-red-600 hover:text-red-800"><Trash2 size={18} /> Dispose</button>
                     </>
                   )}
@@ -112,7 +112,7 @@ export default function ReturnedItems() {
             <p><strong>Original Price:</strong> Ksh {selectedItem.product?.base_price}</p>
             <label className="block mt-4 mb-1">Open Box Price (Ksh)</label>
             <input type="number" step="0.01" value={openBoxPrice} onChange={e => setOpenBoxPrice(e.target.value)} className="border p-2 rounded-xl w-full" />
-            <button onClick={() => handleOpenBox(selectedItem)} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-xl w-full">Save</button>
+            <button onClick={() => handleOpenBox(selectedItem)} className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-xl w-full">Save</button>
           </div>
         </div>
       )}

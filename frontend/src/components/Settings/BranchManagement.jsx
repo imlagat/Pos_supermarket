@@ -96,7 +96,7 @@ export default function BranchManagement() {
                   </span>
                 </td>
                 <td className="p-3 flex justify-end gap-2">
-                  <button onClick={() => handleEdit(branch)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition" title="Edit">
+                  <button onClick={() => handleEdit(branch)} className="p-1.5 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition" title="Edit">
                     <Edit size={16} />
                   </button>
                   {branch.id !== 1 && (

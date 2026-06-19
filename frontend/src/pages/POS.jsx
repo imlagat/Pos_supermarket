@@ -395,11 +395,11 @@ export default function POS() {
           {openBoxItems.length > 0 && (
             <div className="mb-6">
               <h3 className="text-md font-semibold text-orange-500 mb-2 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">Open Box Deals</span>
+                <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs">Open Box Deals</span>
               </h3>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 {openBoxItems.map(item => (
-                  <div key={item.id} className="border border-blue-200 rounded-xl p-3 bg-blue-50 hover:shadow-md cursor-pointer relative" onClick={() => {
+                  <div key={item.id} className="border border-orange-200 rounded-xl p-3 bg-orange-50 hover:shadow-md cursor-pointer relative" onClick={() => {
                     const existing = items.find(i => i.is_open_box && i.returned_item_id === item.id);
                     if (existing && existing.quantity >= item.quantity) {
                       toast.error('This product is out of stock');
@@ -414,11 +414,11 @@ export default function POS() {
                     toast.success(`OPEN BOX (${item.name.replace(' (Open Box)', '').toUpperCase()}) ADDED TO CART`);
                   }}>
                     <div className="font-semibold text-gray-800 truncate pr-16">{item.name}</div>
-                    <div className="text-lg font-bold text-blue-600">Ksh {item.price}</div>
+                    <div className="text-lg font-bold text-orange-600">Ksh {item.price}</div>
                     <div className="text-xs text-gray-500">Original: Ksh {item.original_price}</div>
                     <div className="text-xs text-gray-500">Stock: {item.quantity}</div>
                     <div className="absolute top-2 right-2 flex gap-1">
-                      <button onClick={(e) => handleEditOpenBox(e, item)} className="bg-white p-1 rounded-full text-blue-500 shadow hover:bg-blue-100" title="Edit Price"><Plus size={14} /></button>
+                      <button onClick={(e) => handleEditOpenBox(e, item)} className="bg-white p-1 rounded-full text-orange-500 shadow hover:bg-orange-100" title="Edit Price"><Plus size={14} /></button>
                       <button onClick={(e) => handleDeleteOpenBox(e, item)} className="bg-white p-1 rounded-full text-red-500 shadow hover:bg-red-100" title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </div>
@@ -470,7 +470,7 @@ export default function POS() {
         <div className="border-t border-gray-100 p-6 bg-gray-50 rounded-b-2xl">
           <div className="flex justify-between text-sm text-gray-600 mb-2"><span>Subtotal</span><span>Ksh {subtotalDisplay.toFixed(2)}</span></div>
           {appliedDiscounts.map((d, idx) => (<div key={idx} className="flex justify-between text-sm text-green-600 mb-2"><span>{d.name}</span><span>- Ksh {d.amount.toFixed(2)}</span></div>))}
-          {discountFromPoints > 0 && <div className="flex justify-between text-sm text-blue-600 mb-2"><span>Points redeemed</span><span>- Ksh {discountFromPoints.toFixed(2)}</span></div>}
+          {discountFromPoints > 0 && <div className="flex justify-between text-sm text-orange-600 mb-2"><span>Points redeemed</span><span>- Ksh {discountFromPoints.toFixed(2)}</span></div>}
           <div className="flex justify-between text-2xl font-bold text-gray-800 mb-4"><span>Total</span><span>Ksh {finalTotal.toFixed(2)}</span></div>
           <div className="flex justify-between text-sm text-gray-600 mb-4"><span>VAT ({taxRate}%)</span><span>Ksh {vat.toFixed(2)}</span></div>
           <div className="grid grid-cols-3 gap-2">

@@ -30,7 +30,7 @@ export default function Paywall() {
             <button
                 onClick={handleUpgrade}
                 disabled={isLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow transition duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-lg shadow transition duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
             >
                 {isLoading && (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

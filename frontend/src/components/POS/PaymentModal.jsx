@@ -271,7 +271,7 @@ if (split) {
 
           {/* Polling status banner */}
           {statusMessage && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 text-center animate-pulse">
+            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-700 text-center animate-pulse">
               ⏳ {statusMessage}
             </div>
           )}

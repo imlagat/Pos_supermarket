@@ -6,20 +6,26 @@ use Illuminate\Http\Request;
 
 class InventoryController extends Controller
 {
-    public function alerts()
+    public function alerts(Request $request)
     {
         try {
-            $branchId = app('current_branch_id') ?? 1;
-            $lowStock = \App\Models\BranchStock::whereColumn('quantity', '<=', 'min_stock_threshold')
-                ->where('branch_id', $branchId)
-                ->with('product')
-                ->get()
+            $branchId = $request->header('X-Branch-ID') ?? 1;
+            
+            $lowStockQuery = \App\Models\BranchStock::whereColumn('quantity', '<=', 'min_stock_threshold')
+                ->with('product');
+            if ($branchId) {
+                $lowStockQuery->where('branch_id', $branchId);
+            }
+            $lowStock = $lowStockQuery->get()
                 ->map(fn($s) => ['product' => $s->product, 'type' => 'low_stock', 'stock' => $s->quantity]);
                 
-            $expiring = Batch::where('expiry_date', '<=', now()->addDays(7))
+            $expiringQuery = Batch::where('expiry_date', '<=', now()->addDays(30))
                 ->where('quantity', '>', 0)
-                ->with('product')
-                ->get()
+                ->with('product');
+            if ($branchId) {
+                $expiringQuery->where('branch_id', $branchId);
+            }
+            $expiring = $expiringQuery->get()
                 ->map(fn($b) => ['product' => $b->product, 'type' => 'expiring', 'batch' => $b]);
                 
             return response()->json(array_merge($lowStock->toArray(), $expiring->toArray()));

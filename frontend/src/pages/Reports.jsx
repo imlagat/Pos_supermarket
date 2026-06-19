@@ -19,14 +19,14 @@ export default function Reports() {
   const [weeklyTrend, setWeeklyTrend] = useState([]);
 
   const COLORS = [
-    '#3b82f6', // blue
-    '#10b981', // green
-    '#f59e0b', // amber
-    '#ef4444', // red
-    '#8b5cf6', // purple
-    '#ec4899', // pink
-    '#14b8a6', // teal
-    '#f97316', // orange
+    '#f97316', // brand orange
+    '#1e293b', // slate-800
+    '#fdba74', // orange-300
+    '#334155', // slate-700
+    '#ea580c', // orange-600
+    '#475569', // slate-600
+    '#c2410c', // orange-700
+    '#94a3b8', // slate-400
   ];
 
   useEffect(() => {

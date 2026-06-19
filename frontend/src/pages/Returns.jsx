@@ -314,7 +314,7 @@ export default function Returns() {
                 </table>
               </div>
               <div className="mt-4 p-3 bg-orange-50 rounded-xl flex justify-between"><span>Restocking fee:</span><span className="font-semibold">Ksh {restockingFee}</span></div>
-              <div className="mt-2 p-3 bg-purple-50 rounded-xl flex justify-between"><span>VAT Deduction ({systemSettings.tax_rate !== undefined ? systemSettings.tax_rate : 16}%):</span><span className="font-semibold">Ksh {calculateRefund().vatDeduction.toFixed(2)}</span></div>
+              <div className="mt-2 p-3 bg-slate-50 rounded-xl flex justify-between"><span>VAT Deduction ({systemSettings.tax_rate !== undefined ? systemSettings.tax_rate : 16}%):</span><span className="font-semibold">Ksh {calculateRefund().vatDeduction.toFixed(2)}</span></div>
               <div className="mt-2">
                 <label className="block text-sm font-medium mb-1">Incurred Expense (e.g., shipping, handling)</label>
                 <input
@@ -378,7 +378,7 @@ export default function Returns() {
                       <td className="p-4 capitalize">{item.status}</td>
                       <td className="p-4">{item.open_box_price ? `Ksh ${item.open_box_price}` : '-'}</td>
                       <td className="p-4">{item.disposal_reason || '-'}</td>
-                      <td className="p-4">{parentReturn?.image_path ? <a href={imageUrl(parentReturn.image_path)} target="_blank" className="text-blue-600 underline">View</a> : '-'}</td>
+                      <td className="p-4">{parentReturn?.image_path ? <a href={imageUrl(parentReturn.image_path)} target="_blank" className="text-orange-600 underline">View</a> : '-'}</td>
                     </tr>
                   );
                 })}
@@ -399,10 +399,10 @@ export default function Returns() {
                   <div>
                     <p className="font-semibold">{item.product?.name} {item.status === 'open_box' && '(Open Box)'}</p>
                     <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                    {item.status === 'open_box' && <p className="text-sm text-blue-600">Current Price: Ksh {item.open_box_price}</p>}
+                    {item.status === 'open_box' && <p className="text-sm text-orange-600">Current Price: Ksh {item.open_box_price}</p>}
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setActionItem(item); setActionType('openbox'); setOpenBoxPrice(item.open_box_price || (item.product?.base_price * 0.5).toFixed(2)); setOpenBoxDiscount(item.open_box_price ? (100 - (item.open_box_price / item.product?.base_price * 100)) : 50); }} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1"><Tag size={14} /> {item.status === 'open_box' ? 'Edit Price' : 'Open Box'}</button>
+                    <button onClick={() => { setActionItem(item); setActionType('openbox'); setOpenBoxPrice(item.open_box_price || (item.product?.base_price * 0.5).toFixed(2)); setOpenBoxDiscount(item.open_box_price ? (100 - (item.open_box_price / item.product?.base_price * 100)) : 50); }} className="bg-orange-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1"><Tag size={14} /> {item.status === 'open_box' ? 'Edit Price' : 'Open Box'}</button>
                     <button onClick={() => { setActionItem(item); setActionType('dispose'); }} className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1"><Trash2 size={14} /> Dispose</button>
                   </div>
                 </div>
@@ -421,7 +421,7 @@ export default function Returns() {
             <label className="block mt-4 mb-1">Discount (%)</label>
             <input type="range" min="0" max="100" value={openBoxDiscount} onChange={e => updateOpenBoxPriceFromDiscount(parseInt(e.target.value))} className="w-full" />
             <div className="flex gap-2 mt-2"><input type="number" step="0.01" value={openBoxPrice} onChange={e => setOpenBoxPrice(e.target.value)} className="border p-2 rounded-xl flex-1" /><span className="text-sm self-center">Ksh</span></div>
-            <button onClick={() => handleOpenBox(actionItem)} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-xl w-full">Save Open Box Price</button>
+            <button onClick={() => handleOpenBox(actionItem)} className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-xl w-full">Save Open Box Price</button>
           </div>
         </div>
       )}

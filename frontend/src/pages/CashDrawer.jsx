@@ -70,7 +70,7 @@ export default function CashDrawer() {
         <button
           onClick={() => setActiveTab('balance')}
           className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'balance' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+            activeTab === 'balance' ? 'bg-orange-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
           }`}
         >
           My Balance
@@ -78,7 +78,7 @@ export default function CashDrawer() {
         <button
           onClick={() => setActiveTab('deposits')}
           className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-            activeTab === 'deposits' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+            activeTab === 'deposits' ? 'bg-orange-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
           }`}
         >
           <ArrowDownToLine size={16} /> My Deposits
@@ -114,32 +114,32 @@ export default function CashDrawer() {
             </div>
 
             {/* M-Pesa Card */}
-            <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100 relative overflow-hidden flex flex-col justify-center">
+            <div className="bg-orange-50 rounded-2xl p-6 border border-orange-100 relative overflow-hidden flex flex-col justify-center">
               <div className="relative z-10">
-                <div className="flex items-center gap-2 text-blue-700 mb-2">
+                <div className="flex items-center gap-2 text-orange-700 mb-2">
                   <Smartphone size={16} />
                   <span className="text-xs font-bold tracking-wider uppercase">M-Pesa Float</span>
                 </div>
-                <div className="text-3xl font-bold text-blue-900 mb-2">
+                <div className="text-3xl font-bold text-slate-900 mb-2">
                   Ksh {status.mpesa_total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <div className="text-xs text-blue-600">
+                <div className="text-xs text-orange-600">
                   Opening: Ksh {status.opening_mpesa.toLocaleString(undefined, { minimumFractionDigits: 2 })} • Today's M-Pesa sales: Ksh {status.mpesa_sales.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
               </div>
             </div>
 
             {/* Card Card */}
-            <div className="bg-purple-50 rounded-2xl p-6 border border-purple-100 relative overflow-hidden flex flex-col justify-center">
+            <div className="bg-slate-50 rounded-2xl p-6 border border-purple-100 relative overflow-hidden flex flex-col justify-center">
               <div className="relative z-10">
-                <div className="flex items-center gap-2 text-purple-700 mb-2">
+                <div className="flex items-center gap-2 text-slate-700 mb-2">
                   <CreditCard size={16} />
                   <span className="text-xs font-bold tracking-wider uppercase">Card Payments</span>
                 </div>
                 <div className="text-3xl font-bold text-purple-900 mb-2">
                   Ksh {status.card_total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <div className="text-xs text-purple-600">
+                <div className="text-xs text-slate-600">
                   Today's Card sales: Ksh {status.card_sales.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
               </div>
@@ -179,7 +179,7 @@ export default function CashDrawer() {
             {/* M-Pesa Breakdown */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex items-center gap-2">
-                <Smartphone size={18} className="text-blue-600" />
+                <Smartphone size={18} className="text-orange-600" />
                 <h3 className="font-bold text-gray-800 text-sm">M-Pesa Breakdown</h3>
               </div>
               <div className="p-6 space-y-4">
@@ -201,7 +201,7 @@ export default function CashDrawer() {
             {/* Card Breakdown */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex items-center gap-2">
-                <CreditCard size={18} className="text-purple-600" />
+                <CreditCard size={18} className="text-slate-600" />
                 <h3 className="font-bold text-gray-800 text-sm">Card Breakdown</h3>
               </div>
               <div className="p-6 space-y-4">

@@ -171,7 +171,7 @@ export default function Customers() {
                 <td className="p-4 capitalize">{c.tier}</td>
                 <td className="p-4">{c.points_balance} pts</td>
                 <td className="p-4 flex gap-2">
-                  <button onClick={() => handleEdit(c)} className="text-blue-600 hover:text-blue-800"><Edit2 size={18} /></button>
+                  <button onClick={() => handleEdit(c)} className="text-orange-600 hover:text-orange-800"><Edit2 size={18} /></button>
                   <button onClick={() => handleDelete(c.id)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
                   <button onClick={() => viewHistory(c)} className="text-green-600 hover:text-green-800"><History size={18} /></button>
                 </td>

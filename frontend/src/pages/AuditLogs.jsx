@@ -90,7 +90,7 @@ export default function AuditLogs() {
   const getActionColor = (actionVerb) => {
     const lower = actionVerb.toLowerCase();
     if (lower.includes('added') || lower.includes('created') || lower.includes('performed')) return 'text-green-600';
-    if (lower.includes('updated') || lower.includes('adjusted')) return 'text-blue-600';
+    if (lower.includes('updated') || lower.includes('adjusted')) return 'text-orange-600';
     if (lower.includes('deleted') || lower.includes('removed')) return 'text-red-600';
     if (lower.includes('return')) return 'text-orange-700';
     return 'text-gray-700';
