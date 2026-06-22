@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User, Loader2, Maximize2, Minimize2, Paperclip, Smile, Mic, ArrowUp } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Loader2, Maximize2, Minimize2, Paperclip, Mic, ArrowUp, MoreHorizontal } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -12,7 +12,63 @@ export default function ChatWidget() {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [attachedFile, setAttachedFile] = useState(null);
     const messagesEndRef = useRef(null);
+    const menuRef = useRef(null);
+    const fileInputRef = useRef(null);
+
+    const startListening = () => {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            toast.error("Your browser doesn't support speech recognition.");
+            return;
+        }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+            setIsListening(true);
+            toast.success("Listening...", { id: 'mic', duration: 3000 });
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            setInput((prev) => prev ? prev + ' ' + transcript : transcript);
+        };
+
+        recognition.onerror = (event) => {
+            console.error(event.error);
+            setIsListening(false);
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+        };
+
+        recognition.start();
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setAttachedFile(file);
+            toast.success(`Attached ${file.name}`);
+        }
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -58,7 +114,14 @@ export default function ChatWidget() {
         setIsLoading(true);
 
         try {
-            const res = await api.post('/chat', { messages: newMessages });
+            // For now, if a file is attached, we simulate or notify as backend doesn't handle multipart yet
+            const payload = { messages: newMessages };
+            if (attachedFile) {
+                // If you had an endpoint supporting formData, you would append here
+                setAttachedFile(null); // clear after sending
+            }
+            
+            const res = await api.post('/chat', payload);
             
             if (res.data.error) {
                 toast.error(res.data.error);
@@ -103,25 +166,37 @@ export default function ChatWidget() {
             {isOpen && (
                 <div className={`fixed bottom-6 right-6 ${isExpanded ? 'w-full md:w-[600px] h-[80vh] max-h-[800px]' : 'w-96 h-[550px]'} bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200 overflow-hidden transform transition-all duration-300 origin-bottom-right`}>
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-orange-600 to-orange-600 p-4 flex justify-between items-center text-white shrink-0">
+                    <div className="bg-slate-900 p-4 flex justify-between items-center text-white shrink-0">
                         <div className="flex items-center gap-2">
-                            <Bot size={24} />
+                            <Bot size={24} className="text-orange-500" />
                             <div>
                                 <h3 className="font-bold text-lg leading-tight">Supermarket AI</h3>
-                                <p className="text-xs opacity-90">Powered by Google Gemini</p>
+                                <p className="text-xs opacity-90 text-gray-300">Powered by Google Gemini</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => setIsExpanded(!isExpanded)} 
-                                className="hover:bg-white/20 px-2 py-1.5 rounded-lg transition text-xs font-medium flex items-center gap-1.5 bg-white/10"
-                            >
-                                {isExpanded ? (
-                                    <><Minimize2 size={14} /> Collapse window</>
-                                ) : (
-                                    <><Maximize2 size={14} /> Expand window</>
+                            <div className="relative" ref={menuRef}>
+                                <button 
+                                    onClick={() => setShowMenu(!showMenu)} 
+                                    className="hover:bg-white/20 p-1.5 rounded-lg transition"
+                                >
+                                    <MoreHorizontal size={20} />
+                                </button>
+                                {showMenu && (
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900 rounded-xl shadow-xl border border-slate-700 overflow-hidden z-50 py-1">
+                                        <button 
+                                            onClick={() => { setIsExpanded(!isExpanded); setShowMenu(false); }} 
+                                            className="w-full px-4 py-3 hover:bg-slate-800 transition text-sm font-medium flex items-center gap-3 text-white text-left"
+                                        >
+                                            {isExpanded ? (
+                                                <><Minimize2 size={16} className="text-blue-400" /> Collapse window</>
+                                            ) : (
+                                                <><Maximize2 size={16} className="text-blue-400" /> Expand window</>
+                                            )}
+                                        </button>
+                                    </div>
                                 )}
-                            </button>
+                            </div>
                             <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1.5 rounded-lg transition ml-1">
                                 <X size={20} />
                             </button>
@@ -178,17 +253,39 @@ export default function ChatWidget() {
                             />
                             <div className="flex items-center justify-between px-1">
                                 <div className="flex items-center gap-1 text-gray-500">
-                                    <button type="button" title="Attach file" className="p-1.5 hover:bg-gray-200 hover:text-gray-700 rounded-lg transition"><Paperclip size={18} /></button>
-                                    <button type="button" title="Emoji" className="p-1.5 hover:bg-gray-200 hover:text-gray-700 rounded-lg transition"><Smile size={18} /></button>
-                                    <button type="button" title="GIF" className="p-1.5 hover:bg-gray-200 hover:text-gray-700 rounded-lg transition">
-                                        <div className="text-[9px] font-extrabold border-2 border-current rounded px-1 py-0.5 leading-none flex items-center justify-center">GIF</div>
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef} 
+                                        className="hidden" 
+                                        onChange={handleFileChange}
+                                        accept="image/*,.pdf,.doc,.docx,.txt"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        title="Attach file" 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className={`p-1.5 rounded-lg transition ${attachedFile ? 'text-orange-600 bg-orange-50' : 'hover:bg-gray-200 hover:text-gray-700'}`}
+                                    >
+                                        <Paperclip size={18} />
                                     </button>
-                                    <button type="button" title="Voice message" className="p-1.5 hover:bg-gray-200 hover:text-gray-700 rounded-lg transition"><Mic size={18} /></button>
+                                    <button 
+                                        type="button" 
+                                        title="Voice message" 
+                                        onClick={startListening}
+                                        className={`p-1.5 rounded-lg transition ${isListening ? 'text-red-600 bg-red-50 animate-pulse' : 'hover:bg-gray-200 hover:text-gray-700'}`}
+                                    >
+                                        <Mic size={18} />
+                                    </button>
+                                    {attachedFile && (
+                                        <span className="text-[10px] text-orange-600 font-medium ml-1 truncate max-w-[100px]">
+                                            {attachedFile.name}
+                                        </span>
+                                    )}
                                 </div>
                                 <button
                                     type="submit"
                                     disabled={!input.trim() || isLoading}
-                                    className="w-8 h-8 flex items-center justify-center bg-gray-800 text-white rounded-full hover:bg-black disabled:opacity-50 transition shadow-sm"
+                                    className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 disabled:opacity-50 transition shadow-sm"
                                 >
                                     <ArrowUp size={18} strokeWidth={2.5} />
                                 </button>
