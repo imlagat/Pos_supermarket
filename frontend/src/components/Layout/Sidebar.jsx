@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { 
   LayoutDashboard, ShoppingCart, Package, Tag, Users, 
   AlertTriangle, Receipt, UserPlus, BarChart3, Settings, LogOut, UserCircle, FileText,
-  Truck, RefreshCw, Wallet, UserCog, Banknote
+  Truck, RefreshCw, Wallet, UserCog, Banknote, CreditCard
 } from 'lucide-react';
 
 import BranchSelector from './BranchSelector';
@@ -25,6 +25,7 @@ const menuItems = [
   { name: 'Reports', path: '/reports', icon: BarChart3, roles: ['admin', 'manager'] },
   { name: 'Finance & P&L', path: '/finance', icon: BarChart3, roles: ['admin', 'manager'] },
   { name: 'Users & Shifts', path: '/users', icon: UserPlus, roles: ['admin', 'manager'] },
+  { name: 'Billing', path: '/billing', icon: CreditCard, roles: ['admin'] },
   { name: 'Audit Logs', path: '/audit-logs', icon: FileText, roles: ['admin'] },
   { name: 'Settings', path: '/settings', icon: Settings, roles: ['admin', 'manager'] },
 ];

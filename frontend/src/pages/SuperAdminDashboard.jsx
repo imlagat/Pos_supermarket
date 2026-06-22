@@ -3,13 +3,20 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { LogOut, Shield, Users, Building2, Activity, Settings, RefreshCw, XCircle, CheckCircle, Clock, ShoppingCart } from 'lucide-react';
+import { LogOut, Shield, Users, Building2, Activity, Settings, RefreshCw, XCircle, CheckCircle, Clock, ShoppingCart, Trash2, Edit2, CreditCard } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [tenants, setTenants] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('stores');
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showEditAdminModal, setShowEditAdminModal] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '' });
+  const [editingAdmin, setEditingAdmin] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'super_admin') {
@@ -17,6 +24,8 @@ export default function SuperAdminDashboard() {
       return;
     }
     fetchTenants();
+    fetchAdmins();
+    fetchSubscriptions();
   }, [user, navigate]);
 
   const fetchTenants = async () => {
@@ -30,13 +39,80 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const fetchAdmins = async () => {
+    try {
+      const res = await api.get('/super-admin/admins');
+      setAdmins(res.data);
+    } catch (error) {
+      toast.error('Failed to fetch admins');
+    }
+  };
+
+  const fetchSubscriptions = async () => {
+    try {
+      const res = await api.get('/super-admin/subscriptions');
+      setSubscriptions(res.data);
+    } catch (error) {
+      toast.error('Failed to fetch subscriptions');
+    }
+  };
+
+  const updateSubscriptionStatus = async (id, newStatus) => {
+    try {
+      await api.put(`/super-admin/subscriptions/${id}`, { status: newStatus });
+      toast.success('Subscription status updated');
+      fetchSubscriptions();
+      fetchTenants(); // Also refresh tenants to show updated tiers if it completed
+    } catch (error) {
+      toast.error('Failed to update subscription status');
+    }
+  };
+
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/super-admin/admins', newAdmin);
+      toast.success('Super admin created successfully');
+      setShowAdminModal(false);
+      setNewAdmin({ name: '', email: '', password: '' });
+      fetchAdmins();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to create admin');
+    }
+  };
+
+  const handleEditAdmin = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/super-admin/admins/${editingAdmin.id}`, editingAdmin);
+      toast.success('Super admin updated successfully');
+      setShowEditAdminModal(false);
+      setEditingAdmin(null);
+      fetchAdmins();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update admin');
+    }
+  };
+
+  const handleDeleteAdmin = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this admin?')) return;
+    try {
+      await api.delete(`/super-admin/admins/${id}`);
+      toast.success('Super admin deleted successfully');
+      fetchAdmins();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete admin');
+    }
+  };
+
   const updateTier = async (tenantId, newTier) => {
     try {
       await api.put(`/super-admin/tenants/${tenantId}/tier`, { tier: newTier });
       toast.success('Tenant tier updated successfully');
       fetchTenants();
     } catch (error) {
-      toast.error('Failed to update tenant tier');
+      console.error("Tier update error:", error.response || error);
+      toast.error(error.response?.data?.message || 'Failed to update tenant tier');
     }
   };
 
@@ -46,7 +122,8 @@ export default function SuperAdminDashboard() {
       toast.success('Tenant status updated');
       fetchTenants();
     } catch (error) {
-      toast.error('Failed to update status');
+      console.error("Status update error:", error.response || error);
+      toast.error(error.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -119,18 +196,43 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Users size={20} className="text-gray-500"/>
-              Registered Stores
-            </h2>
-            <button onClick={fetchTenants} className="text-gray-500 hover:text-orange-600 transition-colors">
-              <RefreshCw size={18} />
-            </button>
-          </div>
-          
-          <div className="overflow-x-auto">
+        <div className="mb-6 flex gap-4 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('stores')}
+            className={`pb-4 px-2 font-medium text-sm transition-colors relative ${activeTab === 'stores' ? 'text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Registered Stores
+            {activeTab === 'stores' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600 rounded-t-full"></span>}
+          </button>
+          <button
+            onClick={() => setActiveTab('admins')}
+            className={`pb-4 px-2 font-medium text-sm transition-colors relative ${activeTab === 'admins' ? 'text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Super Admins
+            {activeTab === 'admins' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600 rounded-t-full"></span>}
+          </button>
+          <button
+            onClick={() => setActiveTab('subscriptions')}
+            className={`pb-4 px-2 font-medium text-sm transition-colors relative ${activeTab === 'subscriptions' ? 'text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Subscriptions
+            {activeTab === 'subscriptions' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-600 rounded-t-full"></span>}
+          </button>
+        </div>
+
+        {activeTab === 'stores' ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Building2 size={20} className="text-gray-500"/>
+                Stores Directory
+              </h2>
+              <button onClick={fetchTenants} className="text-gray-500 hover:text-orange-600 transition-colors">
+                <RefreshCw size={18} />
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-gray-600">
               <thead className="bg-gray-50 border-b border-gray-100 text-gray-900 uppercase text-xs font-semibold">
                 <tr>
@@ -214,8 +316,270 @@ export default function SuperAdminDashboard() {
             </table>
           </div>
         </div>
+        ) : activeTab === 'admins' ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Shield size={20} className="text-gray-500"/>
+              Super Admins
+            </h2>
+            <div className="flex items-center gap-3">
+              <button onClick={fetchAdmins} className="text-gray-500 hover:text-orange-600 transition-colors">
+                <RefreshCw size={18} />
+              </button>
+              <button 
+                onClick={() => setShowAdminModal(true)}
+                className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
+              >
+                Add Admin
+              </button>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-50 border-b border-gray-100 text-gray-900 uppercase text-xs font-semibold">
+                <tr>
+                  <th className="px-6 py-4">Name</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Created At</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {admins.map(admin => (
+                  <tr key={admin.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-gray-900 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs uppercase">
+                        {admin.name.charAt(0)}
+                      </div>
+                      {admin.name}
+                    </td>
+                    <td className="px-6 py-4">{admin.email}</td>
+                    <td className="px-6 py-4">{new Date(admin.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                      <button 
+                        onClick={() => { setEditingAdmin({ ...admin, password: '' }); setShowEditAdminModal(true); }}
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Edit Admin"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteAdmin(admin.id)}
+                        className={`p-1.5 rounded transition-colors ${admin.id === user.id ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'}`}
+                        title={admin.id === user.id ? "Cannot delete yourself" : "Delete Admin"}
+                        disabled={admin.id === user.id}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {admins.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-8 text-center text-gray-500">No admins found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        ) : activeTab === 'subscriptions' ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <CreditCard size={20} className="text-gray-500"/>
+              Subscription Transactions
+            </h2>
+            <button onClick={fetchSubscriptions} className="text-gray-500 hover:text-orange-600 transition-colors">
+              <RefreshCw size={18} />
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-50 border-b border-gray-100 text-gray-900 uppercase text-xs font-semibold">
+                <tr>
+                  <th className="px-6 py-4">Date</th>
+                  <th className="px-6 py-4">Store / Phone</th>
+                  <th className="px-6 py-4">Plan / Cycle</th>
+                  <th className="px-6 py-4">Amount</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {subscriptions.map(sub => (
+                  <tr key={sub.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4">{new Date(sub.created_at).toLocaleString()}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-gray-900">{sub.tenant?.name || 'Unknown'}</div>
+                      <div className="text-xs text-gray-500">{sub.phone}</div>
+                      <div className="text-[10px] text-gray-400 mt-1">{sub.checkout_id}</div>
+                    </td>
+                    <td className="px-6 py-4 capitalize font-medium">
+                      {sub.tier} <br/> <span className="text-xs text-gray-500">({sub.cycle})</span>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-orange-600">KSH {Number(sub.amount).toLocaleString()}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                        sub.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        sub.status === 'pending' ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {sub.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <select
+                        value={sub.status}
+                        onChange={(e) => updateSubscriptionStatus(sub.id, e.target.value)}
+                        className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 p-2 ml-auto"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+                {subscriptions.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No subscription transactions found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        ) : null}
 
       </main>
+
+      {/* Add Admin Modal */}
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-gray-900 text-lg">Add Super Admin</h3>
+              <button onClick={() => setShowAdminModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateAdmin} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={newAdmin.name}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={newAdmin.email}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={newAdmin.password}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                />
+              </div>
+              <div className="pt-4 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowAdminModal(false)}
+                  className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg"
+                >
+                  Create Admin
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Admin Modal */}
+      {showEditAdminModal && editingAdmin && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-gray-900 text-lg">Edit Super Admin</h3>
+              <button onClick={() => { setShowEditAdminModal(false); setEditingAdmin(null); }} className="text-gray-400 hover:text-gray-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleEditAdmin} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={editingAdmin.name}
+                  onChange={(e) => setEditingAdmin({ ...editingAdmin, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={editingAdmin.email}
+                  onChange={(e) => setEditingAdmin({ ...editingAdmin, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password (Optional)</label>
+                <input
+                  type="password"
+                  minLength={8}
+                  placeholder="Leave blank to keep current"
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={editingAdmin.password}
+                  onChange={(e) => setEditingAdmin({ ...editingAdmin, password: e.target.value })}
+                />
+              </div>
+              <div className="pt-4 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditAdminModal(false); setEditingAdmin(null); }}
+                  className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

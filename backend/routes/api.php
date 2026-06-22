@@ -93,6 +93,12 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get('/super-admin/tenants', [App\Http\Controllers\SuperAdminController::class, 'getTenants']);
     Route::put('/super-admin/tenants/{id}/tier', [App\Http\Controllers\SuperAdminController::class, 'updateTier']);
     Route::put('/super-admin/tenants/{id}/status', [App\Http\Controllers\SuperAdminController::class, 'updateStatus']);
+    Route::get('/super-admin/admins', [App\Http\Controllers\SuperAdminController::class, 'getAdmins']);
+    Route::post('/super-admin/admins', [App\Http\Controllers\SuperAdminController::class, 'createAdmin']);
+    Route::put('/super-admin/admins/{id}', [App\Http\Controllers\SuperAdminController::class, 'updateAdmin']);
+    Route::delete('/super-admin/admins/{id}', [App\Http\Controllers\SuperAdminController::class, 'deleteAdmin']);
+    Route::get('/super-admin/subscriptions', [App\Http\Controllers\SuperAdminController::class, 'getSubscriptionTransactions']);
+    Route::put('/super-admin/subscriptions/{id}', [App\Http\Controllers\SuperAdminController::class, 'updateSubscriptionTransaction']);
 });
 
 Route::middleware('auth:sanctum')->get('/mpesa/status/{checkoutId}', [MpesaController::class, 'checkStatus']);
@@ -149,6 +155,7 @@ Route::middleware('auth:sanctum')->post('/returned-items/{returnedItem}/image', 
 Route::middleware('auth:sanctum')->get('/reports/returned-items', [App\Http\Controllers\ReportController::class, 'returnedItems']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/subscriptions/history', [App\Http\Controllers\SubscriptionController::class, 'history']);
     Route::post('/subscriptions/subscribe', [App\Http\Controllers\SubscriptionController::class, 'subscribe']);
     Route::post('/subscriptions/callback', [App\Http\Controllers\SubscriptionController::class, 'handleCallback']);
     Route::post('/onboarding/complete', [App\Http\Controllers\SettingsController::class, 'completeOnboarding']);

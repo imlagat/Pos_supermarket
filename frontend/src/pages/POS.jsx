@@ -454,9 +454,13 @@ export default function POS() {
               )}
             </h2>
             <div className="flex gap-2 items-center">
-              {activeShift && (
+              {activeShift ? (
                 <button onClick={() => setShowCloseRegister(true)} className="mr-2 text-xs bg-gray-800 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-gray-700">
                   <Lock size={12} /> Close Register
+                </button>
+              ) : (
+                <button onClick={() => setShowStartShift(true)} className="mr-2 text-xs bg-orange-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-orange-700">
+                  <Lock size={12} /> Open Register
                 </button>
               )}
               <div className="relative"><User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="tel" placeholder="Phone number" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="pl-10 pr-2 py-1 border rounded-full text-sm w-36" /><button onClick={searchCustomer} className="ml-1 text-xs bg-orange-500 text-white px-2 py-1 rounded-full">Find</button>{customerSearchResult && <button onClick={clearCustomer} className="ml-1 text-xs text-red-500">X</button>}</div>
@@ -553,7 +557,7 @@ export default function POS() {
             setShowStartShift(false);
           }}
           onCancel={() => {
-            logout();
+            setShowStartShift(false);
           }}
         />
       )}
@@ -564,11 +568,7 @@ export default function POS() {
           onShiftClosed={() => {
             setActiveShift(null);
             setShowCloseRegister(false);
-            if (user?.role === 'cashier') {
-              logout();
-            } else {
-              setShowStartShift(true);
-            }
+            setShowStartShift(true);
           }}
         />
       )}

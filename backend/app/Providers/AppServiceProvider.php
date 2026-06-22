@@ -18,6 +18,9 @@ class AppServiceProvider extends ServiceProvider
         Customer::observe(CustomerObserver::class);
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            if ($notifiable->isSuperAdmin()) {
+                return 'http://localhost:5173/super-admin/reset-password?token='.$token.'&email='.urlencode($notifiable->getEmailForPasswordReset());
+            }
             return 'http://localhost:5173/reset-password?token='.$token.'&email='.urlencode($notifiable->getEmailForPasswordReset());
         });
 

@@ -3,10 +3,11 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ChatWidget from '../AIChatbot/ChatWidget';
 import Paywall from '../common/Paywall';
-import { Search, Bell, HelpCircle, Menu, LogOut, User, RefreshCw, AlertCircle, Package } from 'lucide-react';
+import { Search, Bell, HelpCircle, Menu, LogOut, User, RefreshCw, AlertCircle, Package, Settings as SettingsIcon } from 'lucide-react';
 
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
+import SwitchAccountModal from '../Auth/SwitchAccountModal';
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -26,6 +27,7 @@ export default function Layout() {
   const notifRef = useRef(null);
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
   const profileRef = useRef(null);
 
   // Fetch alerts on mount
@@ -284,11 +286,14 @@ export default function Layout() {
                     <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 mt-1">{user?.role || 'Admin'}</p>
                   </div>
                   <div className="p-2">
+                    <button onClick={() => { setShowProfileMenu(false); navigate('/profile'); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-orange-600 rounded-lg transition-colors">
+                      <User size={16} /> Profile
+                    </button>
                     <button onClick={() => { setShowProfileMenu(false); navigate('/settings'); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-orange-600 rounded-lg transition-colors">
-                      <User size={16} /> Profile & Settings
+                      <SettingsIcon size={16} /> Settings
                     </button>
                     {user?.role === 'admin' && (
-                      <button onClick={() => { setShowProfileMenu(false); /* Switch account modal trigger */ }} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-orange-600 rounded-lg transition-colors">
+                      <button onClick={() => { setShowProfileMenu(false); setShowSwitchModal(true); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-orange-600 rounded-lg transition-colors">
                         <RefreshCw size={16} /> Switch Account
                       </button>
                     )}
@@ -318,6 +323,8 @@ export default function Layout() {
           {isTrialExpired ? <Paywall /> : <Outlet />}
         </div>
       </main>
+
+      <SwitchAccountModal isOpen={showSwitchModal} onClose={() => setShowSwitchModal(false)} />
       {!isBronze && <ChatWidget />}
     </div>
   );

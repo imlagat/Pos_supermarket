@@ -9,6 +9,7 @@ export default function Pricing() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly');
 
   const handleSelectPlan = (planName) => {
     if (planName === 'Enterprise') {
@@ -90,6 +91,31 @@ export default function Pricing() {
           </motion.div>
         </div>
 
+        <div className="flex justify-center mb-12">
+          <div className="bg-white border border-gray-200 p-1.5 rounded-full flex items-center shadow-sm">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
+                billingCycle === 'monthly' 
+                  ? 'bg-orange-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingCycle('annual')}
+              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${
+                billingCycle === 'annual' 
+                  ? 'bg-orange-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              Annual <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${billingCycle === 'annual' ? 'bg-white text-orange-600' : 'bg-green-500 text-white'}`}>SAVE 40%</span>
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
           {plans.map((plan, index) => (
             <motion.div
@@ -123,9 +149,15 @@ export default function Pricing() {
 
               <div className="mb-6">
                 <span className="text-4xl font-extrabold text-gray-900">
-                  {plan.price === 'Custom' ? 'Custom' : `KSH ${plan.price}`}
+                  {plan.price === 'Custom' 
+                    ? 'Custom' 
+                    : `KSH ${billingCycle === 'monthly' ? plan.price : (plan.price === '1,599' ? '11,513' : '18,713')}`}
                 </span>
-                {plan.price !== 'Custom' && <span className="text-gray-500 font-medium">/mo</span>}
+                {plan.price !== 'Custom' && (
+                  <span className="text-gray-500 font-medium">
+                    /{billingCycle === 'monthly' ? 'mo' : 'yr'}
+                  </span>
+                )}
               </div>
 
               <button

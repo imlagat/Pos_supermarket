@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom';
 import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
-import { TrendingUp, ShoppingBag, Users, Package, AlertCircle, Tag, Bot, RefreshCw, Zap, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, CreditCard, Banknote, Smartphone, CheckCircle } from 'lucide-react';
+import { TrendingUp, ShoppingBag, Users, Package, AlertCircle, Tag, Bot, RefreshCw, Zap, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, CreditCard, Banknote, Smartphone, CheckCircle, Clock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
-  const { user } = useAuthStore();
+  const { user, loadUser } = useAuthStore();
   const [stats, setStats] = useState({ total_sales: 0, orders: 0, customers: 0, products: 0 });
   const [chartData, setChartData] = useState([]);
   const [timeRange, setTimeRange] = useState('weekly');
@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
+    loadUser(); // Ensure tenant billing status is in sync
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -150,6 +151,51 @@ export default function Dashboard() {
           </select>
         </div>
       </div>
+      
+      {user?.tenant && (
+        user.tenant.billing_status === 'active' ? (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-center justify-between shadow-sm">
+            <div className="flex items-center gap-4 mb-4 sm:mb-0">
+              <div className="p-3 bg-green-100 text-green-600 rounded-full">
+                <CheckCircle size={24} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Active Subscription</h2>
+                <p className="text-sm text-gray-600 capitalize">
+                  You are currently on the {user.tenant.tier} plan.
+                </p>
+              </div>
+            </div>
+            <Link to="/billing" className="px-6 py-2.5 bg-white text-green-700 border border-green-200 hover:bg-green-50 font-bold rounded-lg shadow-sm transition-colors w-full sm:w-auto text-center">
+              Manage Billing
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-center justify-between shadow-sm">
+            <div className="flex items-center gap-4 mb-4 sm:mb-0">
+              <div className="p-3 bg-orange-100 text-orange-600 rounded-full">
+                <Clock size={24} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Trial Period</h2>
+                <p className="text-sm text-gray-600">
+                  {(() => {
+                    if (!user.tenant.trial_ends_at) return 'Your free trial has expired.';
+                    const days = Math.ceil((new Date(user.tenant.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
+                    if (days > 0) return `You have ${days} day${days === 1 ? '' : 's'} remaining in your free trial.`;
+                    if (days === 0) return 'Your free trial expires today!';
+                    return `Your free trial expired ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago.`;
+                  })()}
+                </p>
+              </div>
+            </div>
+            <Link to="/billing" className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg shadow transition-colors w-full sm:w-auto text-center">
+              Upgrade Now
+            </Link>
+          </div>
+        )
+      )}
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((card, idx) => {

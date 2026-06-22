@@ -39,6 +39,8 @@ const Finance = React.lazy(() => import('./pages/Finance'));
 const CashDrawer = React.lazy(() => import('./pages/CashDrawer'));
 const SuperAdminLogin = React.lazy(() => import('./pages/SuperAdminLogin'));
 const SuperAdminDashboard = React.lazy(() => import('./pages/SuperAdminDashboard'));
+const SuperAdminForgotPassword = React.lazy(() => import('./pages/SuperAdminForgotPassword'));
+const SuperAdminResetPassword = React.lazy(() => import('./pages/SuperAdminResetPassword'));
 const Billing = React.lazy(() => import('./pages/Billing'));
 const OnboardingWizard = React.lazy(() => import('./pages/OnboardingWizard'));
 
@@ -67,6 +69,8 @@ function App() {
                         
                         {/* Super Admin Routes */}
                         <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+                        <Route path="/super-admin/forgot-password" element={<SuperAdminForgotPassword />} />
+                        <Route path="/super-admin/reset-password" element={<SuperAdminResetPassword />} />
                         <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
                         
                         <Route path="/remote-scanner/:sessionId" element={<RemoteScannerApp />} />
