@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Loader2, Maximize2, Minimize2, Paperclip, Smile, Mic, ArrowUp } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -8,6 +8,7 @@ import { useAuthStore } from '../../stores/authStore';
 export default function ChatWidget() {
     const { user } = useAuthStore();
     const [isOpen, setIsOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -100,9 +101,9 @@ export default function ChatWidget() {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="fixed bottom-6 right-6 w-96 h-[550px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200 overflow-hidden transform transition-all">
+                <div className={`fixed bottom-6 right-6 ${isExpanded ? 'w-full md:w-[600px] h-[80vh] max-h-[800px]' : 'w-96 h-[550px]'} bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200 overflow-hidden transform transition-all duration-300 origin-bottom-right`}>
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-orange-600 to-orange-600 p-4 flex justify-between items-center text-white">
+                    <div className="bg-gradient-to-r from-orange-600 to-orange-600 p-4 flex justify-between items-center text-white shrink-0">
                         <div className="flex items-center gap-2">
                             <Bot size={24} />
                             <div>
@@ -110,9 +111,21 @@ export default function ChatWidget() {
                                 <p className="text-xs opacity-90">Powered by Google Gemini</p>
                             </div>
                         </div>
-                        <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-lg transition">
-                            <X size={20} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setIsExpanded(!isExpanded)} 
+                                className="hover:bg-white/20 px-2 py-1.5 rounded-lg transition text-xs font-medium flex items-center gap-1.5 bg-white/10"
+                            >
+                                {isExpanded ? (
+                                    <><Minimize2 size={14} /> Collapse window</>
+                                ) : (
+                                    <><Maximize2 size={14} /> Expand window</>
+                                )}
+                            </button>
+                            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1.5 rounded-lg transition ml-1">
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Messages Area */}
@@ -153,23 +166,33 @@ export default function ChatWidget() {
                     </div>
 
                     {/* Input Area */}
-                    <form onSubmit={sendMessage} className="p-4 bg-white border-t border-gray-100">
-                        <div className="relative">
+                    <form onSubmit={sendMessage} className="p-3 bg-white border-t border-gray-100 shrink-0">
+                        <div className="relative bg-gray-50 rounded-xl flex flex-col pt-1.5 pb-1.5 px-2 focus-within:ring-1 focus-within:ring-orange-300 focus-within:bg-white border border-gray-200 transition-all">
                             <input
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder="Ask me about stock, sales..."
-                                className="w-full pl-4 pr-12 py-3 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-600 focus:ring-2 focus:ring-orange-200 transition-all text-sm"
+                                placeholder="Message..."
+                                className="w-full bg-transparent border-none focus:ring-0 text-sm mb-1 px-2 py-2 text-gray-800 placeholder-gray-400 outline-none"
                                 disabled={isLoading}
                             />
-                            <button
-                                type="submit"
-                                disabled={!input.trim() || isLoading}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition"
-                            >
-                                <Send size={16} />
-                            </button>
+                            <div className="flex items-center justify-between px-1">
+                                <div className="flex items-center gap-1 text-gray-500">
+                                    <button type="button" title="Attach file" className="p-1.5 hover:bg-gray-200 hover:text-gray-700 rounded-lg transition"><Paperclip size={18} /></button>
+                                    <button type="button" title="Emoji" className="p-1.5 hover:bg-gray-200 hover:text-gray-700 rounded-lg transition"><Smile size={18} /></button>
+                                    <button type="button" title="GIF" className="p-1.5 hover:bg-gray-200 hover:text-gray-700 rounded-lg transition">
+                                        <div className="text-[9px] font-extrabold border-2 border-current rounded px-1 py-0.5 leading-none flex items-center justify-center">GIF</div>
+                                    </button>
+                                    <button type="button" title="Voice message" className="p-1.5 hover:bg-gray-200 hover:text-gray-700 rounded-lg transition"><Mic size={18} /></button>
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={!input.trim() || isLoading}
+                                    className="w-8 h-8 flex items-center justify-center bg-gray-800 text-white rounded-full hover:bg-black disabled:opacity-50 transition shadow-sm"
+                                >
+                                    <ArrowUp size={18} strokeWidth={2.5} />
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

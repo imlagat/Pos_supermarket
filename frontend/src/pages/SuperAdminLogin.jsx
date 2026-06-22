@@ -96,7 +96,12 @@ export default function SuperAdminLogin() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Password</label>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-gray-700">Password</label>
+                    <Link to="/super-admin/forgot-password" className="text-sm font-medium text-orange-600 hover:text-orange-500">
+                      Forgot password?
+                    </Link>
+                  </div>
                   <div className="mt-1 relative rounded-xl shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Lock className="h-5 w-5 text-gray-400" />

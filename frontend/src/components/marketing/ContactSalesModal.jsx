@@ -249,7 +249,7 @@ export default function ContactSalesModal({ isOpen, onClose }) {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email</p>
-                    <p className="text-gray-900 font-medium">support@lipana.dev</p>
+                    <p className="text-gray-900 font-medium">superposlish@gmail.com</p>
                   </div>
                 </div>
 
@@ -259,7 +259,7 @@ export default function ContactSalesModal({ isOpen, onClose }) {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone</p>
-                    <p className="text-gray-900 font-medium">+254 718 680 308</p>
+                    <p className="text-gray-900 font-medium">0725130227</p>
                   </div>
                 </div>
 
@@ -269,7 +269,7 @@ export default function ContactSalesModal({ isOpen, onClose }) {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">WhatsApp</p>
-                    <p className="text-gray-900 font-medium">+254 718 680 308</p>
+                    <p className="text-gray-900 font-medium">0725130227</p>
                   </div>
                 </div>
 
@@ -279,7 +279,7 @@ export default function ContactSalesModal({ isOpen, onClose }) {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Office</p>
-                    <p className="text-gray-900 font-medium">Nairobi, Kenya</p>
+                    <p className="text-gray-900 font-medium">Nakuru, Kenya</p>
                   </div>
                 </div>
 

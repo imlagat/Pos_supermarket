@@ -20,7 +20,7 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->whereNull('deleted_at')],
             'password' => 'required|string|min:6|confirmed',
             'role' => 'required|in:admin,manager,cashier'
         ]);
@@ -53,7 +53,12 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
+            'email' => [
+                'sometimes',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($user->id)->whereNull('deleted_at')
+            ],
             'password' => 'sometimes|string|min:6|confirmed',
             'role' => 'sometimes|in:admin,manager,cashier'
         ]);
@@ -87,7 +92,7 @@ class UserController extends Controller
                 'sometimes',
                 'email',
                 'max:255',
-                Rule::unique('users')->ignore($user->id),
+                Rule::unique('users')->ignore($user->id)->whereNull('deleted_at'),
             ],
         ];
 

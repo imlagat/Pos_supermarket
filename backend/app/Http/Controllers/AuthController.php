@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
 
@@ -53,7 +54,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->whereNull('deleted_at')],
             'password' => 'required|string|min:6',
             'tier' => 'nullable|string|in:bronze,silver,custom',
         ]);

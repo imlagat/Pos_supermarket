@@ -13,6 +13,8 @@ use App\Models\ReturnOrder;
 use App\Models\ReturnedItem;
 use App\Models\DiscountRule;
 use App\Models\Supplier;
+use App\Models\User;
+use App\Models\Batch;
 
 class AIChatbotController extends Controller
 {
@@ -41,9 +43,10 @@ class AIChatbotController extends Controller
             . "- If role is 'admin' or 'manager', provide comprehensive strategic insights, acknowledge their leadership role, and offer detailed analytical data when asked. You are permitted to use create_discount and create_open_box_deal.\n"
             . "- If role is 'cashier', maintain a helpful and supportive tone focused exclusively on daily operations (e.g. stock lookups, processing returns). You must NOT reveal sensitive financial reports. If they ask for sensitive data, explicitly explain that as a cashier, they do not have access to financial reports.\n"
             . "You have access to several tools to query and mutate the database. Use them when requested.\n"
-            . "- To process a return, you must ask the user for the order ID and the product IDs/quantities if they haven't provided them. Use the perform_return tool.\n"
+            . "- To process a return, you must ask the user for the order ID (or alphanumeric Order Number like ORD-XXXX) and the product IDs/quantities if they haven't provided them. Use the perform_return tool.\n"
             . "- To create an open box deal, you must first know the returned_item_id. Ask the user if they haven't provided it.\n"
-            . "- To create a discount, use create_discount. You must know the product ID.\n"
+            . "- To create a discount for a specific product, use create_discount. You must know the product ID.\n"
+            . "- To create a discount based on expiration date (e.g. products expiring in N days), use create_expiry_discount. You do not need a product ID.\n"
             . "If a tool returns an error saying 'Permission denied', apologize politely and inform the user that their role ({$role}) does not have the required privileges.\n";
 
         // Gemini tool definitions
@@ -91,12 +94,26 @@ class AIChatbotController extends Controller
                 ]
             ],
             [
-                'name' => 'perform_return',
-                'description' => 'Process a return for a specific order. Ensure you have the order ID and items list.',
+                'name' => 'create_expiry_discount',
+                'description' => 'Create a discount rule for products expiring within a certain number of days. Only Admin and Manager roles are allowed.',
                 'parameters' => [
                     'type' => 'OBJECT',
                     'properties' => [
-                        'order_id' => ['type' => 'INTEGER', 'description' => 'The ID of the order being returned'],
+                        'name' => ['type' => 'STRING', 'description' => 'Name of the discount (e.g. Expiry Sale 20% off)'],
+                        'discount_percentage' => ['type' => 'NUMBER', 'description' => 'Discount percentage (e.g. 20)'],
+                        'days_left_max' => ['type' => 'INTEGER', 'description' => 'Maximum number of days left before expiration (e.g. 20)'],
+                        'days_left_min' => ['type' => 'INTEGER', 'description' => 'Minimum number of days left (usually 0)']
+                    ],
+                    'required' => ['name', 'discount_percentage', 'days_left_max']
+                ]
+            ],
+            [
+                'name' => 'perform_return',
+                'description' => 'Process a return for a specific order. Ensure you have the order ID or alphanumeric Order Number (e.g. ORD-BWROCVBR) and items list.',
+                'parameters' => [
+                    'type' => 'OBJECT',
+                    'properties' => [
+                        'order_id' => ['type' => 'STRING', 'description' => 'The ID or Order Number of the order being returned (e.g. ORD-12345 or 123)'],
                         'items' => [
                             'type' => 'ARRAY',
                             'description' => 'List of items to return',
@@ -140,6 +157,33 @@ class AIChatbotController extends Controller
                     ],
                     'required' => ['returned_item_id', 'open_box_price']
                 ]
+            ],
+            [
+                'name' => 'get_registered_users',
+                'description' => 'Get a list of all registered users in the system. Only Admin and Manager roles are allowed.'
+            ],
+            [
+                'name' => 'get_in_stock_products',
+                'description' => 'Get a list of products that are currently in stock.'
+            ],
+            [
+                'name' => 'get_expiring_products',
+                'description' => 'Get a list of products expiring within a specific number of days.',
+                'parameters' => [
+                    'type' => 'OBJECT',
+                    'properties' => [
+                        'days' => ['type' => 'INTEGER', 'description' => 'Number of days to check for expiration (e.g. 30)']
+                    ],
+                    'required' => ['days']
+                ]
+            ],
+            [
+                'name' => 'get_suppliers_list',
+                'description' => 'Get a list of all registered suppliers in the system.'
+            ],
+            [
+                'name' => 'get_returns_list',
+                'description' => 'Get a list of the most recent return orders.'
             ]
         ];
 
@@ -339,17 +383,73 @@ class AIChatbotController extends Controller
                         'total_orders' => $ordersCount
                     ]
                 ];
+            case 'get_registered_users':
+                if (!$user || ($user->role !== 'admin' && $user->role !== 'manager')) {
+                    return ['status' => 'error', 'message' => 'Permission denied. Only Admin and Manager can view registered users.'];
+                }
+                $users = User::select('id', 'name', 'email', 'role')->get();
+                return ['status' => 'success', 'users' => $users];
+
+            case 'get_in_stock_products':
+                $products = Product::where('branch_stock_quantity', '>', 0)
+                                   ->select('id', 'name', 'sku', 'branch_stock_quantity as stock', 'price')
+                                   ->limit(50)
+                                   ->get();
+                return ['status' => 'success', 'products' => $products, 'note' => 'Showing up to 50 in-stock products.'];
+
+            case 'get_expiring_products':
+                $days = $arguments['days'] ?? 30;
+                $batches = Batch::where('expiry_date', '<=', now()->addDays($days))
+                                ->where('expiry_date', '>=', now())
+                                ->where('quantity', '>', 0)
+                                ->with('product:id,name')
+                                ->limit(50)
+                                ->get()
+                                ->map(function($b) {
+                                    return [
+                                        'product' => $b->product->name ?? 'Unknown',
+                                        'expiry_date' => $b->expiry_date,
+                                        'quantity' => $b->quantity
+                                    ];
+                                });
+                return ['status' => 'success', 'expiring_products' => $batches];
+
+            case 'get_suppliers_list':
+                $suppliers = Supplier::select('id', 'name', 'contact_person', 'email', 'phone')->get();
+                return ['status' => 'success', 'suppliers' => $suppliers];
+
+            case 'get_returns_list':
+                $returns = ReturnOrder::with('order:id,order_number')
+                                      ->orderBy('created_at', 'desc')
+                                      ->limit(10)
+                                      ->get()
+                                      ->map(function($r) {
+                                          return [
+                                              'return_id' => $r->id,
+                                              'order_number' => $r->order->order_number ?? null,
+                                              'reason' => $r->reason,
+                                              'refund_amount' => $r->refund_amount,
+                                              'date' => $r->created_at->format('Y-m-d')
+                                          ];
+                                      });
+                return ['status' => 'success', 'recent_returns' => $returns];
 
             case 'create_discount':
                 if (!$user || ($user->role !== 'admin' && $user->role !== 'manager')) {
                     return ['status' => 'error', 'message' => 'Permission denied. Only Admin and Manager can create discounts.'];
                 }
+                
+                $discountType = strtolower($arguments['discount_type'] ?? '');
+                if (!in_array($discountType, ['percentage', 'fixed'])) {
+                    return ['status' => 'error', 'message' => "Invalid discount_type: '$discountType'. For product-specific discounts, it must be 'percentage' or 'fixed'. If you are trying to create an expiration discount, you MUST use the create_expiry_discount tool instead."];
+                }
+
                 try {
                     $discount = DiscountRule::create([
                         'name' => $arguments['name'],
-                        'type' => $arguments['discount_type'],
+                        'type' => $discountType,
                         'product_id' => $arguments['product_id'],
-                        'discount_type' => $arguments['discount_type'],
+                        'discount_type' => $discountType,
                         'value' => $arguments['value'],
                         'starts_at' => $arguments['starts_at'] ?? now(),
                         'ends_at' => $arguments['ends_at'] ?? now()->addDays(7),
@@ -360,16 +460,40 @@ class AIChatbotController extends Controller
                     return ['status' => 'error', 'message' => $e->getMessage()];
                 }
 
+            case 'create_expiry_discount':
+                if (!$user || ($user->role !== 'admin' && $user->role !== 'manager')) {
+                    return ['status' => 'error', 'message' => 'Permission denied. Only Admin and Manager can create discounts.'];
+                }
+                try {
+                    $discount = DiscountRule::create([
+                        'name' => $arguments['name'],
+                        'type' => 'expiry_markdown',
+                        'discount_percentage' => $arguments['discount_percentage'],
+                        'days_left_max' => $arguments['days_left_max'],
+                        'days_left_min' => $arguments['days_left_min'] ?? 0,
+                        'is_active' => true,
+                        'starts_at' => now(),
+                        'ends_at' => now()->addYears(10), // Active indefinitely
+                    ]);
+                    return ['status' => 'success', 'message' => "Expiry discount '{$discount->name}' created successfully.", 'discount' => $discount];
+                } catch (\Exception $e) {
+                    return ['status' => 'error', 'message' => $e->getMessage()];
+                }
+
             case 'perform_return':
                 try {
-                    $order = Order::find($arguments['order_id']);
+                    $orderIdentifier = $arguments['order_id'];
+                    $order = is_numeric($orderIdentifier) 
+                        ? Order::find($orderIdentifier) 
+                        : Order::where('order_number', $orderIdentifier)->first();
+                        
                     if (!$order || $order->status !== 'completed') {
                         return ['status' => 'error', 'message' => 'Order not found or not completed.'];
                     }
                     
                     DB::beginTransaction();
                     $return = ReturnOrder::create([
-                        'order_id' => $arguments['order_id'],
+                        'order_id' => $order->id,
                         'user_id' => $user ? $user->id : 1,
                         'items' => json_encode($arguments['items']),
                         'reason' => $arguments['reason'] ?? 'Chatbot return',
