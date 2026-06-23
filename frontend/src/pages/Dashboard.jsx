@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
-import { TrendingUp, ShoppingBag, Users, Package, AlertCircle, Tag, Bot, RefreshCw, Zap, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, CreditCard, Banknote, Smartphone, CheckCircle, Clock } from 'lucide-react';
+import { TrendingUp, ShoppingBag, Users, Package, AlertCircle, Tag, Bot, RefreshCw, Zap, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, CreditCard, Banknote, Smartphone, CheckCircle, Clock, Lock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import toast from 'react-hot-toast';
 
@@ -500,58 +500,82 @@ export default function Dashboard() {
       </div>
 
       {/* Enterprise AI Command Center */}
+      {/* Enterprise AI Command Center */}
       {(user?.role === 'admin' || user?.role === 'manager') && (
-      <div className="bg-white border border-orange-200 rounded-2xl shadow-lg p-4 md:p-5 mb-8 text-gray-800 relative overflow-hidden w-full">
+      <div className={`bg-white border rounded-2xl shadow-lg p-4 md:p-5 mb-8 text-gray-800 relative overflow-hidden w-full ${user?.tenant?.tier === 'bronze' ? 'border-gray-200 opacity-90' : 'border-orange-200'}`}>
         {/* Decorative background elements */}
-        <div className="absolute -top-16 -right-16 w-48 h-48 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60"></div>
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-amber-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60"></div>
+        {user?.tenant?.tier !== 'bronze' && (
+          <>
+            <div className="absolute -top-16 -right-16 w-48 h-48 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60"></div>
+            <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-amber-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60"></div>
+          </>
+        )}
         
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Bot size={22} className="text-orange-600" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${user?.tenant?.tier === 'bronze' ? 'bg-gray-100' : 'bg-orange-100'}`}>
+                <Bot size={22} className={user?.tenant?.tier === 'bronze' ? 'text-gray-500' : 'text-orange-600'} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold leading-tight">Enterprise AI Command Center</h2>
+                <p className="text-gray-500 text-xs mt-0.5">Run autonomous infrastructure jobs instantly.</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold leading-tight">Enterprise AI Command Center</h2>
-              <p className="text-gray-500 text-xs mt-0.5">Run autonomous infrastructure jobs instantly.</p>
-            </div>
+            {user?.tenant?.tier === 'bronze' && (
+              <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-semibold flex items-center gap-1 border border-gray-200">
+                <Lock size={12} /> Premium Feature
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Auto Reorder Card */}
-            <div className="bg-orange-50/50 backdrop-blur-md border border-orange-100 rounded-xl p-4 hover:bg-orange-50 transition flex flex-col justify-between">
+            <div className={`${user?.tenant?.tier === 'bronze' ? 'bg-gray-50 border-gray-200' : 'bg-orange-50/50 hover:bg-orange-50 border-orange-100'} backdrop-blur-md border rounded-xl p-4 transition flex flex-col justify-between`}>
               <div className="mb-3">
-                <h3 className="font-semibold text-base flex items-center gap-2">
-                  <RefreshCw size={16} className="text-orange-600" /> Auto-Reordering
+                <h3 className={`font-semibold text-base flex items-center gap-2 ${user?.tenant?.tier === 'bronze' ? 'text-gray-700' : ''}`}>
+                  <RefreshCw size={16} className={user?.tenant?.tier === 'bronze' ? 'text-gray-400' : 'text-orange-600'} /> Auto-Reordering
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">Predicts demand and drafts POs for low stock.</p>
               </div>
-              <button 
-                onClick={runAiReorder}
-                disabled={aiLoading.reorder}
-                className="w-full py-2 bg-white hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-70 mt-auto"
-              >
-                {aiLoading.reorder ? <RefreshCw size={18} className="animate-spin" /> : <RefreshCw size={18} />}
-                {aiLoading.reorder ? 'Analyzing Stock...' : 'Execute AI Reorder'}
-              </button>
+              {user?.tenant?.tier === 'bronze' ? (
+                <Link to="/billing" className="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mt-auto">
+                  <Lock size={16} /> Upgrade to Unlock
+                </Link>
+              ) : (
+                <button 
+                  onClick={runAiReorder}
+                  disabled={aiLoading.reorder}
+                  className="w-full py-2 bg-white hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-70 mt-auto"
+                >
+                  {aiLoading.reorder ? <RefreshCw size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+                  {aiLoading.reorder ? 'Analyzing Stock...' : 'Execute AI Reorder'}
+                </button>
+              )}
             </div>
 
             {/* Dynamic Pricing Card */}
-            <div className="bg-orange-50/50 backdrop-blur-md border border-orange-100 rounded-xl p-4 hover:bg-orange-50 transition flex flex-col justify-between">
+            <div className={`${user?.tenant?.tier === 'bronze' ? 'bg-gray-50 border-gray-200' : 'bg-orange-50/50 hover:bg-orange-50 border-orange-100'} backdrop-blur-md border rounded-xl p-4 transition flex flex-col justify-between`}>
               <div className="mb-3">
-                <h3 className="font-semibold text-base flex items-center gap-2">
-                  <TrendingUp size={16} className="text-orange-600" /> Dynamic Pricing
+                <h3 className={`font-semibold text-base flex items-center gap-2 ${user?.tenant?.tier === 'bronze' ? 'text-gray-700' : ''}`}>
+                  <TrendingUp size={16} className={user?.tenant?.tier === 'bronze' ? 'text-gray-400' : 'text-orange-600'} /> Dynamic Pricing
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">Optimizes base price based on recent sales velocity.</p>
               </div>
-              <button 
-                onClick={runAiPricing}
-                disabled={aiLoading.pricing}
-                className="w-full py-2 bg-white hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-70 mt-auto"
-              >
-                {aiLoading.pricing ? <TrendingUp size={16} className="animate-spin" /> : <TrendingUp size={16} />}
-                {aiLoading.pricing ? 'Optimizing Prices...' : 'Run Pricing AI'}
-              </button>
+              {user?.tenant?.tier === 'bronze' ? (
+                <Link to="/billing" className="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mt-auto">
+                  <Lock size={16} /> Upgrade to Unlock
+                </Link>
+              ) : (
+                <button 
+                  onClick={runAiPricing}
+                  disabled={aiLoading.pricing}
+                  className="w-full py-2 bg-white hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-70 mt-auto"
+                >
+                  {aiLoading.pricing ? <TrendingUp size={16} className="animate-spin" /> : <TrendingUp size={16} />}
+                  {aiLoading.pricing ? 'Optimizing Prices...' : 'Run Pricing AI'}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -68,22 +68,24 @@ class SubscriptionController extends Controller
 
     public function handleCallback(Request $request)
     {
-        // Mock M-Pesa Callback
         $request->validate([
             'checkout_id' => 'required|string',
-            'status' => 'required|in:completed,failed',
             'tier' => 'required|in:bronze,silver',
             'cycle' => 'nullable|in:monthly,yearly'
         ]);
 
-        $payment = SubscriptionPayment::where('checkout_id', $request->checkout_id)->first();
-        if ($payment) {
-            $payment->update(['status' => $request->status]);
+        $cacheStatus = \Illuminate\Support\Facades\Cache::get('mpesa_' . $request->checkout_id);
+        if ($cacheStatus !== 'completed') {
+            return response()->json(['error' => 'Payment not verified or expired.'], 400);
         }
 
-        if ($request->status === 'completed') {
-            $user = $request->user();
-            $tenant = $user->tenant;
+        $payment = SubscriptionPayment::where('checkout_id', $request->checkout_id)->first();
+        if ($payment) {
+            $payment->update(['status' => 'completed']);
+        }
+
+        $user = $request->user();
+        $tenant = $user->tenant;
 
             $cycle = $request->cycle ?? 'monthly';
             $nextBillingDate = $cycle === 'yearly' ? now()->addYear() : now()->addMonth();
@@ -99,9 +101,6 @@ class SubscriptionController extends Controller
                 'message' => 'Subscription upgraded successfully!',
                 'tenant' => $tenant
             ]);
-        }
-
-        return response()->json(['error' => 'Payment failed'], 400);
     }
 
     public function history(Request $request)

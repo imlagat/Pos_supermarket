@@ -50,6 +50,10 @@ export const useAuthStore = create((set, get) => ({
         set({ isLoading: true });
         try {
             const res = await api.post('/register', { name, email, password, tier });
+            if (res.data.requires_2fa) {
+                set({ isLoading: false });
+                return res.data;
+            }
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
             

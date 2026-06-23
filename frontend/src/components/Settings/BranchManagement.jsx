@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Lock } from 'lucide-react';
 
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../stores/authStore';
 export default function BranchManagement() {
+  const { user } = useAuthStore();
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -63,12 +66,21 @@ export default function BranchManagement() {
     <div className="space-y-4">
       <div className="flex justify-between items-center border-b pb-2">
         <h3 className="text-lg font-semibold text-gray-800">Branch Management</h3>
-        <button
-          onClick={() => { setFormData({ id: null, name: '', location: '', contact_number: '', status: 'active' }); setShowModal(true); }}
-          className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-orange-700"
-        >
-          <Plus size={16} /> Add Branch
-        </button>
+        {user?.tenant?.tier === 'bronze' && branches.length >= 1 ? (
+          <Link
+            to="/billing"
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-gray-300 transition"
+          >
+            <Lock size={16} /> Upgrade to add branches
+          </Link>
+        ) : (
+          <button
+            onClick={() => { setFormData({ id: null, name: '', location: '', contact_number: '', status: 'active' }); setShowModal(true); }}
+            className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-orange-700"
+          >
+            <Plus size={16} /> Add Branch
+          </button>
+        )}
       </div>
 
       <div className="overflow-x-auto">

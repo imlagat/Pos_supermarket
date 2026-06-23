@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Users as UsersIcon, Plus, Edit2, Trash2, Search, BarChart3, Filter } from 'lucide-react';
+import { Users as UsersIcon, Plus, Edit2, Trash2, Search, BarChart3, Filter, Lock } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ShiftsReport from './ShiftsReport';
@@ -283,7 +284,16 @@ export default function Users() {
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
             {editing && <button type="button" onClick={resetForm} className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition">Cancel</button>}
-            <button type="submit" disabled={saving} className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white px-8 py-2 rounded-xl font-semibold shadow-md transition">{saving ? 'Saving...' : (editing ? 'Update User' : 'Create User')}</button>
+            
+            {user?.tenant?.tier === 'bronze' && users.length >= 3 && !editing ? (
+              <Link to="/billing" className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-8 py-2 rounded-xl font-semibold shadow-md transition flex items-center gap-2">
+                <Lock size={16} /> Upgrade to add more users
+              </Link>
+            ) : (
+              <button type="submit" disabled={saving} className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white px-8 py-2 rounded-xl font-semibold shadow-md transition">
+                {saving ? 'Saving...' : (editing ? 'Update User' : 'Create User')}
+              </button>
+            )}
           </div>
         </form>
       </div>

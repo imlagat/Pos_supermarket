@@ -29,7 +29,7 @@ export default function MarketingLayout() {
               <Link to="/login" className="text-gray-700 hover:text-orange-600 font-medium transition">
                 Log in
               </Link>
-              <Link to="/register" className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white px-5 py-2.5 rounded-full font-medium transition shadow-md hover:shadow-lg">
+              <Link to="/pricing" className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white px-5 py-2.5 rounded-full font-medium transition shadow-md hover:shadow-lg">
                 Start Free Trial
               </Link>
             </div>
@@ -62,23 +62,22 @@ export default function MarketingLayout() {
               <ul className="space-y-2 text-sm">
                 <li><Link to="/features" className="hover:text-orange-400 transition">Features</Link></li>
                 <li><Link to="/pricing" className="hover:text-orange-400 transition">Pricing</Link></li>
-                <li><a href="#" className="hover:text-orange-400 transition">Hardware</a></li>
+                <li><Link to="/hardware" className="hover:text-orange-400 transition">Hardware</Link></li>
               </ul>
             </div>
             <div>
               <h3 className="text-white font-semibold mb-4">Resources</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-orange-400 transition">Help Center</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition">API Documentation</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition">Community</a></li>
+                <li><Link to="/help-center" className="hover:text-orange-400 transition">Help Center</Link></li>
+                <li><Link to="/community" className="hover:text-orange-400 transition">Community</Link></li>
               </ul>
             </div>
             <div>
               <h3 className="text-white font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-orange-400 transition">About</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition">Contact</a></li>
-                <li><a href="#" className="hover:text-orange-400 transition">Privacy</a></li>
+                <li><Link to="/about" className="hover:text-orange-400 transition">About</Link></li>
+                <li><Link to="/contact" className="hover:text-orange-400 transition">Contact</Link></li>
+                <li><Link to="/privacy" className="hover:text-orange-400 transition">Privacy</Link></li>
               </ul>
             </div>
           </div>

@@ -57,7 +57,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
-                to="/register" 
+                to="/pricing" 
                 className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white px-8 py-4 rounded-full font-bold text-lg transition-all shadow-lg hover:shadow-orange-500/30 hover:-translate-y-1"
               >
                 Start Free Trial
@@ -69,7 +69,7 @@ export default function Home() {
                 View Features
               </Link>
             </div>
-            <p className="mt-6 text-sm text-gray-500">No credit card required • 14-day free trial</p>
+            <p className="mt-6 text-sm text-gray-500">No credit card required • 3-day free trial</p>
           </motion.div>
         </div>
       </section>
@@ -135,7 +135,7 @@ export default function Home() {
           <h2 className="text-4xl font-bold text-gray-900 mb-6">Ready to transform your business?</h2>
           <p className="text-xl text-gray-600 mb-10">Join thousands of retailers who are growing their business with POSsuper.</p>
           <Link 
-            to="/register" 
+            to="/pricing" 
             className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white px-8 py-4 rounded-full font-bold text-lg transition shadow-lg hover:shadow-orange-500/30"
           >
             Get Started Now
