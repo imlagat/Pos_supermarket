@@ -305,7 +305,8 @@ class ReportController extends Controller
             ->join('orders', 'payments.order_id', '=', 'orders.id')
             ->select('payments.method', DB::raw('SUM(payments.amount) as revenue'))
             ->where('payments.status', 'completed')
-            ->where('orders.status', 'completed');
+            ->where('orders.status', 'completed')
+            ->where('orders.tenant_id', $user->tenant_id);
 
         if ($period !== 'all') {
             if ($period === 'daily') {

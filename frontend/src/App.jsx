@@ -10,6 +10,12 @@ import MarketingLayout from './components/marketing/MarketingLayout';
 const Home = React.lazy(() => import('./pages/marketing/Home'));
 const Features = React.lazy(() => import('./pages/marketing/Features'));
 const Pricing = React.lazy(() => import('./pages/marketing/Pricing'));
+const Hardware = React.lazy(() => import('./pages/marketing/Hardware'));
+const HelpCenter = React.lazy(() => import('./pages/marketing/HelpCenter'));
+const Community = React.lazy(() => import('./pages/marketing/Community'));
+const About = React.lazy(() => import('./pages/marketing/About'));
+const Contact = React.lazy(() => import('./pages/marketing/Contact'));
+const Privacy = React.lazy(() => import('./pages/marketing/Privacy'));
 const Register = React.lazy(() => import('./pages/Register'));
 
 // Lazy loaded app pages
@@ -59,6 +65,12 @@ function App() {
                             <Route path="/" element={<Home />} />
                             <Route path="/features" element={<Features />} />
                             <Route path="/pricing" element={<Pricing />} />
+                            <Route path="/hardware" element={<Hardware />} />
+                            <Route path="/help-center" element={<HelpCenter />} />
+                            <Route path="/community" element={<Community />} />
+                            <Route path="/about" element={<About />} />
+                            <Route path="/contact" element={<Contact />} />
+                            <Route path="/privacy" element={<Privacy />} />
                         </Route>
 
                         {/* Auth Routes */}
@@ -102,6 +114,9 @@ function App() {
                                 <Route path="/billing" element={<Billing />} />
                             </Route>
                         </Route>
+
+                        {/* Catch-all Route */}
+                        <Route path="*" element={<Home />} />
                     </Routes>
                 </Suspense>
             </BrowserRouter>

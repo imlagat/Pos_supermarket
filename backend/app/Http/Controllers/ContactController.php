@@ -21,9 +21,9 @@ class ContactController extends Controller
             'message' => 'required|string|max:2000',
         ]);
 
-        $adminEmail = config('mail.from.address') ?? 'support@poslish.com';
+        $adminEmail = env('MAIL_ADMIN_ADDRESS', env('MAIL_USERNAME', 'superposlish@gmail.com'));
 
-        Mail::to($adminEmail)->queue(new ContactSalesMail($validated));
+        Mail::to($adminEmail)->send(new ContactSalesMail($validated));
 
         return response()->json([
             'success' => true,

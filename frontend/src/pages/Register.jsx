@@ -9,11 +9,27 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { register, isLoading } = useAuthStore();
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const { register, verifyOtp, resendOtp, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (requires2FA) {
+      if (!otpCode || otpCode.trim() === '') {
+        toast.error('Please enter the verification code.');
+        return;
+      }
+      try {
+        await verifyOtp(email, otpCode);
+        navigate('/dashboard');
+      } catch {
+        toast.error('Invalid or expired code');
+      }
+      return;
+    }
+
     if (!name || !email || !password) {
       toast.error('Please fill in all fields.');
       return;
@@ -32,9 +48,14 @@ export default function Register() {
       const urlParams = new URLSearchParams(window.location.search);
       const plan = urlParams.get('plan') || 'bronze';
 
-      await register(name, email, password, plan);
-      toast.success('Registration successful!');
-      navigate('/dashboard');
+      const res = await register(name, email, password, plan);
+      if (res && res.requires_2fa) {
+        setRequires2FA(true);
+        toast.success(res.message || 'Verification email sent!');
+      } else {
+        toast.success('Registration successful!');
+        navigate('/dashboard');
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Registration failed. Email might be in use.');
     }
@@ -68,6 +89,8 @@ export default function Register() {
           </div>
           
           <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto md:mx-0">
+            {!requires2FA ? (
+              <>
             <div className="mb-5">
               <label className="block text-gray-700 text-sm font-bold mb-2">Full Name</label>
               <input
@@ -116,16 +139,53 @@ export default function Register() {
                 </button>
               </div>
             </div>
+              </>
+            ) : (
+              <div className="mb-8">
+                <label className="block text-gray-700 text-sm font-bold mb-2">Enter Verification Code</label>
+                <p className="text-sm text-gray-500 mb-4">Please check your email ({email}) for the 6-digit code.</p>
+                <input
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  className="w-full px-4 py-4 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-center tracking-[0.5em] font-mono text-xl text-gray-800 font-bold"
+                  placeholder="------"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={isLoading}
               className="w-full bg-[#E55A2A] hover:bg-[#D44A1A] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-orange-500/30 flex items-center justify-center gap-2 mb-4"
             >
-              {isLoading ? 'Creating account...' : 'Signup'}
+              {isLoading ? (requires2FA ? 'Verifying...' : 'Creating account...') : (requires2FA ? 'Verify & Continue' : 'Signup')}
             </button>
+
+            {requires2FA && (
+              <div className="text-center space-y-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await resendOtp(email);
+                      toast.success(res.message || 'Verification code resent');
+                    } catch {
+                      toast.error('Failed to resend code');
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="text-sm font-bold text-gray-600 hover:text-orange-600 transition-colors"
+                >
+                  Resend Code
+                </button>
+              </div>
+            )}
           </form>
 
+          {!requires2FA && (
           <div className="w-full max-w-sm mx-auto md:mx-0 mt-8 text-center">
             <p className="text-gray-600 font-medium">
               Already have an account?{' '}
@@ -138,6 +198,7 @@ export default function Register() {
               <p>By registering, you agree to our <span className="hover:text-gray-600 cursor-pointer">Terms</span> and <span className="hover:text-gray-600 cursor-pointer">Privacy Policy</span>.</p>
             </div>
           </div>
+          )}
         </div>
 
         {/* Right Side: Image */}

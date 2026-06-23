@@ -370,6 +370,28 @@ export default function POS() {
   const taxRate = systemSettings.tax_rate !== undefined ? systemSettings.tax_rate : 16;
   const vat = finalTotal * (taxRate / 100);
 
+  const isTrialExpired = user?.tenant?.billing_status === 'trialing' && user?.tenant?.trial_ends_at && new Date(user?.tenant?.trial_ends_at) < new Date();
+
+  if (isTrialExpired) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] bg-gray-50 rounded-2xl border border-gray-200 p-8 text-center">
+        <div className="bg-red-100 p-4 rounded-full mb-6">
+          <Lock size={48} className="text-red-600" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-800 mb-4">Trial Expired</h2>
+        <p className="text-gray-600 text-lg max-w-md mx-auto mb-8">
+          Your 3-day Silver trial has ended. To continue using the POS and checkout customers, please set up your billing.
+        </p>
+        <button 
+          onClick={() => window.location.href = '/billing'}
+          className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg transition"
+        >
+          Set Up Billing
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-12 gap-6 relative">
       <div className="col-span-7 bg-white rounded-2xl shadow-xl p-6 print:hidden">

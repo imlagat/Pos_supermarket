@@ -53,24 +53,49 @@ export default function Billing() {
       
       toast.success(res.data.message || 'Check your phone to enter M-Pesa PIN.');
       
-      // Simulate successful payment callback locally for MVP testing
-      setTimeout(async () => {
+      // Poll for M-Pesa payment status
+      const checkoutId = res.data.checkout_id;
+      let attempts = 0;
+      const maxAttempts = 20; // 60 seconds (3s * 20)
+
+      const pollStatus = setInterval(async () => {
         try {
-          await api.post('/subscriptions/callback', {
-            checkout_id: res.data.checkout_id,
-            status: 'completed',
-            tier: selectedTier,
-            cycle: billingCycle
-          });
-          toast.success('Subscription active!');
-          fetchTenant();
-          fetchHistory();
-          setSelectedTier('');
-          setPhone('');
+          attempts++;
+          const statusRes = await api.get(`/mpesa/status/${checkoutId}`);
+          const currentStatus = statusRes.data.status;
+
+          if (currentStatus === 'completed') {
+            clearInterval(pollStatus);
+            // Finalize subscription with the backend
+            await api.post('/subscriptions/callback', {
+              checkout_id: checkoutId,
+              tier: selectedTier,
+              cycle: billingCycle
+            });
+            toast.success('Subscription active!');
+            fetchTenant();
+            fetchHistory();
+            setSelectedTier('');
+            setPhone('');
+            setStkLoading(false);
+          } else if (currentStatus === 'failed') {
+            clearInterval(pollStatus);
+            toast.error('Payment failed or was cancelled.');
+            setStkLoading(false);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(pollStatus);
+            toast.error('Payment verification timed out. Please check your history later.');
+            setStkLoading(false);
+          }
         } catch (e) {
-          toast.error('Payment verification failed.');
+          clearInterval(pollStatus);
+          toast.error('Error verifying payment.');
+          setStkLoading(false);
         }
-      }, 5000);
+      }, 3000);
+
+      // Do NOT setStkLoading(false) here, let the poll finish
+      return;
 
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to initiate payment.');

@@ -71,10 +71,11 @@ export default function Layout() {
   }, [searchQuery]);
 
   const trialEndsAt = user?.tenant?.trial_ends_at;
+  const billingStatus = user?.tenant?.billing_status;
   let trialDaysRemaining = null;
   let isTrialExpired = false;
 
-  if (trialEndsAt) {
+  if (billingStatus === 'trialing' && trialEndsAt) {
       const endsAt = new Date(trialEndsAt);
       const now = new Date();
       const diffTime = endsAt - now;

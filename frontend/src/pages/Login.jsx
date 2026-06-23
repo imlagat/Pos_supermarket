@@ -202,10 +202,6 @@ export default function Login() {
                   Signup
                 </Link>
               </p>
-              
-              <div className="mt-8 pt-6 border-t border-gray-200 text-xs text-gray-400 font-medium">
-                <p>Demo: <span className="font-mono text-gray-600 font-bold">admin@pos.com</span> / <span className="font-mono text-gray-600 font-bold">admin123</span></p>
-              </div>
             </div>
           )}
         </div>

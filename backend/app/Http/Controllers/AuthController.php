@@ -54,18 +54,20 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->whereNull('deleted_at')],
+            'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
             'tier' => 'nullable|string|in:bronze,silver,custom',
         ]);
 
         $tenantName = explode(' ', $request->name)[0] . "'s Store";
-        $tier = $request->tier ?? 'bronze';
+        // Reverse trial: give everyone 3 days of Silver
+        $tier = 'silver';
 
         $tenant = Tenant::create([
             'name' => $tenantName,
             'tier' => $tier,
             'is_active' => true,
+            'billing_status' => 'trialing',
             'trial_ends_at' => now()->addDays(3),
         ]);
 
@@ -76,6 +78,9 @@ class AuthController extends Controller
             'status' => 'active',
         ]);
 
+        // Generate OTP
+        $otpCode = (string) rand(100000, 999999);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -84,20 +89,20 @@ class AuthController extends Controller
             'pin' => '0000',
             'tenant_id' => $tenant->id,
             'branch_id' => $branch->id,
+            'otp_code' => $otpCode,
+            'otp_expires_at' => now()->addMinutes(10),
         ]);
 
         try {
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeTenantMail($tenant, $user));
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeTenantMail($tenant, $user, $otpCode));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send welcome email: ' . $e->getMessage());
         }
 
-        $token = $user->createToken('pos-token')->plainTextToken;
-
         return response()->json([
-            'user' => $user->load('tenant'),
-            'token' => $token,
-            'message' => 'Registration successful.'
+            'requires_2fa' => true,
+            'email' => $user->email,
+            'message' => 'Registration successful. Please check your email for the verification code.'
         ]);
     }
 
