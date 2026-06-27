@@ -93,6 +93,8 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get('/super-admin/tenants', [App\Http\Controllers\SuperAdminController::class, 'getTenants']);
     Route::put('/super-admin/tenants/{id}/tier', [App\Http\Controllers\SuperAdminController::class, 'updateTier']);
     Route::put('/super-admin/tenants/{id}/status', [App\Http\Controllers\SuperAdminController::class, 'updateStatus']);
+    Route::put('/super-admin/tenants/{id}', [App\Http\Controllers\SuperAdminController::class, 'updateTenant']);
+    Route::delete('/super-admin/tenants/{id}', [App\Http\Controllers\SuperAdminController::class, 'deleteTenant']);
     Route::get('/super-admin/admins', [App\Http\Controllers\SuperAdminController::class, 'getAdmins']);
     Route::post('/super-admin/admins', [App\Http\Controllers\SuperAdminController::class, 'createAdmin']);
     Route::put('/super-admin/admins/{id}', [App\Http\Controllers\SuperAdminController::class, 'updateAdmin']);

@@ -21,10 +21,10 @@ export default function Paywall() {
                 </svg>
             </div>
             
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">Free Trial Expired</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">7 Days Trial Expired</h2>
             
             <p className="text-gray-600 mb-8 max-w-md">
-                Your 3-day free trial has come to an end. To continue using the system, please upgrade your account.
+                Your 7 days trial has come to an end. To continue using the system, please upgrade your account.
             </p>
             
             <button

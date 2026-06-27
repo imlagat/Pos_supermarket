@@ -29,8 +29,8 @@ export default function MarketingLayout() {
               <Link to="/login" className="text-gray-700 hover:text-orange-600 font-medium transition">
                 Log in
               </Link>
-              <Link to="/pricing" className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white px-5 py-2.5 rounded-full font-medium transition shadow-md hover:shadow-lg">
-                Start Free Trial
+              <Link to="/register" className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white px-5 py-2.5 rounded-full font-medium transition shadow-md hover:shadow-lg">
+                Start 7 Days Trial
               </Link>
             </div>
           </div>

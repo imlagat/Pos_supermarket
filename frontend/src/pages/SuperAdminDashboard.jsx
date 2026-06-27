@@ -15,8 +15,10 @@ export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState('stores');
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showEditAdminModal, setShowEditAdminModal] = useState(false);
+  const [showEditTenantModal, setShowEditTenantModal] = useState(false);
   const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '' });
   const [editingAdmin, setEditingAdmin] = useState(null);
+  const [editingTenant, setEditingTenant] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'super_admin') {
@@ -64,7 +66,8 @@ export default function SuperAdminDashboard() {
       fetchSubscriptions();
       fetchTenants(); // Also refresh tenants to show updated tiers if it completed
     } catch (error) {
-      toast.error('Failed to update subscription status');
+      console.error(error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to update subscription status');
     }
   };
 
@@ -124,6 +127,32 @@ export default function SuperAdminDashboard() {
     } catch (error) {
       console.error("Status update error:", error.response || error);
       toast.error(error.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const handleDeleteTenant = async (tenantId) => {
+    if (!window.confirm('Are you sure you want to delete this store? This action cannot be undone and will delete all associated data.')) return;
+    try {
+      await api.delete(`/super-admin/tenants/${tenantId}`);
+      toast.success('Store deleted successfully');
+      fetchTenants();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete store');
+    }
+  };
+
+  const handleEditTenant = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/super-admin/tenants/${editingTenant.id}`, {
+        name: editingTenant.name
+      });
+      toast.success('Store updated successfully');
+      setShowEditTenantModal(false);
+      setEditingTenant(null);
+      fetchTenants();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update store');
     }
   };
 
@@ -237,6 +266,7 @@ export default function SuperAdminDashboard() {
               <thead className="bg-gray-50 border-b border-gray-100 text-gray-900 uppercase text-xs font-semibold">
                 <tr>
                   <th className="px-6 py-4">Store Name</th>
+                  <th className="px-6 py-4">Admin Email</th>
                   <th className="px-6 py-4">Tier Plan</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Subscription Status</th>
@@ -250,6 +280,7 @@ export default function SuperAdminDashboard() {
                   return (
                     <tr key={tenant.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 font-medium text-gray-900">{tenant.name}</td>
+                      <td className="px-6 py-4 text-gray-500">{tenant.users && tenant.users.length > 0 ? tenant.users[0].email : 'N/A'}</td>
                       <td className="px-6 py-4">
                         <select 
                           value={tenant.tier} 
@@ -303,13 +334,27 @@ export default function SuperAdminDashboard() {
                         >
                           {tenant.is_active ? 'Suspend' : 'Activate'}
                         </button>
+                        <button 
+                          onClick={() => { setEditingTenant(tenant); setShowEditTenantModal(true); }}
+                          className="p-1.5 rounded text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Edit Store"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTenant(tenant.id)}
+                          className="p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Delete Store"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   );
                 })}
                 {tenants.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No stores registered yet.</td>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No stores registered yet.</td>
                   </tr>
                 )}
               </tbody>
@@ -565,6 +610,47 @@ export default function SuperAdminDashboard() {
                 <button
                   type="button"
                   onClick={() => { setShowEditAdminModal(false); setEditingAdmin(null); }}
+                  className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Tenant Modal */}
+      {showEditTenantModal && editingTenant && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-gray-900 text-lg">Edit Store details</h3>
+              <button onClick={() => { setShowEditTenantModal(false); setEditingTenant(null); }} className="text-gray-400 hover:text-gray-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleEditTenant} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={editingTenant.name}
+                  onChange={(e) => setEditingTenant({ ...editingTenant, name: e.target.value })}
+                />
+              </div>
+              <div className="pt-4 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditTenantModal(false); setEditingTenant(null); }}
                   className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg border border-gray-200"
                 >
                   Cancel

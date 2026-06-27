@@ -14,6 +14,7 @@ export default function Billing() {
   const [selectedTier, setSelectedTier] = useState('');
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [history, setHistory] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     // Optionally fetch latest tenant data
@@ -52,6 +53,7 @@ export default function Billing() {
       });
       
       toast.success(res.data.message || 'Check your phone to enter M-Pesa PIN.');
+      setShowPaymentModal(true);
       
       // Poll for M-Pesa payment status
       const checkoutId = res.data.checkout_id;
@@ -78,19 +80,23 @@ export default function Billing() {
             setSelectedTier('');
             setPhone('');
             setStkLoading(false);
+            setShowPaymentModal(false);
           } else if (currentStatus === 'failed') {
             clearInterval(pollStatus);
             toast.error('Payment failed or was cancelled.');
             setStkLoading(false);
+            setShowPaymentModal(false);
           } else if (attempts >= maxAttempts) {
             clearInterval(pollStatus);
             toast.error('Payment verification timed out. Please check your history later.');
             setStkLoading(false);
+            setShowPaymentModal(false);
           }
         } catch (e) {
           clearInterval(pollStatus);
           toast.error('Error verifying payment.');
           setStkLoading(false);
+          setShowPaymentModal(false);
         }
       }, 3000);
 
@@ -99,7 +105,6 @@ export default function Billing() {
 
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to initiate payment.');
-    } finally {
       setStkLoading(false);
     }
   };
@@ -131,7 +136,7 @@ export default function Billing() {
             
             {tenant.billing_status === 'trialing' && tenant.trial_ends_at && (
               <p className="text-sm text-gray-500 mt-2">
-                Your free trial ends on {new Date(tenant.trial_ends_at).toLocaleDateString()}
+                Your 7 days trial ends on {new Date(tenant.trial_ends_at).toLocaleDateString()}
               </p>
             )}
             
@@ -273,6 +278,31 @@ export default function Billing() {
           </table>
         </div>
       </div>
+
+      {/* M-Pesa Waiting Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
+              <div className="h-full bg-orange-500 animate-pulse w-full"></div>
+            </div>
+            
+            <div className="w-20 h-20 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Loader2 className="w-10 h-10 animate-spin" />
+            </div>
+            
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Waiting for Payment</h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              We've sent an M-Pesa prompt to your phone. <br/><br/>
+              Please enter your M-Pesa PIN to complete the transaction.
+            </p>
+            
+            <div className="bg-orange-50 text-orange-800 text-sm p-4 rounded-xl font-medium border border-orange-100">
+              Do not close this window. The system will automatically confirm once paid.
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

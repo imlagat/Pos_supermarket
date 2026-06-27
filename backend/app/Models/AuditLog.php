@@ -11,6 +11,12 @@ class AuditLog extends Model
 
     protected static function booted() {
         static::addGlobalScope(new \App\Models\Scopes\BranchScope);
+        
+        static::creating(function ($model) {
+            if (auth()->check() && empty($model->branch_id)) {
+                $model->branch_id = auth()->user()->branch_id;
+            }
+        });
     }
 
     public function user()

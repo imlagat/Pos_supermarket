@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Mail;
 class ShiftController extends Controller
 {
     public function current(Request $request)
@@ -43,6 +43,12 @@ class ShiftController extends Controller
             'opening_time' => now(),
             'status' => 'open'
         ]);
+
+        // Send email to admins
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        if ($admins->isNotEmpty()) {
+            Mail::to($admins)->queue(new \App\Mail\ShiftOpenedMail($shift));
+        }
 
         return response()->json(['shift' => $shift], 201);
     }
@@ -104,6 +110,18 @@ class ShiftController extends Controller
             'status' => 'closed',
             'notes' => $request->notes
         ]);
+
+        // Send email to admins
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        if ($admins->isNotEmpty()) {
+            $data = [
+                'cashSales' => $cashSales,
+                'mpesaSales' => $mpesaSales,
+                'cardSales' => $cardSales,
+                'deposits' => $deposits,
+            ];
+            Mail::to($admins)->queue(new \App\Mail\ShiftClosedMail($shift, $data));
+        }
 
         return response()->json(['shift' => $shift]);
     }

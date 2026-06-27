@@ -72,24 +72,51 @@ export default function Layout() {
 
   const trialEndsAt = user?.tenant?.trial_ends_at;
   const billingStatus = user?.tenant?.billing_status;
-  let trialDaysRemaining = null;
-  let isTrialExpired = false;
+  
+  const [trialTimeLeft, setTrialTimeLeft] = useState('');
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(null);
+  const [isTrialExpired, setIsTrialExpired] = useState(false);
 
-  if (billingStatus === 'trialing' && trialEndsAt) {
-      const endsAt = new Date(trialEndsAt);
-      const now = new Date();
-      const diffTime = endsAt - now;
-      trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (trialDaysRemaining <= 0) {
-          isTrialExpired = true;
+  useEffect(() => {
+    if (billingStatus !== 'trialing' || !trialEndsAt) {
+        setTrialDaysRemaining(null);
+        setIsTrialExpired(false);
+        return;
+    }
+
+    const endsAt = new Date(trialEndsAt).getTime();
+
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const distance = endsAt - now;
+
+      if (distance <= 0) {
+          setIsTrialExpired(true);
+          setTrialDaysRemaining(0);
+          setTrialTimeLeft('Expired');
+      } else {
+          setIsTrialExpired(false);
+          const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+          
+          setTrialDaysRemaining(Math.ceil(distance / (1000 * 60 * 60 * 24)));
+          setTrialTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
       }
-  }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [billingStatus, trialEndsAt]);
 
   return (
     <div className="flex h-screen overflow-hidden print:h-auto print:overflow-visible bg-gray-50">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-auto bg-[#F8F9FA] print:bg-white print:overflow-visible print:p-0">
-        <header className="bg-white h-16 border-b border-gray-100 flex items-center justify-between px-6 shrink-0 z-10 sticky top-0 print:hidden">
+        <header className="bg-white h-16 border-b border-gray-100 flex items-center justify-between px-6 shrink-0 z-50 sticky top-0 print:hidden">
           <div className="flex items-center gap-4 flex-1">
             <button className="text-gray-400 hover:text-gray-700 md:hidden"><Menu size={20}/></button>
             <div className="relative max-w-md w-full hidden md:block group" ref={searchRef}>
@@ -217,9 +244,9 @@ export default function Layout() {
                         sysAlerts.push({ type: 'system', message: 'Your account is suspended. Read-only mode active.' });
                       }
                       if (isTrialExpired) {
-                        sysAlerts.push({ type: 'system', message: 'Free trial has expired. Upgrade to keep using all features.' });
+                        sysAlerts.push({ type: 'system', message: '7 days trial has expired. Upgrade to keep using all features.' });
                       } else if (trialDaysRemaining !== null && trialDaysRemaining <= 7 && trialDaysRemaining > 0) {
-                        sysAlerts.push({ type: 'system', message: `Free trial ends in ${trialDaysRemaining} days!` });
+                        sysAlerts.push({ type: 'system', message: `7 days trial ends in ${trialDaysRemaining} days!` });
                       }
                       const allAlerts = [...sysAlerts, ...alerts];
                       
@@ -311,13 +338,13 @@ export default function Layout() {
         </header>
 
         {isSuspended && (
-          <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-3 text-center text-sm font-bold shadow-md z-50 flex-shrink-0 animate-pulse print:hidden">
+          <div className="sticky top-16 bg-gradient-to-r from-amber-600 to-orange-600 text-white p-3 text-center text-sm font-bold shadow-md z-50 flex-shrink-0 animate-pulse print:hidden">
             ⚠️ Your account has been suspended. You are in read-only mode and can only view historical sales data.
           </div>
         )}
         {trialDaysRemaining !== null && !isTrialExpired && (
-          <div className="bg-yellow-500 text-gray-900 p-3 text-center text-sm font-bold shadow-md z-50 flex-shrink-0">
-            ⏳ Free trial ends in {trialDaysRemaining} day{trialDaysRemaining === 1 ? '' : 's'}. <button onClick={() => window.location.href='/settings'} className="underline ml-2">Upgrade now</button>
+          <div className="sticky top-16 bg-yellow-500 text-gray-900 p-3 text-center text-sm font-bold shadow-md z-40 flex-shrink-0">
+            ⏳ 7 days trial ends in {trialTimeLeft}. <button onClick={() => navigate('/billing')} className="underline ml-2">Upgrade now</button>
           </div>
         )}
         <div className="p-4 md:p-6 print:p-0 flex-1">
@@ -326,7 +353,7 @@ export default function Layout() {
       </main>
 
       <SwitchAccountModal isOpen={showSwitchModal} onClose={() => setShowSwitchModal(false)} />
-      {!isBronze && <ChatWidget />}
+      <ChatWidget />
     </div>
   );
 }

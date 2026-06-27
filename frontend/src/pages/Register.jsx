@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import toast from 'react-hot-toast';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, ShoppingCart, Mail, Lock, User, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, ShoppingCart, Mail, Lock, User, UserPlus, Loader2 } from 'lucide-react';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -79,13 +79,13 @@ export default function Register() {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-6xl flex flex-col md:flex-row min-h-[700px]">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-4xl flex flex-col md:flex-row min-h-[600px]">
         
         {/* Left Side: Form */}
-        <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center">
+        <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-center">
           <div className="text-center md:text-left mb-10">
             <h1 className="text-3xl md:text-4xl font-extrabold text-orange-600 tracking-tight">Create Account</h1>
-            <p className="text-gray-500 mt-2 font-medium">Start your free trial today</p>
+            <p className="text-gray-500 mt-2 font-medium">Start your 7 days trial today</p>
           </div>
           
           <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto md:mx-0">
@@ -159,8 +159,9 @@ export default function Register() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#E55A2A] hover:bg-[#D44A1A] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-orange-500/30 flex items-center justify-center gap-2 mb-4"
+              className="w-full bg-[#E55A2A] hover:bg-[#D44A1A] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-orange-500/30 flex items-center justify-center gap-2 mb-4 disabled:opacity-70 disabled:cursor-not-allowed"
             >
+              {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
               {isLoading ? (requires2FA ? 'Verifying...' : 'Creating account...') : (requires2FA ? 'Verify & Continue' : 'Signup')}
             </button>
 
@@ -177,9 +178,10 @@ export default function Register() {
                     }
                   }}
                   disabled={isLoading}
-                  className="text-sm font-bold text-gray-600 hover:text-orange-600 transition-colors"
+                  className="text-sm font-bold text-gray-600 hover:text-orange-600 transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Resend Code
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isLoading ? 'Sending...' : 'Resend Code'}
                 </button>
               </div>
             )}

@@ -144,19 +144,23 @@ export default function ChatWidget() {
             {!isOpen && (
                 <button
                     onClick={() => {
-                        if (user?.tenant?.tier === 'bronze' || (user?.tenant && !user.tenant.is_active)) return;
+                        if (user?.tenant && !user.tenant.is_active) return;
+                        if (user?.tenant?.tier === 'bronze') {
+                            window.location.href = '/billing';
+                            return;
+                        }
                         setIsOpen(true);
                     }}
                     className={`fixed bottom-6 right-6 p-4 rounded-full shadow-2xl transition-all z-50 flex items-center justify-center
                         ${(user?.tenant?.tier === 'bronze' || (user?.tenant && !user.tenant.is_active))
-                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' 
+                            ? 'bg-gray-400 text-gray-200 cursor-pointer opacity-80 hover:bg-gray-500' 
                             : 'bg-orange-600 text-white hover:bg-orange-700 hover:scale-110'
                         }`}
                     title={
                         (user?.tenant && !user.tenant.is_active) ? "Account Suspended" :
                         user?.tenant?.tier === 'bronze' ? "AI Assistant (Upgrade to unlock)" : "Open AI Assistant"
                     }
-                    disabled={user?.tenant?.tier === 'bronze' || (user?.tenant && !user.tenant.is_active)}
+                    disabled={user?.tenant && !user.tenant.is_active}
                 >
                     <MessageCircle size={28} />
                 </button>

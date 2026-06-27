@@ -116,10 +116,10 @@ export default function Dashboard() {
   }, [timeRange]);
 
   const statCards = [
-    { title: 'Total Sales', value: `Ksh ${stats.total_sales?.toLocaleString()}`, icon: ShoppingBag, color: 'text-orange-600', bg: 'bg-orange-50', trend: 12.5, trendUp: true },
-    { title: 'Orders', value: stats.orders, icon: Package, color: 'text-slate-700', bg: 'bg-slate-100', trend: 12.5, trendUp: false },
-    { title: 'Customers', value: stats.customers, icon: Users, color: 'text-slate-700', bg: 'bg-slate-100', trend: 0, trendUp: true },
-    { title: 'Products', value: stats.products, icon: Package, color: 'text-slate-700', bg: 'bg-slate-100', trend: 5.3, trendUp: true },
+    { title: 'Total Sales', value: `Ksh ${stats.total_sales?.toLocaleString() || 0}`, icon: ShoppingBag, color: 'text-orange-600', bg: 'bg-orange-50', trend: 0, trendUp: true },
+    { title: 'Orders', value: stats.orders || 0, icon: Package, color: 'text-orange-600', bg: 'bg-orange-50', trend: 0, trendUp: true },
+    { title: 'Customers', value: stats.customers || 0, icon: Users, color: 'text-orange-600', bg: 'bg-orange-50', trend: 0, trendUp: true },
+    { title: 'Products', value: stats.products || 0, icon: Package, color: 'text-orange-600', bg: 'bg-orange-50', trend: 0, trendUp: true },
   ];
 
 
@@ -180,11 +180,14 @@ export default function Dashboard() {
                 <h2 className="text-lg font-bold text-gray-900">Trial Period</h2>
                 <p className="text-sm text-gray-600">
                   {(() => {
-                    if (!user.tenant.trial_ends_at) return 'Your free trial has expired.';
-                    const days = Math.ceil((new Date(user.tenant.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
-                    if (days > 0) return `You have ${days} day${days === 1 ? '' : 's'} remaining in your free trial.`;
-                    if (days === 0) return 'Your free trial expires today!';
-                    return `Your free trial expired ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago.`;
+                    if (!user.tenant.trial_ends_at) return 'Your 7 days trial has expired.';
+                    const distance = new Date(user.tenant.trial_ends_at).getTime() - currentTime.getTime();
+                    if (distance <= 0) return 'Your 7 days trial has expired.';
+                    const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((distance % (1000 * 60)) / 1000);
+                    return `You have ${d}d ${h}h ${m}m ${s}s remaining in your 7 days trial.`;
                   })()}
                 </p>
               </div>
