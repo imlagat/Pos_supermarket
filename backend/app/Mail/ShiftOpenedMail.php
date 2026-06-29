@@ -9,23 +9,20 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use App\Models\Shift;
 
-class WelcomeTenantMail extends Mailable
+class ShiftOpenedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $tenantName;
-    public $userName;
-    public $otpCode;
+    public $shift;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($tenantName, $userName, $otpCode = null)
+    public function __construct(Shift $shift)
     {
-        $this->tenantName = $tenantName;
-        $this->userName = $userName;
-        $this->otpCode = $otpCode;
+        $this->shift = $shift;
     }
 
     /**
@@ -34,7 +31,7 @@ class WelcomeTenantMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to POSlish! Your store is ready.',
+            subject: 'Shift Opened - ' . ($this->shift->user->name ?? 'User') . ' at ' . ($this->shift->branch->name ?? 'Branch'),
         );
     }
 
@@ -44,7 +41,7 @@ class WelcomeTenantMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            htmlString: '<h1>Welcome to POSlish!</h1><p>Hi ' . $this->userName . ', your store <strong>' . $this->tenantName . '</strong> is set up. Enjoy your 7 days trial!</p>' . ($this->otpCode ? '<br><p>To complete your registration and log in, please enter this verification code: <strong style="font-size: 24px; letter-spacing: 2px;">' . $this->otpCode . '</strong></p>' : ''),
+            view: 'emails.shifts.opened',
         );
     }
 

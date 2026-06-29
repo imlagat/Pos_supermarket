@@ -315,7 +315,14 @@ export default function Users() {
                 <td className="p-4 capitalize">{u.role}</td>
                 <td className="p-4 flex gap-2">
                   <button onClick={() => handleEdit(u)} className="text-orange-600"><Edit2 size={18} /></button>
-                  <button onClick={() => handleDelete(u.id)} className="text-red-600"><Trash2 size={18} /></button>
+                  <button 
+                    onClick={() => handleDelete(u.id)} 
+                    disabled={u.id === user?.id} 
+                    className={`${u.id === user?.id ? 'text-gray-300 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`}
+                    title={u.id === user?.id ? 'You cannot delete yourself' : 'Delete user'}
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </td>
               </tr>
             ))}

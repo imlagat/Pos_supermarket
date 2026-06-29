@@ -590,9 +590,21 @@ export default function POS() {
           onShiftClosed={() => {
             setActiveShift(null);
             setShowCloseRegister(false);
-            setShowStartShift(true);
           }}
         />
+      )}
+
+      {user?.role === 'cashier' && !activeShift && !shiftLoading && !showStartShift && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-2xl border border-gray-200">
+          <div className="bg-orange-100 p-6 rounded-full mb-6">
+            <Lock size={64} className="text-orange-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">Register Closed</h2>
+          <p className="text-gray-600 text-lg mb-8">You must open the register to start selling.</p>
+          <button onClick={() => setShowStartShift(true)} className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+            <Lock size={20} /> Open Register
+          </button>
+        </div>
       )}
     </div>
   );

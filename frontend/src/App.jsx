@@ -6,10 +6,11 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import PageLoader from './components/common/PageLoader';
 import MarketingLayout from './components/marketing/MarketingLayout';
 
+import Home from './pages/marketing/Home';
+import Features from './pages/marketing/Features';
+import Pricing from './pages/marketing/Pricing';
+
 // Lazy loaded marketing pages
-const Home = React.lazy(() => import('./pages/marketing/Home'));
-const Features = React.lazy(() => import('./pages/marketing/Features'));
-const Pricing = React.lazy(() => import('./pages/marketing/Pricing'));
 const Hardware = React.lazy(() => import('./pages/marketing/Hardware'));
 const HelpCenter = React.lazy(() => import('./pages/marketing/HelpCenter'));
 const Community = React.lazy(() => import('./pages/marketing/Community'));
@@ -51,6 +52,7 @@ const Billing = React.lazy(() => import('./pages/Billing'));
 const OnboardingWizard = React.lazy(() => import('./pages/OnboardingWizard'));
 
 import SuspendedModal from './components/common/SuspendedModal';
+import ScrollToTop from './components/common/ScrollToTop';
 
 function App() {
     return (
@@ -58,6 +60,7 @@ function App() {
             <Toaster position="top-right" />
             <SuspendedModal />
             <BrowserRouter>
+                <ScrollToTop />
                 <Suspense fallback={<PageLoader message="Loading page..." />}>
                     <Routes>
                         {/* Marketing Routes */}

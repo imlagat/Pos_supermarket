@@ -32,12 +32,18 @@ class UserController extends Controller
             }
         }
 
+        $branchId = $request->branch_id;
+        if (!$branchId && $authUser) {
+            $branch = \App\Models\Branch::where('tenant_id', $authUser->tenant_id)->first();
+            $branchId = $branch ? $branch->id : null;
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
-            'branch_id' => $request->branch_id ?? null,
+            'branch_id' => $branchId,
         ]);
         return response()->json($user, 201);
     }

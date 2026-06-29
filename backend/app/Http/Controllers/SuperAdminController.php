@@ -17,7 +17,9 @@ class SuperAdminController extends Controller
         if (!$request->user()->isSuperAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        $tenants = Tenant::orderBy('created_at', 'desc')->get();
+        $tenants = Tenant::with(['users' => function($query) {
+            $query->where('role', 'admin');
+        }])->orderBy('created_at', 'desc')->get();
         return response()->json($tenants);
     }
 
@@ -26,7 +28,7 @@ class SuperAdminController extends Controller
         if (!$request->user()->isSuperAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        $request->validate(['tier' => 'required|in:bronze,silver,custom']);
+        $request->validate(['tier' => 'required|in:bronze,silver,gold,ai,custom']);
         $tenant = Tenant::findOrFail($id);
         $tenant->tier = $request->tier;
         $tenant->save();
@@ -43,6 +45,57 @@ class SuperAdminController extends Controller
         $tenant->is_active = $request->is_active;
         $tenant->save();
         return response()->json($tenant);
+    }
+
+    public function updateTenant(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $tenant = Tenant::findOrFail($id);
+        $tenant->name = $request->name;
+        $tenant->save();
+        
+        return response()->json($tenant);
+    }
+
+    public function deleteTenant(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $tenant = Tenant::findOrFail($id);
+        
+        $tables = [
+            'audit_logs', 'batches', 'branch_stocks', 'branches', 'customers', 
+            'discount_rules', 'drawer_movements', 'loyalty_transactions', 'order_items', 
+            'orders', 'payments', 'products', 'purchase_order_items', 'purchase_orders', 
+            'returned_items', 'returns', 'settings', 'shifts', 'stock_alerts', 
+            'subscription_payments', 'suppliers', 'users'
+        ];
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+            foreach ($tables as $table) {
+                \Illuminate\Support\Facades\DB::table($table)->where('tenant_id', $id)->delete();
+            }
+            $tenant->delete();
+            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+            \Illuminate\Support\Facades\DB::commit();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json(['message' => 'Failed to delete tenant: ' . $e->getMessage()], 500);
+        }
+        
+        return response()->json(['message' => 'Tenant and all associated data deleted successfully']);
     }
 
     public function getAdmins(Request $request)

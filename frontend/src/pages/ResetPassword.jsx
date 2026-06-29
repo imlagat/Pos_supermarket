@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Lock, Send, ShoppingCart } from 'lucide-react';
+import { Lock, Send, ShoppingCart, Loader2 } from 'lucide-react';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -112,7 +112,14 @@ export default function ResetPassword() {
               disabled={loading}
               className="w-full bg-[#E55A2A] hover:bg-[#D44A1A] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-orange-500/30 flex items-center justify-center gap-2 mb-4"
             >
-              {loading ? 'Resetting...' : 'Reset Password'}
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin w-5 h-5" />
+                  Resetting...
+                </>
+              ) : (
+                'Reset Password'
+              )}
             </button>
           </form>
 
