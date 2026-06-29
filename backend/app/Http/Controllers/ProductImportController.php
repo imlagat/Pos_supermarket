@@ -78,13 +78,11 @@ class ProductImportController extends Controller
                 
                 $product = Product::create($pData);
                 
-                \Illuminate\Support\Facades\DB::table('branch_stocks')->insert([
+                \App\Models\BranchStock::create([
                     'branch_id' => $branchId,
                     'product_id' => $product->id,
                     'quantity' => $stockQty,
                     'min_stock_threshold' => $minStock,
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
             }
         }

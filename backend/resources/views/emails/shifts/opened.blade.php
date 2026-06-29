@@ -21,11 +21,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo"><span class="logo-icon">L</span> LipanaPOS</div>
+            <div class="logo"><span class="logo-icon">P</span> POS Super</div>
         </div>
         
         <div class="title">Shift opened</div>
-        <p class="greeting">Hi {{ $shift->user->name ?? 'User' }}, here's the opening breakdown for your shift at {{ $shift->branch->name ?? 'Branch' }}.</p>
+        <p class="greeting">Hello Admin, Cashier <strong>{{ $shift->user->name ?? 'User' }}</strong> has just opened their shift. Here's the opening breakdown for their shift at <strong>{{ $shift->branch->name ?? 'Branch' }}</strong>.</p>
         
         <div class="card">
             <div class="row">
@@ -51,8 +51,8 @@
         </div>
 
         <div class="footer">
-            &copy; {{ date('Y') }} LipanaPOS &middot; Built for African businesses<br>
-            <a href="#" style="color: #4A90E2; text-decoration: none;">pos.lipana.app</a>
+            &copy; {{ date('Y') }} POS Super &middot; Built for African businesses<br>
+            <a href="#" style="color: #4A90E2; text-decoration: none;">pos.super</a>
         </div>
     </div>
 </body>
