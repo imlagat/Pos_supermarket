@@ -278,14 +278,16 @@ export default function Layout() {
                       ));
                     })()}
                   </div>
-                  <div className="p-2 border-t border-gray-100 bg-gray-50">
-                    <button 
-                      onClick={() => { setShowNotifications(false); navigate('/inventory'); }}
-                      className="w-full text-center text-xs font-bold text-orange-600 hover:text-orange-700 py-1 transition-colors"
-                    >
-                      View All Inventory
-                    </button>
-                  </div>
+                  {user?.role !== 'cashier' && (
+                    <div className="p-2 border-t border-gray-100 bg-gray-50">
+                      <button 
+                        onClick={() => { setShowNotifications(false); navigate('/inventory'); }}
+                        className="w-full text-center text-xs font-bold text-orange-600 hover:text-orange-700 py-1 transition-colors"
+                      >
+                        View All Inventory
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

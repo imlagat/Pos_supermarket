@@ -27,5 +27,24 @@ export default function ProtectedRoute() {
         return <Navigate to="/onboarding" replace />;
     }
 
+    // Role-based Access Control (RBAC)
+    const cashierAllowedPaths = ['/pos', '/cash-drawer', '/customers', '/transactions', '/returns', '/profile', '/onboarding'];
+    
+    if (user.role === 'cashier') {
+        // If the current path doesn't start with one of the allowed paths
+        const isAllowed = cashierAllowedPaths.some(path => location.pathname.startsWith(path));
+        if (!isAllowed) {
+            return <Navigate to="/pos" replace />;
+        }
+    }
+
+    if (user.role === 'manager') {
+        const managerRestrictedPaths = ['/billing', '/audit-logs'];
+        const isRestricted = managerRestrictedPaths.some(path => location.pathname.startsWith(path));
+        if (isRestricted) {
+            return <Navigate to="/dashboard" replace />;
+        }
+    }
+
     return <Outlet />;
 }
