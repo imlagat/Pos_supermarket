@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ChatWidget from '../AIChatbot/ChatWidget';
 import Paywall from '../common/Paywall';
@@ -12,6 +12,7 @@ import SwitchAccountModal from '../Auth/SwitchAccountModal';
 export default function Layout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const isBronze = user?.tenant?.tier === 'bronze';
   const isSuspended = user?.tenant && !user.tenant.is_active;
 
@@ -348,7 +349,7 @@ export default function Layout() {
           </div>
         )}
         <div className="p-4 md:p-6 print:p-0 flex-1">
-          {isTrialExpired ? <Paywall /> : <Outlet />}
+          {isTrialExpired && location.pathname !== '/billing' ? <Paywall /> : <Outlet />}
         </div>
       </main>
 

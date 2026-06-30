@@ -64,6 +64,38 @@ class SuperAdminController extends Controller
         return response()->json($tenant);
     }
 
+    public function extendSubscription(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $request->validate([
+            'days' => 'required|integer|min:1',
+        ]);
+
+        $tenant = Tenant::findOrFail($id);
+        $days = (int) $request->days;
+
+        if ($tenant->billing_status === 'active' && $tenant->next_billing_date) {
+            $tenant->next_billing_date = \Carbon\Carbon::parse($tenant->next_billing_date)->addDays($days);
+        } else {
+            // It's trialing or expired, so we extend trial_ends_at
+            if ($tenant->trial_ends_at && \Carbon\Carbon::parse($tenant->trial_ends_at)->isFuture()) {
+                $tenant->trial_ends_at = \Carbon\Carbon::parse($tenant->trial_ends_at)->addDays($days);
+            } else {
+                $tenant->trial_ends_at = now()->addDays($days);
+            }
+        }
+        
+        $tenant->save();
+        
+        return response()->json([
+            'message' => "Successfully extended subscription by {$days} days",
+            'tenant' => $tenant
+        ]);
+    }
+
     public function deleteTenant(Request $request, $id)
     {
         if (!$request->user()->isSuperAdmin()) {

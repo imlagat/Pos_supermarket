@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { LogOut, Shield, Users, Building2, Activity, Settings, RefreshCw, XCircle, CheckCircle, Clock, ShoppingCart, Trash2, Edit2, CreditCard } from 'lucide-react';
+import { LogOut, Shield, Users, Building2, Activity, Settings, RefreshCw, XCircle, CheckCircle, Clock, ShoppingCart, Trash2, Edit2, CreditCard, Calendar } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
   const { user, logout } = useAuthStore();
@@ -19,6 +19,9 @@ export default function SuperAdminDashboard() {
   const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '' });
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [editingTenant, setEditingTenant] = useState(null);
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [extendingTenant, setExtendingTenant] = useState(null);
+  const [extendDays, setExtendDays] = useState(7);
 
   useEffect(() => {
     if (!user || user.role !== 'super_admin') {
@@ -153,6 +156,19 @@ export default function SuperAdminDashboard() {
       fetchTenants();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update store');
+    }
+  };
+
+  const handleExtendSubscription = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/super-admin/tenants/${extendingTenant.id}/extend`, { days: extendDays });
+      toast.success(`Extended subscription by ${extendDays} days`);
+      setShowExtendModal(false);
+      setExtendingTenant(null);
+      fetchTenants();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to extend subscription');
     }
   };
 
@@ -340,6 +356,13 @@ export default function SuperAdminDashboard() {
                           title="Edit Store"
                         >
                           <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => { setExtendingTenant(tenant); setShowExtendModal(true); setExtendDays(7); }}
+                          className="p-1.5 rounded text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors"
+                          title="Extend Subscription"
+                        >
+                          <Calendar size={16} />
                         </button>
                         <button 
                           onClick={() => handleDeleteTenant(tenant.id)}
@@ -660,6 +683,50 @@ export default function SuperAdminDashboard() {
                   className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg"
                 >
                   Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Extend Subscription Modal */}
+      {showExtendModal && extendingTenant && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-gray-900 text-lg">Extend Subscription</h3>
+              <button onClick={() => { setShowExtendModal(false); setExtendingTenant(null); }} className="text-gray-400 hover:text-gray-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleExtendSubscription} className="p-6 space-y-4">
+              <div className="bg-orange-50 text-orange-800 p-3 rounded-lg text-sm mb-2 border border-orange-100">
+                Extending subscription for <strong>{extendingTenant.name}</strong>.
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Days to Extend</label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={extendDays}
+                  onChange={(e) => setExtendDays(e.target.value)}
+                />
+              </div>
+              <div className="pt-4 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowExtendModal(false); setExtendingTenant(null); }}
+                  className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white font-medium hover:bg-green-700 rounded-lg"
+                >
+                  Confirm Extension
                 </button>
               </div>
             </form>

@@ -1,16 +1,10 @@
-import { useAuthStore } from '../../stores/authStore';
-import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function Paywall() {
-    const { upgrade, isLoading } = useAuthStore();
+    const navigate = useNavigate();
 
-    const handleUpgrade = async () => {
-        try {
-            const res = await upgrade();
-            toast.success(res.message || 'Successfully upgraded!');
-        } catch (error) {
-            toast.error('Failed to upgrade account');
-        }
+    const handleUpgrade = () => {
+        navigate('/billing');
     };
 
     return (
@@ -29,12 +23,8 @@ export default function Paywall() {
             
             <button
                 onClick={handleUpgrade}
-                disabled={isLoading}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-lg shadow transition duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
             >
-                {isLoading && (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                )}
                 Upgrade Account Now
             </button>
             
