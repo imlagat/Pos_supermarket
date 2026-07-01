@@ -5,14 +5,40 @@ use Illuminate\Support\Facades\Log;
 
 class MpesaService
 {
+    protected $consumerKey;
+    protected $consumerSecret;
+    protected $shortcode;
+    protected $passkey;
+    protected $environment;
+    protected $callbackUrl;
+
+    public function __construct(array $credentials = null)
+    {
+        if ($credentials) {
+            $this->consumerKey = $credentials['consumer_key'] ?? env('MPESA_CONSUMER_KEY');
+            $this->consumerSecret = $credentials['consumer_secret'] ?? env('MPESA_CONSUMER_SECRET');
+            $this->shortcode = $credentials['shortcode'] ?? env('MPESA_SHORTCODE');
+            $this->passkey = $credentials['passkey'] ?? env('MPESA_PASSKEY');
+            $this->environment = $credentials['environment'] ?? env('MPESA_ENVIRONMENT', 'sandbox');
+            $this->callbackUrl = $credentials['callback_url'] ?? env('MPESA_CALLBACK_URL');
+        } else {
+            $this->consumerKey = env('MPESA_CONSUMER_KEY');
+            $this->consumerSecret = env('MPESA_CONSUMER_SECRET');
+            $this->shortcode = env('MPESA_SHORTCODE');
+            $this->passkey = env('MPESA_PASSKEY');
+            $this->environment = env('MPESA_ENVIRONMENT', 'sandbox');
+            $this->callbackUrl = env('MPESA_CALLBACK_URL');
+        }
+    }
+
     public function getAccessToken()
     {
-        $url = env('MPESA_ENVIRONMENT') === 'sandbox'
+        $url = $this->environment === 'sandbox'
             ? 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
             : 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
 
         try {
-            $response = Http::withBasicAuth(env('MPESA_CONSUMER_KEY'), env('MPESA_CONSUMER_SECRET'))->get($url);
+            $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)->get($url);
             $data = $response->json();
 
             if (isset($data['access_token'])) {
@@ -40,29 +66,33 @@ class MpesaService
             $phone = '254' . $phone;
         }
 
-        $url = env('MPESA_ENVIRONMENT') === 'sandbox'
+        $url = $this->environment === 'sandbox'
             ? 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
             : 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
+        
         $timestamp = now()->format('YmdHis');
-        $password = base64_encode(env('MPESA_SHORTCODE').env('MPESA_PASSKEY').$timestamp);
+        $password = base64_encode($this->shortcode . $this->passkey . $timestamp);
+        
         $payload = [
-            'BusinessShortCode' => env('MPESA_SHORTCODE'),
+            'BusinessShortCode' => $this->shortcode,
             'Password' => $password,
             'Timestamp' => $timestamp,
             'TransactionType' => 'CustomerPayBillOnline',
             'Amount' => (int) $amount,
             'PartyA' => $phone,
-            'PartyB' => env('MPESA_SHORTCODE'),
+            'PartyB' => $this->shortcode,
             'PhoneNumber' => $phone,
-            'CallBackURL' => env('MPESA_CALLBACK_URL'),
+            'CallBackURL' => $this->callbackUrl,
             'AccountReference' => $accountReference,
             'TransactionDesc' => 'POS Payment'
         ];
+        
         $token = $this->getAccessToken();
         if (!$token) {
             Log::error('M-Pesa: Failed to get access token');
-            return ['error' => 'Failed to authenticate with M-Pesa'];
+            return ['error' => 'Failed to authenticate with M-Pesa. Please check your credentials.'];
         }
+        
         try {
             $response = Http::withToken($token)->post($url, $payload);
             $result = $response->json();

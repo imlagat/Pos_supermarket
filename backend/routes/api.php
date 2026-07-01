@@ -19,7 +19,7 @@ Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 // M-Pesa callback — must be public (no auth) so Safaricom can reach it
-Route::post('/mpesa/callback', [MpesaController::class, 'callback']);
+Route::post('/mpesa/callback/{tenant_id}', [MpesaController::class, 'callback']);
 
 Route::post('/remote-scan/session/{sessionId}', [App\Http\Controllers\RemoteScannerController::class, 'store']);
 Route::get('/remote-scan/session/{sessionId}', [App\Http\Controllers\RemoteScannerController::class, 'check']);
