@@ -19,10 +19,10 @@ export const useAuthStore = create((set, get) => ({
         set({ activeBranchId: id });
     },
 
-    login: async (email, password) => {
+    login: async (email, password, isSuperAdmin = false) => {
         set({ isLoading: true });
         try {
-            const res = await api.post('/login', { email, password });
+            const res = await api.post('/login', { email, password, is_super_admin: isSuperAdmin });
             if (res.data.requires_2fa) {
                 set({ isLoading: false });
                 return res.data;

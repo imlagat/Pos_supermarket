@@ -44,7 +44,7 @@ class CheckExpiringSubscriptions extends Command
             $trialEnds = Carbon::parse($tenant->trial_ends_at)->startOfDay();
             $daysLeft = $today->diffInDays($trialEnds, false);
 
-            if ($daysLeft === 3 || $daysLeft === 1) {
+            if ($daysLeft >= 1 && $daysLeft <= 3) {
                 $this->sendEmailToAdmins($tenant, new TrialExpiringMail($tenant, (int)$daysLeft));
                 $this->info("Sent trial expiry email to {$tenant->name} ({$daysLeft} days left)");
             }

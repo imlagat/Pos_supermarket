@@ -117,7 +117,7 @@ export default function Layout() {
     <div className="flex h-screen overflow-hidden print:h-auto print:overflow-visible bg-gray-50">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-auto bg-[#F8F9FA] print:bg-white print:overflow-visible print:p-0">
-        <header className="bg-white h-16 border-b border-gray-100 flex items-center justify-between px-6 shrink-0 z-50 sticky top-0 print:hidden">
+        <header className="bg-white h-16 border-b border-gray-100 flex items-center justify-between px-6 shrink-0 z-[60] sticky top-0 print:hidden">
           <div className="flex items-center gap-4 flex-1">
             <button className="text-gray-400 hover:text-gray-700 md:hidden"><Menu size={20}/></button>
             <div className="relative max-w-md w-full hidden md:block group" ref={searchRef}>
@@ -340,16 +340,18 @@ export default function Layout() {
           </div>
         </header>
 
-        {isSuspended && (
-          <div className="sticky top-16 bg-gradient-to-r from-amber-600 to-orange-600 text-white p-3 text-center text-sm font-bold shadow-md z-50 flex-shrink-0 animate-pulse print:hidden">
-            ⚠️ Your account has been suspended. You are in read-only mode and can only view historical sales data.
-          </div>
-        )}
-        {trialDaysRemaining !== null && !isTrialExpired && (
-          <div className="sticky top-16 bg-yellow-500 text-gray-900 p-3 text-center text-sm font-bold shadow-md z-40 flex-shrink-0">
-            ⏳ 7 days trial ends in {trialTimeLeft}. <button onClick={() => navigate('/billing')} className="underline ml-2">Upgrade now</button>
-          </div>
-        )}
+        <div className="sticky top-16 z-50 flex flex-col flex-shrink-0 w-full shadow-md print:hidden">
+          {isSuspended && (
+            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-3 text-center text-sm font-bold animate-pulse">
+              ⚠️ Your account has been suspended. You are in read-only mode and can only view historical sales data. <a href="mailto:superposlish@gmail.com" className="underline ml-2 hover:text-orange-200 transition-colors">Talk to sales</a>
+            </div>
+          )}
+          {trialDaysRemaining !== null && !isTrialExpired && (
+            <div className="bg-yellow-500 text-gray-900 p-3 text-center text-sm font-bold border-b border-yellow-600/20">
+              ⏳ 7 days trial ends in {trialTimeLeft}. <button onClick={() => navigate('/billing')} className="underline ml-2 hover:text-orange-700 transition-colors">Upgrade now</button>
+            </div>
+          )}
+        </div>
         <div className="p-4 md:p-6 print:p-0 flex-1">
           {isTrialExpired && location.pathname !== '/billing' ? <Paywall /> : <Outlet />}
         </div>

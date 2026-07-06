@@ -13,19 +13,20 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Your Free Trial is Expiring Soon</h2>
+            <h2>Account Suspended</h2>
         </div>
         <div class="content">
             <p>Hello,</p>
-            <p>We hope you are enjoying your experience with POSlish for your store, <strong>{{ $tenant->name }}</strong>.</p>
-            <p>This is a quick reminder that your 7-day free trial will expire in <strong>{{ $daysLeft }} day(s)</strong>.</p>
-            <p>To ensure uninterrupted access to your POS, inventory management, and reports, please upgrade your account before the trial period ends.</p>
+            <p>This is an automated notification regarding your POSlish account for your store, <strong>{{ $tenant->name }}</strong>.</p>
+            <p>Your store account has been temporarily <strong>suspended</strong> by the system administrator. During this time, access to your POS, dashboard, and other services will be restricted.</p>
+            
+            <p>To resolve this issue and restore access to your account, please reach out to our support team.</p>
             
             <div style="text-align: center;">
-                <a href="{{ url('/billing') }}" class="btn">Upgrade Now</a>
+                <a href="mailto:superposlish@gmail.com" class="btn">Talk to Support</a>
             </div>
             
-            <p style="margin-top: 30px;">If you have any questions or need assistance choosing a plan, our support team is here to help.</p>
+            <p style="margin-top: 30px;">Once the issue is resolved, your account will be reactivated immediately. We appreciate your prompt attention to this matter.</p>
             <p>Best regards,<br>The POSlish Team</p>
         </div>
         <div class="footer">

@@ -28,6 +28,20 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($request->has('is_super_admin') && $request->is_super_admin) {
+            if ($user->role !== 'super_admin') {
+                throw ValidationException::withMessages([
+                    'email' => ['Invalid super admin credentials.'],
+                ]);
+            }
+        } else {
+            if ($user->role === 'super_admin') {
+                throw ValidationException::withMessages([
+                    'email' => ['Invalid credentials for tenant portal.'],
+                ]);
+            }
+        }
+
         if ($user->tenant && !$user->tenant->is_active && $user->role !== 'admin') {
             throw ValidationException::withMessages([
                 'email' => ['Please contact your admin. Your store account is currently suspended.'],
