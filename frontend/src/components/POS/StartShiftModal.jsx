@@ -38,12 +38,12 @@ export default function StartShiftModal({ onShiftStarted, onCancel, branchId }) 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-fade-in">
-        <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-6 text-white text-center">
+        <div className="bg-slate-900 p-6 text-white text-center">
           <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <Wallet size={32} />
           </div>
           <h2 className="text-2xl font-bold">Start Your Shift</h2>
-          <p className="text-orange-100 mt-1">Please declare your opening float</p>
+          <p className="text-slate-300 mt-1">Please declare your opening float</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">

@@ -14,16 +14,18 @@ class WelcomeTenantMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $tenant;
-    public $user;
+    public $tenantName;
+    public $userName;
+    public $otpCode;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($tenant, $user)
+    public function __construct($tenantName, $userName, $otpCode = null)
     {
-        $this->tenant = $tenant;
-        $this->user = $user;
+        $this->tenantName = $tenantName;
+        $this->userName = $userName;
+        $this->otpCode = $otpCode;
     }
 
     /**
@@ -42,7 +44,7 @@ class WelcomeTenantMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            htmlString: '<h1>Welcome to POSlish!</h1><p>Hi ' . $this->user->name . ', your store <strong>' . $this->tenant->name . '</strong> is set up. Enjoy your free trial!</p>',
+            htmlString: '<h1>Welcome to POSlish!</h1><p>Hi ' . $this->userName . ', your store <strong>' . $this->tenantName . '</strong> is set up. Enjoy your 7 days trial!</p>' . ($this->otpCode ? '<br><p>To complete your registration and log in, please enter this verification code: <strong style="font-size: 24px; letter-spacing: 2px;">' . $this->otpCode . '</strong></p>' : ''),
         );
     }
 

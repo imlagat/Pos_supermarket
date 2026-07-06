@@ -8,7 +8,7 @@ class Branch extends Model
 {
     use \App\Traits\Tenantable;
 
-    protected $fillable = ['name', 'location', 'contact_number', 'status'];
+    protected $fillable = ['name', 'location', 'contact_number', 'status', 'tenant_id'];
 
     public function stocks()
     {

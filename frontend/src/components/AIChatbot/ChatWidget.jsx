@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Loader2, Maximize2, Minimize2, Paperclip, Mic, ArrowUp, MoreHorizontal } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -8,10 +8,67 @@ import { useAuthStore } from '../../stores/authStore';
 export default function ChatWidget() {
     const { user } = useAuthStore();
     const [isOpen, setIsOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [attachedFile, setAttachedFile] = useState(null);
     const messagesEndRef = useRef(null);
+    const menuRef = useRef(null);
+    const fileInputRef = useRef(null);
+
+    const startListening = () => {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            toast.error("Your browser doesn't support speech recognition.");
+            return;
+        }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+            setIsListening(true);
+            toast.success("Listening...", { id: 'mic', duration: 3000 });
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            setInput((prev) => prev ? prev + ' ' + transcript : transcript);
+        };
+
+        recognition.onerror = (event) => {
+            console.error(event.error);
+            setIsListening(false);
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+        };
+
+        recognition.start();
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setAttachedFile(file);
+            toast.success(`Attached ${file.name}`);
+        }
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,7 +114,14 @@ export default function ChatWidget() {
         setIsLoading(true);
 
         try {
-            const res = await api.post('/chat', { messages: newMessages });
+            // For now, if a file is attached, we simulate or notify as backend doesn't handle multipart yet
+            const payload = { messages: newMessages };
+            if (attachedFile) {
+                // If you had an endpoint supporting formData, you would append here
+                setAttachedFile(null); // clear after sending
+            }
+            
+            const res = await api.post('/chat', payload);
             
             if (res.data.error) {
                 toast.error(res.data.error);
@@ -80,19 +144,23 @@ export default function ChatWidget() {
             {!isOpen && (
                 <button
                     onClick={() => {
-                        if (user?.tenant?.tier === 'bronze' || (user?.tenant && !user.tenant.is_active)) return;
+                        if (user?.tenant && !user.tenant.is_active) return;
+                        if (user?.tenant?.tier === 'bronze') {
+                            window.location.href = '/billing';
+                            return;
+                        }
                         setIsOpen(true);
                     }}
                     className={`fixed bottom-6 right-6 p-4 rounded-full shadow-2xl transition-all z-50 flex items-center justify-center
                         ${(user?.tenant?.tier === 'bronze' || (user?.tenant && !user.tenant.is_active))
-                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' 
+                            ? 'bg-gray-400 text-gray-200 cursor-pointer opacity-80 hover:bg-gray-500' 
                             : 'bg-orange-600 text-white hover:bg-orange-700 hover:scale-110'
                         }`}
                     title={
                         (user?.tenant && !user.tenant.is_active) ? "Account Suspended" :
                         user?.tenant?.tier === 'bronze' ? "AI Assistant (Upgrade to unlock)" : "Open AI Assistant"
                     }
-                    disabled={user?.tenant?.tier === 'bronze' || (user?.tenant && !user.tenant.is_active)}
+                    disabled={user?.tenant && !user.tenant.is_active}
                 >
                     <MessageCircle size={28} />
                 </button>
@@ -100,19 +168,43 @@ export default function ChatWidget() {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="fixed bottom-6 right-6 w-96 h-[550px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200 overflow-hidden transform transition-all">
+                <div className={`fixed bottom-6 right-6 ${isExpanded ? 'w-full md:w-[600px] h-[80vh] max-h-[800px]' : 'w-96 h-[550px]'} bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200 overflow-hidden transform transition-all duration-300 origin-bottom-right`}>
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-orange-600 to-orange-600 p-4 flex justify-between items-center text-white">
+                    <div className="bg-slate-900 p-4 flex justify-between items-center text-white shrink-0">
                         <div className="flex items-center gap-2">
-                            <Bot size={24} />
+                            <Bot size={24} className="text-orange-500" />
                             <div>
                                 <h3 className="font-bold text-lg leading-tight">Supermarket AI</h3>
-                                <p className="text-xs opacity-90">Powered by Google Gemini</p>
+                                <p className="text-xs opacity-90 text-gray-300">Powered by Google Gemini</p>
                             </div>
                         </div>
-                        <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-lg transition">
-                            <X size={20} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <div className="relative" ref={menuRef}>
+                                <button 
+                                    onClick={() => setShowMenu(!showMenu)} 
+                                    className="hover:bg-white/20 p-1.5 rounded-lg transition"
+                                >
+                                    <MoreHorizontal size={20} />
+                                </button>
+                                {showMenu && (
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900 rounded-xl shadow-xl border border-slate-700 overflow-hidden z-50 py-1">
+                                        <button 
+                                            onClick={() => { setIsExpanded(!isExpanded); setShowMenu(false); }} 
+                                            className="w-full px-4 py-3 hover:bg-slate-800 transition text-sm font-medium flex items-center gap-3 text-white text-left"
+                                        >
+                                            {isExpanded ? (
+                                                <><Minimize2 size={16} className="text-blue-400" /> Collapse window</>
+                                            ) : (
+                                                <><Maximize2 size={16} className="text-blue-400" /> Expand window</>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1.5 rounded-lg transition ml-1">
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Messages Area */}
@@ -153,23 +245,55 @@ export default function ChatWidget() {
                     </div>
 
                     {/* Input Area */}
-                    <form onSubmit={sendMessage} className="p-4 bg-white border-t border-gray-100">
-                        <div className="relative">
+                    <form onSubmit={sendMessage} className="p-3 bg-white border-t border-gray-100 shrink-0">
+                        <div className="relative bg-gray-50 rounded-xl flex flex-col pt-1.5 pb-1.5 px-2 focus-within:ring-1 focus-within:ring-orange-300 focus-within:bg-white border border-gray-200 transition-all">
                             <input
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder="Ask me about stock, sales..."
-                                className="w-full pl-4 pr-12 py-3 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-600 focus:ring-2 focus:ring-orange-200 transition-all text-sm"
+                                placeholder="Message..."
+                                className="w-full bg-transparent border-none focus:ring-0 text-sm mb-1 px-2 py-2 text-gray-800 placeholder-gray-400 outline-none"
                                 disabled={isLoading}
                             />
-                            <button
-                                type="submit"
-                                disabled={!input.trim() || isLoading}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition"
-                            >
-                                <Send size={16} />
-                            </button>
+                            <div className="flex items-center justify-between px-1">
+                                <div className="flex items-center gap-1 text-gray-500">
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef} 
+                                        className="hidden" 
+                                        onChange={handleFileChange}
+                                        accept="image/*,.pdf,.doc,.docx,.txt"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        title="Attach file" 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className={`p-1.5 rounded-lg transition ${attachedFile ? 'text-orange-600 bg-orange-50' : 'hover:bg-gray-200 hover:text-gray-700'}`}
+                                    >
+                                        <Paperclip size={18} />
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        title="Voice message" 
+                                        onClick={startListening}
+                                        className={`p-1.5 rounded-lg transition ${isListening ? 'text-red-600 bg-red-50 animate-pulse' : 'hover:bg-gray-200 hover:text-gray-700'}`}
+                                    >
+                                        <Mic size={18} />
+                                    </button>
+                                    {attachedFile && (
+                                        <span className="text-[10px] text-orange-600 font-medium ml-1 truncate max-w-[100px]">
+                                            {attachedFile.name}
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={!input.trim() || isLoading}
+                                    className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 disabled:opacity-50 transition shadow-sm"
+                                >
+                                    <ArrowUp size={18} strokeWidth={2.5} />
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

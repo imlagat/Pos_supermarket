@@ -376,7 +376,7 @@ export default function Products() {
             <div className="mt-4 flex gap-2">
               <button 
                 onClick={() => handleEdit(p)} 
-                className="flex-1 bg-blue-50 text-blue-600 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-100 transition flex items-center justify-center gap-1"
+                className="flex-1 bg-orange-50 text-orange-600 py-1.5 rounded-lg text-sm font-medium hover:bg-orange-100 transition flex items-center justify-center gap-1"
                 title="Edit Product"
               >
                 <Edit2 size={14} /> Edit
@@ -426,7 +426,7 @@ export default function Products() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-3 rounded-xl text-blue-600">
+          <div className="bg-orange-100 p-3 rounded-xl text-orange-600">
             <TrendingUp size={28} />
           </div>
           <div>

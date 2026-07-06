@@ -12,11 +12,24 @@ export default function Billing() {
   const [stkLoading, setStkLoading] = useState(false);
   const [phone, setPhone] = useState('');
   const [selectedTier, setSelectedTier] = useState('');
+  const [billingCycle, setBillingCycle] = useState('monthly');
+  const [history, setHistory] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     // Optionally fetch latest tenant data
     fetchTenant();
+    fetchHistory();
   }, []);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await api.get('/subscriptions/history');
+      setHistory(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchTenant = async () => {
     try {
@@ -35,31 +48,63 @@ export default function Billing() {
     try {
       const res = await api.post('/subscriptions/subscribe', {
         tier: selectedTier,
-        phone: phone
+        phone: phone,
+        cycle: billingCycle
       });
       
       toast.success(res.data.message || 'Check your phone to enter M-Pesa PIN.');
+      setShowPaymentModal(true);
       
-      // Simulate successful payment callback locally for MVP testing
-      setTimeout(async () => {
+      // Poll for M-Pesa payment status
+      const checkoutId = res.data.checkout_id;
+      let attempts = 0;
+      const maxAttempts = 20; // 60 seconds (3s * 20)
+
+      const pollStatus = setInterval(async () => {
         try {
-          await api.post('/subscriptions/callback', {
-            checkout_id: res.data.checkout_id,
-            status: 'completed',
-            tier: selectedTier
-          });
-          toast.success('Subscription active!');
-          fetchTenant();
-          setSelectedTier('');
-          setPhone('');
+          attempts++;
+          const statusRes = await api.get(`/mpesa/status/${checkoutId}`);
+          const currentStatus = statusRes.data.status;
+
+          if (currentStatus === 'completed') {
+            clearInterval(pollStatus);
+            // Finalize subscription with the backend
+            await api.post('/subscriptions/callback', {
+              checkout_id: checkoutId,
+              tier: selectedTier,
+              cycle: billingCycle
+            });
+            toast.success('Subscription active!');
+            fetchTenant();
+            fetchHistory();
+            setSelectedTier('');
+            setPhone('');
+            setStkLoading(false);
+            setShowPaymentModal(false);
+          } else if (currentStatus === 'failed') {
+            clearInterval(pollStatus);
+            toast.error('Payment failed or was cancelled.');
+            setStkLoading(false);
+            setShowPaymentModal(false);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(pollStatus);
+            toast.error('Payment verification timed out. Please check your history later.');
+            setStkLoading(false);
+            setShowPaymentModal(false);
+          }
         } catch (e) {
-          toast.error('Payment verification failed.');
+          clearInterval(pollStatus);
+          toast.error('Error verifying payment.');
+          setStkLoading(false);
+          setShowPaymentModal(false);
         }
-      }, 5000);
+      }, 3000);
+
+      // Do NOT setStkLoading(false) here, let the poll finish
+      return;
 
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to initiate payment.');
-    } finally {
       setStkLoading(false);
     }
   };
@@ -82,7 +127,7 @@ export default function Billing() {
               </span>
               <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                 tenant.billing_status === 'active' ? 'bg-green-100 text-green-800' :
-                tenant.billing_status === 'trialing' ? 'bg-blue-100 text-blue-800' :
+                tenant.billing_status === 'trialing' ? 'bg-orange-100 text-orange-800' :
                 'bg-red-100 text-red-800'
               }`}>
                 {tenant.billing_status.toUpperCase()}
@@ -91,7 +136,7 @@ export default function Billing() {
             
             {tenant.billing_status === 'trialing' && tenant.trial_ends_at && (
               <p className="text-sm text-gray-500 mt-2">
-                Your free trial ends on {new Date(tenant.trial_ends_at).toLocaleDateString()}
+                Your 7 days trial ends on {new Date(tenant.trial_ends_at).toLocaleDateString()}
               </p>
             )}
             
@@ -112,7 +157,26 @@ export default function Billing() {
         
         <form onSubmit={handleSubscribe} className="space-y-4 max-w-md">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Plan</label>
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-medium text-gray-700">Select Plan</label>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle('monthly')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${billingCycle === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle('yearly')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors flex items-center gap-1 ${billingCycle === 'yearly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Yearly <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[9px] uppercase">Save 40%</span>
+                </button>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div 
                 onClick={() => setSelectedTier('bronze')}
@@ -122,7 +186,14 @@ export default function Billing() {
               >
                 <h3 className="font-bold text-gray-900">Bronze</h3>
                 <p className="text-sm text-gray-500">1 Branch</p>
-                <p className="font-bold text-orange-600 mt-2">KSH 1,599/mo</p>
+                {billingCycle === 'monthly' ? (
+                  <p className="font-bold text-orange-600 mt-2">KSH 1,599/mo</p>
+                ) : (
+                  <div>
+                    <p className="font-bold text-orange-600 mt-2">KSH 11,513/yr</p>
+                    <p className="text-xs text-green-600 font-medium line-through opacity-70">KSH 19,188</p>
+                  </div>
+                )}
               </div>
               <div 
                 onClick={() => setSelectedTier('silver')}
@@ -132,7 +203,14 @@ export default function Billing() {
               >
                 <h3 className="font-bold text-gray-900">Silver</h3>
                 <p className="text-sm text-gray-500">Unlimited Branches</p>
-                <p className="font-bold text-orange-600 mt-2">KSH 2,599/mo</p>
+                {billingCycle === 'monthly' ? (
+                  <p className="font-bold text-orange-600 mt-2">KSH 2,599/mo</p>
+                ) : (
+                  <div>
+                    <p className="font-bold text-orange-600 mt-2">KSH 18,713/yr</p>
+                    <p className="text-xs text-green-600 font-medium line-through opacity-70">KSH 31,188</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -158,6 +236,73 @@ export default function Billing() {
           </button>
         </form>
       </div>
+
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Payment History</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-gray-500">
+                <th className="py-3 font-semibold">Date</th>
+                <th className="py-3 font-semibold">Plan</th>
+                <th className="py-3 font-semibold">Amount</th>
+                <th className="py-3 font-semibold">Phone</th>
+                <th className="py-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="py-4 text-center text-gray-500">No payment history found.</td>
+                </tr>
+              ) : (
+                history.map((record) => (
+                  <tr key={record.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="py-3">{new Date(record.created_at).toLocaleString()}</td>
+                    <td className="py-3 capitalize">{record.tier} ({record.cycle})</td>
+                    <td className="py-3 font-bold">KSH {Number(record.amount).toLocaleString()}</td>
+                    <td className="py-3 text-gray-500">{record.phone}</td>
+                    <td className="py-3">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        record.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        record.status === 'pending' ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {record.status.toUpperCase()}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* M-Pesa Waiting Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
+              <div className="h-full bg-orange-500 animate-pulse w-full"></div>
+            </div>
+            
+            <div className="w-20 h-20 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Loader2 className="w-10 h-10 animate-spin" />
+            </div>
+            
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Waiting for Payment</h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              We've sent an M-Pesa prompt to your phone. <br/><br/>
+              Please enter your M-Pesa PIN to complete the transaction.
+            </p>
+            
+            <div className="bg-orange-50 text-orange-800 text-sm p-4 rounded-xl font-medium border border-orange-100">
+              Do not close this window. The system will automatically confirm once paid.
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

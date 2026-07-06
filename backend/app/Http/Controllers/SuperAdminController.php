@@ -5,6 +5,16 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\Tenant;
+use App\Models\User;
+use App\Models\SubscriptionPayment;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\TrialExpiringMail;
+use App\Mail\SubscriptionExpiringMail;
+use App\Mail\TenantSuspendedMail;
+use App\Mail\TenantReactivatedMail;
+use App\Mail\TierChangedMail;
 
 class SuperAdminController extends Controller
 {
@@ -13,7 +23,9 @@ class SuperAdminController extends Controller
         if (!$request->user()->isSuperAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        $tenants = Tenant::orderBy('created_at', 'desc')->get();
+        $tenants = Tenant::with(['users' => function($query) {
+            $query->where('role', 'admin');
+        }])->orderBy('created_at', 'desc')->get();
         return response()->json($tenants);
     }
 
@@ -22,10 +34,24 @@ class SuperAdminController extends Controller
         if (!$request->user()->isSuperAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        $request->validate(['tier' => 'required|in:bronze,silver,custom']);
+        $request->validate(['tier' => 'required|in:bronze,silver,gold,ai,custom']);
         $tenant = Tenant::findOrFail($id);
+        $oldTier = $tenant->tier;
         $tenant->tier = $request->tier;
         $tenant->save();
+
+        if ($oldTier !== $tenant->tier) {
+            foreach ($tenant->users()->where('role', 'admin')->get() as $admin) {
+                if ($admin->email) {
+                    try {
+                        Mail::to($admin->email)->send(new TierChangedMail($tenant, $oldTier, $tenant->tier));
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Failed to send tier change email: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+
         return response()->json($tenant);
     }
 
@@ -36,8 +62,277 @@ class SuperAdminController extends Controller
         }
         $request->validate(['is_active' => 'required|boolean']);
         $tenant = Tenant::findOrFail($id);
+        $wasActive = $tenant->is_active;
         $tenant->is_active = $request->is_active;
         $tenant->save();
+
+        if ($wasActive != $tenant->is_active) {
+            if ($tenant->is_active == false) {
+                foreach ($tenant->users()->where('role', 'admin')->get() as $admin) {
+                    if ($admin->email) {
+                        try {
+                            Mail::to($admin->email)->send(new TenantSuspendedMail($tenant));
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error("Failed to send suspension email: " . $e->getMessage());
+                        }
+                    }
+                }
+            } else {
+                foreach ($tenant->users()->where('role', 'admin')->get() as $admin) {
+                    if ($admin->email) {
+                        try {
+                            Mail::to($admin->email)->send(new TenantReactivatedMail($tenant));
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error("Failed to send reactivation email: " . $e->getMessage());
+                        }
+                    }
+                }
+            }
+        }
+
         return response()->json($tenant);
+    }
+
+    public function updateTenant(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $tenant = Tenant::findOrFail($id);
+        $tenant->name = $request->name;
+        $tenant->save();
+        
+        return response()->json($tenant);
+    }
+
+    public function extendSubscription(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $request->validate([
+            'days' => 'required|integer',
+            'action' => 'nullable|string|in:add,set'
+        ]);
+
+        $tenant = Tenant::findOrFail($id);
+        $days = (int) $request->days;
+        $action = $request->action ?? 'add';
+
+        if ($tenant->billing_status === 'active' && $tenant->next_billing_date) {
+            if ($action === 'set') {
+                $tenant->next_billing_date = now()->addDays($days);
+            } else {
+                $tenant->next_billing_date = \Carbon\Carbon::parse($tenant->next_billing_date)->addDays($days);
+            }
+        } else {
+            // It's trialing or expired, so we adjust trial_ends_at
+            if ($action === 'set') {
+                $tenant->trial_ends_at = now()->addDays($days);
+            } else {
+                if ($tenant->trial_ends_at && \Carbon\Carbon::parse($tenant->trial_ends_at)->isFuture()) {
+                    $tenant->trial_ends_at = \Carbon\Carbon::parse($tenant->trial_ends_at)->addDays($days);
+                } else {
+                    $tenant->trial_ends_at = now()->addDays($days);
+                }
+            }
+        }
+        
+        $tenant->save();
+
+        // Check the new days left and send emails if within thresholds
+        $today = now()->startOfDay();
+        if ($tenant->billing_status === 'active' && $tenant->next_billing_date) {
+            $daysLeft = $today->diffInDays(\Carbon\Carbon::parse($tenant->next_billing_date)->startOfDay(), false);
+            \Illuminate\Support\Facades\Log::info("Adjusted active subscription. Days left: {$daysLeft}");
+            if ($daysLeft >= 1 && $daysLeft <= 5) {
+                foreach ($tenant->users()->where('role', 'admin')->get() as $admin) {
+                    if ($admin->email) {
+                        \Illuminate\Support\Facades\Log::info("Sending active sub email to {$admin->email}");
+                        Mail::to($admin->email)->send(new SubscriptionExpiringMail($tenant, (int)$daysLeft));
+                    }
+                }
+            }
+        } else {
+            if ($tenant->trial_ends_at) {
+                $daysLeft = $today->diffInDays(\Carbon\Carbon::parse($tenant->trial_ends_at)->startOfDay(), false);
+                \Illuminate\Support\Facades\Log::info("Adjusted trial subscription. Days left: {$daysLeft}");
+                if ($daysLeft >= 1 && $daysLeft <= 3) {
+                    foreach ($tenant->users()->where('role', 'admin')->get() as $admin) {
+                        if ($admin->email) {
+                            \Illuminate\Support\Facades\Log::info("Sending trial sub email to {$admin->email}");
+                            try {
+                                Mail::to($admin->email)->send(new TrialExpiringMail($tenant, (int)$daysLeft));
+                                \Illuminate\Support\Facades\Log::info("Email sent successfully.");
+                            } catch (\Exception $e) {
+                                \Illuminate\Support\Facades\Log::error("Failed to send email: " . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return response()->json([
+            'message' => "Successfully adjusted subscription by {$days} days",
+            'tenant' => $tenant
+        ]);
+    }
+
+    public function deleteTenant(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $tenant = Tenant::findOrFail($id);
+        
+        $tables = [
+            'audit_logs', 'batches', 'branch_stocks', 'branches', 'customers', 
+            'discount_rules', 'drawer_movements', 'loyalty_transactions', 'order_items', 
+            'orders', 'payments', 'products', 'purchase_order_items', 'purchase_orders', 
+            'returned_items', 'returns', 'settings', 'shifts', 'stock_alerts', 
+            'subscription_payments', 'suppliers', 'users'
+        ];
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+            foreach ($tables as $table) {
+                \Illuminate\Support\Facades\DB::table($table)->where('tenant_id', $id)->delete();
+            }
+            $tenant->delete();
+            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+            \Illuminate\Support\Facades\DB::commit();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json(['message' => 'Failed to delete tenant: ' . $e->getMessage()], 500);
+        }
+        
+        return response()->json(['message' => 'Tenant and all associated data deleted successfully']);
+    }
+
+    public function getAdmins(Request $request)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $admins = User::where('role', 'super_admin')->get();
+        return response()->json($admins);
+    }
+
+    public function createAdmin(Request $request)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->whereNull('deleted_at')],
+            'password' => 'required|string|min:8',
+        ]);
+
+        $admin = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'super_admin',
+        ]);
+
+        return response()->json($admin, 201);
+    }
+
+    public function updateAdmin(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $admin = User::where('role', 'super_admin')->findOrFail($id);
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($id)->whereNull('deleted_at')],
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $admin->name = $request->name;
+        $admin->email = $request->email;
+        if ($request->filled('password')) {
+            $admin->password = Hash::make($request->password);
+        }
+        $admin->save();
+
+        return response()->json($admin);
+    }
+
+    public function deleteAdmin(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $admin = User::where('role', 'super_admin')->findOrFail($id);
+        
+        if ($admin->id === $request->user()->id) {
+            return response()->json(['message' => 'You cannot delete yourself.'], 400);
+        }
+        
+        $adminCount = User::where('role', 'super_admin')->count();
+        if ($adminCount <= 1) {
+            return response()->json(['message' => 'Cannot delete the last super admin.'], 400);
+        }
+
+        $admin->delete();
+        return response()->json(['message' => 'Super admin deleted successfully']);
+    }
+
+    public function getSubscriptionTransactions(Request $request)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $payments = SubscriptionPayment::with('tenant')->orderBy('created_at', 'desc')->get();
+        return response()->json($payments);
+    }
+
+    public function updateSubscriptionTransaction(Request $request, $id)
+    {
+        if (!$request->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'status' => 'required|in:pending,completed,failed'
+        ]);
+
+        $payment = SubscriptionPayment::findOrFail($id);
+        
+        // Only trigger tenant updates if the status transitions to completed
+        if ($payment->status !== 'completed' && $request->status === 'completed') {
+            $tenant = Tenant::find($payment->tenant_id);
+            if ($tenant) {
+                $cycle = $payment->cycle ?? 'monthly';
+                $nextBillingDate = $cycle === 'yearly' ? now()->addYear() : now()->addMonth();
+
+                $tenant->update([
+                    'tier' => $payment->tier,
+                    'billing_status' => 'active',
+                    'next_billing_date' => $nextBillingDate,
+                    'trial_ends_at' => null,
+                ]);
+            }
+        }
+
+        $payment->status = $request->status;
+        $payment->save();
+
+        return response()->json($payment->load('tenant'));
     }
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Save, Store, Receipt, Package, Settings as SettingsIcon, Gift, Printer, MapPin } from 'lucide-react';
+import { Save, Store, Receipt, Package, Settings as SettingsIcon, Gift, Printer, MapPin, CreditCard } from 'lucide-react';
 import BranchManagement from '../components/Settings/BranchManagement';
 import { useAuthStore } from '../stores/authStore';
 
@@ -86,7 +86,8 @@ export default function Settings() {
           { id: 'branches', label: 'Branches', icon: MapPin, hidden: isBronze },
           { id: 'tax', label: 'Tax & Receipt', icon: Receipt },
           { id: 'inventory', label: 'Inventory', icon: Package },
-          { id: 'loyalty', label: 'Loyalty', icon: Gift }
+          { id: 'loyalty', label: 'Loyalty', icon: Gift },
+          { id: 'mpesa', label: 'M-Pesa API', icon: CreditCard }
         ].filter(t => !t.hidden).map(tab => {
           const Icon = tab.icon;
           return (
@@ -146,6 +147,47 @@ export default function Settings() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Points Expiry Days (0 = never)</label><input type="number" value={settings.points_expiry_days || 0} onChange={e => updateSetting('points_expiry_days', parseInt(e.target.value))} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Member Discount – Silver (%)</label><input type="number" step="0.5" value={settings.silver_discount || 5} onChange={e => updateSetting('silver_discount', parseFloat(e.target.value))} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Member Discount – Gold (%)</label><input type="number" step="0.5" value={settings.gold_discount || 10} onChange={e => updateSetting('gold_discount', parseFloat(e.target.value))} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" /></div>
+            </div>
+          </div>
+        )}
+
+        {/* M-Pesa Settings */}
+        {activeTab === 'mpesa' && (
+          <div className="space-y-5 max-w-2xl">
+            <div className="flex justify-between items-center border-b pb-2 mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Safaricom Daraja API Credentials</h3>
+            </div>
+            <div className="bg-orange-50 text-orange-800 p-4 rounded-xl text-sm border border-orange-100">
+              Configure your own M-Pesa Paybill or Till number here. All STK Push payments from the POS will be routed directly to your account.
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Environment</label>
+                <select value={settings.mpesa_environment || 'sandbox'} onChange={e => updateSetting('mpesa_environment', e.target.value)} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none">
+                  <option value="sandbox">Sandbox (Testing)</option>
+                  <option value="production">Production (Live)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Shortcode (Paybill/Till)</label>
+                <input type="text" value={settings.mpesa_shortcode || ''} onChange={e => updateSetting('mpesa_shortcode', e.target.value)} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none" placeholder="e.g. 174379" />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Consumer Key</label>
+              <input type="text" value={settings.mpesa_consumer_key || ''} onChange={e => updateSetting('mpesa_consumer_key', e.target.value)} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none font-mono text-sm" placeholder="Your Consumer Key" />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Consumer Secret</label>
+              <input type="password" value={settings.mpesa_consumer_secret || ''} onChange={e => updateSetting('mpesa_consumer_secret', e.target.value)} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none font-mono text-sm" placeholder="••••••••••••••••" />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Passkey</label>
+              <input type="password" value={settings.mpesa_passkey || ''} onChange={e => updateSetting('mpesa_passkey', e.target.value)} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none font-mono text-sm" placeholder="••••••••••••••••" />
             </div>
           </div>
         )}

@@ -129,8 +129,8 @@ export default function ShiftsReport() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       {s.status === 'open' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> IN PROGRESS
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span> IN PROGRESS
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-800">

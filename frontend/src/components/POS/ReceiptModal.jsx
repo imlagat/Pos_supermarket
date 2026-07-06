@@ -4,16 +4,15 @@ import toast from 'react-hot-toast';
 
 export default function ReceiptModal({ order, changeAmount, discounts = [], pointsDiscount = 0, customer = null, settings = {}, onClose }) {
   const [orderDetails, setOrderDetails] = useState(null);
-  const [email, setEmail] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const customerEmail = orderDetails?.customer?.email || customer?.email;
 
   const handleEmailReceipt = async () => {
-    if (!email) return;
+    if (!customerEmail) return;
     setSendingEmail(true);
     try {
-      await api.post(`/transactions/${order.id}/email`, { email });
+      await api.post(`/transactions/${order.id}/email`, { email: customerEmail });
       toast.success('Receipt emailed successfully!');
-      setEmail('');
     } catch (err) {
       toast.error('Failed to email receipt');
     } finally {
@@ -193,7 +192,7 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
                 </div>
               ))}
               {finalPointsDiscount > 0 && (
-                <div className="flex justify-between text-xs text-blue-600">
+                <div className="flex justify-between text-xs text-orange-600">
                   <span>Points redeemed</span>
                   <span>- {currencySymbol} {toFixedSafe(finalPointsDiscount)}</span>
                 </div>
@@ -245,24 +244,19 @@ export default function ReceiptModal({ order, changeAmount, discounts = [], poin
             <p className="mt-1">Goods once sold can be refunded within 3 days.</p>
           </div>
         </div>
-          <div className="p-3 border-t flex gap-3 bg-gray-50 flex-col sm:flex-row">
-            <div className="flex flex-col sm:flex-row gap-2 flex-1 items-center">
-              <input 
-                type="email" 
-                placeholder="customer@email.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 w-full sm:w-auto py-2 px-3 border rounded-xl text-sm"
-              />
-              <button 
-                onClick={handleEmailReceipt} 
-                disabled={sendingEmail || !email}
-                className="w-full sm:w-auto px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 font-semibold disabled:opacity-50 text-sm whitespace-nowrap"
-              >
-                {sendingEmail ? 'Sending...' : 'Email Receipt'}
-              </button>
+          <div className="p-3 border-t flex justify-between gap-3 bg-gray-50 flex-col sm:flex-row">
+            <div className="flex gap-2 items-center">
+              {customerEmail && (
+                <button 
+                  onClick={handleEmailReceipt} 
+                  disabled={sendingEmail}
+                  className="w-full sm:w-auto px-4 py-2 bg-orange-50 text-orange-600 rounded-xl hover:bg-orange-100 font-semibold disabled:opacity-50 text-sm whitespace-nowrap"
+                >
+                  {sendingEmail ? 'Sending...' : `Email Receipt`}
+                </button>
+              )}
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-2 w-full sm:w-auto justify-end">
               <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 border rounded-xl bg-white hover:bg-gray-50">Close</button>
               <button onClick={printReceipt} className="flex-1 sm:flex-none px-6 bg-gradient-to-r from-orange-500 to-[#f09a56] text-white py-2 rounded-xl font-semibold shadow-lg hover:shadow-orange-500/20">Print</button>
             </div>

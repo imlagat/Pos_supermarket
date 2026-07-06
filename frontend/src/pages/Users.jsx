@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import PageLoader from '../components/common/PageLoader';
 import api from '../services/api';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Users as UsersIcon, Plus, Edit2, Trash2, Search, BarChart3, Filter } from 'lucide-react';
+import { Users as UsersIcon, Plus, Edit2, Trash2, Search, BarChart3, Filter, Lock } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ShiftsReport from './ShiftsReport';
@@ -189,7 +190,7 @@ export default function Users() {
                     <tr key={perf.user_id} className="border-b hover:bg-gray-50">
                       <td className="p-4 font-medium text-gray-800">{perf.name}</td>
                       <td className="p-4 text-gray-500">{perf.email}</td>
-                      <td className="p-4 text-right font-bold text-blue-600">{perf.orders_taken}</td>
+                      <td className="p-4 text-right font-bold text-orange-600">{perf.orders_taken}</td>
                       <td className="p-4 text-right font-bold text-red-500">{perf.returns_taken || 0}</td>
                       <td className="p-4 text-right font-bold text-orange-700">Ksh {perf.total_sales ? parseFloat(perf.total_sales).toLocaleString() : 0}</td>
                       <td className="p-4 text-right font-bold text-red-600">Ksh {perf.total_returns_amount ? parseFloat(perf.total_returns_amount).toLocaleString() : 0}</td>
@@ -283,7 +284,16 @@ export default function Users() {
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
             {editing && <button type="button" onClick={resetForm} className="px-6 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition">Cancel</button>}
-            <button type="submit" disabled={saving} className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white px-8 py-2 rounded-xl font-semibold shadow-md transition">{saving ? 'Saving...' : (editing ? 'Update User' : 'Create User')}</button>
+            
+            {user?.tenant?.tier === 'bronze' && users.length >= 3 && !editing ? (
+              <Link to="/billing" className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-8 py-2 rounded-xl font-semibold shadow-md transition flex items-center gap-2">
+                <Lock size={16} /> Upgrade to add more users
+              </Link>
+            ) : (
+              <button type="submit" disabled={saving} className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white px-8 py-2 rounded-xl font-semibold shadow-md transition">
+                {saving ? 'Saving...' : (editing ? 'Update User' : 'Create User')}
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -304,8 +314,15 @@ export default function Users() {
                 <td className="p-4">{u.email}</td>
                 <td className="p-4 capitalize">{u.role}</td>
                 <td className="p-4 flex gap-2">
-                  <button onClick={() => handleEdit(u)} className="text-blue-600"><Edit2 size={18} /></button>
-                  <button onClick={() => handleDelete(u.id)} className="text-red-600"><Trash2 size={18} /></button>
+                  <button onClick={() => handleEdit(u)} className="text-orange-600"><Edit2 size={18} /></button>
+                  <button 
+                    onClick={() => handleDelete(u.id)} 
+                    disabled={u.id === user?.id} 
+                    className={`${u.id === user?.id ? 'text-gray-300 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`}
+                    title={u.id === user?.id ? 'You cannot delete yourself' : 'Delete user'}
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </td>
               </tr>
             ))}

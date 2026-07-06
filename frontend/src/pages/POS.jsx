@@ -370,6 +370,28 @@ export default function POS() {
   const taxRate = systemSettings.tax_rate !== undefined ? systemSettings.tax_rate : 16;
   const vat = finalTotal * (taxRate / 100);
 
+  const isTrialExpired = user?.tenant?.billing_status === 'trialing' && user?.tenant?.trial_ends_at && new Date(user?.tenant?.trial_ends_at) < new Date();
+
+  if (isTrialExpired) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] bg-gray-50 rounded-2xl border border-gray-200 p-8 text-center">
+        <div className="bg-red-100 p-4 rounded-full mb-6">
+          <Lock size={48} className="text-red-600" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-800 mb-4">Trial Expired</h2>
+        <p className="text-gray-600 text-lg max-w-md mx-auto mb-8">
+          Your 3-day Silver trial has ended. To continue using the POS and checkout customers, please set up your billing.
+        </p>
+        <button 
+          onClick={() => window.location.href = '/billing'}
+          className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg transition"
+        >
+          Set Up Billing
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-12 gap-6 relative">
       <div className="col-span-7 bg-white rounded-2xl shadow-xl p-6 print:hidden">
@@ -395,11 +417,11 @@ export default function POS() {
           {openBoxItems.length > 0 && (
             <div className="mb-6">
               <h3 className="text-md font-semibold text-orange-500 mb-2 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">Open Box Deals</span>
+                <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs">Open Box Deals</span>
               </h3>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 {openBoxItems.map(item => (
-                  <div key={item.id} className="border border-blue-200 rounded-xl p-3 bg-blue-50 hover:shadow-md cursor-pointer relative" onClick={() => {
+                  <div key={item.id} className="border border-orange-200 rounded-xl p-3 bg-orange-50 hover:shadow-md cursor-pointer relative" onClick={() => {
                     const existing = items.find(i => i.is_open_box && i.returned_item_id === item.id);
                     if (existing && existing.quantity >= item.quantity) {
                       toast.error('This product is out of stock');
@@ -414,11 +436,11 @@ export default function POS() {
                     toast.success(`OPEN BOX (${item.name.replace(' (Open Box)', '').toUpperCase()}) ADDED TO CART`);
                   }}>
                     <div className="font-semibold text-gray-800 truncate pr-16">{item.name}</div>
-                    <div className="text-lg font-bold text-blue-600">Ksh {item.price}</div>
+                    <div className="text-lg font-bold text-orange-600">Ksh {item.price}</div>
                     <div className="text-xs text-gray-500">Original: Ksh {item.original_price}</div>
                     <div className="text-xs text-gray-500">Stock: {item.quantity}</div>
                     <div className="absolute top-2 right-2 flex gap-1">
-                      <button onClick={(e) => handleEditOpenBox(e, item)} className="bg-white p-1 rounded-full text-blue-500 shadow hover:bg-blue-100" title="Edit Price"><Plus size={14} /></button>
+                      <button onClick={(e) => handleEditOpenBox(e, item)} className="bg-white p-1 rounded-full text-orange-500 shadow hover:bg-orange-100" title="Edit Price"><Plus size={14} /></button>
                       <button onClick={(e) => handleDeleteOpenBox(e, item)} className="bg-white p-1 rounded-full text-red-500 shadow hover:bg-red-100" title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </div>
@@ -454,9 +476,13 @@ export default function POS() {
               )}
             </h2>
             <div className="flex gap-2 items-center">
-              {activeShift && (
+              {activeShift ? (
                 <button onClick={() => setShowCloseRegister(true)} className="mr-2 text-xs bg-gray-800 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-gray-700">
                   <Lock size={12} /> Close Register
+                </button>
+              ) : (
+                <button onClick={() => setShowStartShift(true)} className="mr-2 text-xs bg-orange-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-orange-700">
+                  <Lock size={12} /> Open Register
                 </button>
               )}
               <div className="relative"><User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="tel" placeholder="Phone number" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="pl-10 pr-2 py-1 border rounded-full text-sm w-36" /><button onClick={searchCustomer} className="ml-1 text-xs bg-orange-500 text-white px-2 py-1 rounded-full">Find</button>{customerSearchResult && <button onClick={clearCustomer} className="ml-1 text-xs text-red-500">X</button>}</div>
@@ -470,7 +496,7 @@ export default function POS() {
         <div className="border-t border-gray-100 p-6 bg-gray-50 rounded-b-2xl">
           <div className="flex justify-between text-sm text-gray-600 mb-2"><span>Subtotal</span><span>Ksh {subtotalDisplay.toFixed(2)}</span></div>
           {appliedDiscounts.map((d, idx) => (<div key={idx} className="flex justify-between text-sm text-green-600 mb-2"><span>{d.name}</span><span>- Ksh {d.amount.toFixed(2)}</span></div>))}
-          {discountFromPoints > 0 && <div className="flex justify-between text-sm text-blue-600 mb-2"><span>Points redeemed</span><span>- Ksh {discountFromPoints.toFixed(2)}</span></div>}
+          {discountFromPoints > 0 && <div className="flex justify-between text-sm text-orange-600 mb-2"><span>Points redeemed</span><span>- Ksh {discountFromPoints.toFixed(2)}</span></div>}
           <div className="flex justify-between text-2xl font-bold text-gray-800 mb-4"><span>Total</span><span>Ksh {finalTotal.toFixed(2)}</span></div>
           <div className="flex justify-between text-sm text-gray-600 mb-4"><span>VAT ({taxRate}%)</span><span>Ksh {vat.toFixed(2)}</span></div>
           <div className="grid grid-cols-3 gap-2">
@@ -553,7 +579,7 @@ export default function POS() {
             setShowStartShift(false);
           }}
           onCancel={() => {
-            logout();
+            setShowStartShift(false);
           }}
         />
       )}
@@ -564,13 +590,21 @@ export default function POS() {
           onShiftClosed={() => {
             setActiveShift(null);
             setShowCloseRegister(false);
-            if (user?.role === 'cashier') {
-              logout();
-            } else {
-              setShowStartShift(true);
-            }
           }}
         />
+      )}
+
+      {user?.role === 'cashier' && !activeShift && !shiftLoading && !showStartShift && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-2xl border border-gray-200">
+          <div className="bg-orange-100 p-6 rounded-full mb-6">
+            <Lock size={64} className="text-orange-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">Register Closed</h2>
+          <p className="text-gray-600 text-lg mb-8">You must open the register to start selling.</p>
+          <button onClick={() => setShowStartShift(true)} className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+            <Lock size={20} /> Open Register
+          </button>
+        </div>
       )}
     </div>
   );

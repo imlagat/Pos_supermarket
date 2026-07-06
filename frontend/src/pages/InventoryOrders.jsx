@@ -384,7 +384,7 @@ export default function InventoryOrders() {
                       <td className="p-3 font-semibold text-red-600">{nearestExpiry}</td>
                       <td className="p-3 text-green-600">{latestDelivery}</td>
                       <td className="p-3 flex gap-2">
-                        <button onClick={() => setEditProduct(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Adjust Threshold">
+                        <button onClick={() => setEditProduct(p)} className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition" title="Adjust Threshold">
                           <Edit size={16} />
                         </button>
                         <button onClick={() => setViewProduct(p)} className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition" title="View Details">
@@ -411,7 +411,7 @@ export default function InventoryOrders() {
                 {order.status === 'draft' && (
                   <>
                     <button onClick={() => handleEditPO(order)} className="text-orange-700 hover:text-orange-900 font-medium text-sm" title="Edit Order">Edit</button>
-                    <button onClick={() => handleApprovePO(order.id)} className="text-blue-600 hover:text-blue-800 font-medium text-sm" title="Accept & Send">Approve</button>
+                    <button onClick={() => handleApprovePO(order.id)} className="text-orange-600 hover:text-orange-800 font-medium text-sm" title="Accept & Send">Approve</button>
                     <button onClick={() => handleDeletePO(order.id)} className="text-red-600 hover:text-red-800 font-medium text-sm" title="Delete Order">Delete</button>
                   </>
                 )}

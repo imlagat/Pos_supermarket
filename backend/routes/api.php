@@ -10,6 +10,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MpesaController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\SearchController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -18,7 +19,7 @@ Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 // M-Pesa callback — must be public (no auth) so Safaricom can reach it
-Route::post('/mpesa/callback', [MpesaController::class, 'callback']);
+Route::post('/mpesa/callback/{tenant_id}', [MpesaController::class, 'callback']);
 
 Route::post('/remote-scan/session/{sessionId}', [App\Http\Controllers\RemoteScannerController::class, 'store']);
 Route::get('/remote-scan/session/{sessionId}', [App\Http\Controllers\RemoteScannerController::class, 'check']);
@@ -35,10 +36,11 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/switch-account', [AuthController::class, 'switchAccount']);
-    Route::post('/upgrade', [AuthController::class, 'upgradeMock']);
 
     Route::get('/products/lookup/{barcode}', [ProductController::class, 'lookup']);
     Route::apiResource('products', ProductController::class);
+
+    Route::get('/search', [SearchController::class, 'globalSearch']);
 
     Route::post('/cart/calculate', [OrderController::class, 'calculateCart']);
     Route::post('/orders', [OrderController::class, 'store']);
@@ -50,7 +52,9 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::delete('/transactions/held/{id}', [App\Http\Controllers\OrderController::class, 'resume']);
     Route::post('/transactions/{id}/email', [App\Http\Controllers\OrderController::class, 'emailReceipt']);
 
-    Route::apiResource('users', App\Http\Controllers\UserController::class)->middleware('role:admin');
+    Route::get('/users/performance', [App\Http\Controllers\UserController::class, 'performance'])->middleware('role:admin,manager');
+    Route::apiResource('users', App\Http\Controllers\UserController::class)->middleware('role:admin,manager');
+    
     Route::get('/shifts/current', [\App\Http\Controllers\ShiftController::class, 'current']);
     Route::post('/shifts/open', [\App\Http\Controllers\ShiftController::class, 'open']);
     Route::post('/shifts/close', [\App\Http\Controllers\ShiftController::class, 'close']);
@@ -72,8 +76,6 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::post('/mpesa/stkpush', [MpesaController::class, 'stkPush']);
     Route::get('/mpesa/status/{checkoutId}', [MpesaController::class, 'checkStatus']);
 
-    Route::get('/users/performance', [UserController::class, 'performance'])->middleware('role:admin,manager');
-    Route::apiResource('users', UserController::class)->middleware('role:admin,manager');
     Route::apiResource('branches', \App\Http\Controllers\BranchController::class)->middleware('role:admin');
     Route::get('/batches', [InventoryController::class, 'getBatches'])->middleware('role:admin,manager');
     Route::post('/batches', [InventoryController::class, 'addBatch'])->middleware('role:admin,manager');
@@ -88,8 +90,17 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
 
     // Super Admin Routes
     Route::get('/super-admin/tenants', [App\Http\Controllers\SuperAdminController::class, 'getTenants']);
+    Route::put('/super-admin/tenants/{id}/extend', [App\Http\Controllers\SuperAdminController::class, 'extendSubscription']);
     Route::put('/super-admin/tenants/{id}/tier', [App\Http\Controllers\SuperAdminController::class, 'updateTier']);
     Route::put('/super-admin/tenants/{id}/status', [App\Http\Controllers\SuperAdminController::class, 'updateStatus']);
+    Route::put('/super-admin/tenants/{id}', [App\Http\Controllers\SuperAdminController::class, 'updateTenant']);
+    Route::delete('/super-admin/tenants/{id}', [App\Http\Controllers\SuperAdminController::class, 'deleteTenant']);
+    Route::get('/super-admin/admins', [App\Http\Controllers\SuperAdminController::class, 'getAdmins']);
+    Route::post('/super-admin/admins', [App\Http\Controllers\SuperAdminController::class, 'createAdmin']);
+    Route::put('/super-admin/admins/{id}', [App\Http\Controllers\SuperAdminController::class, 'updateAdmin']);
+    Route::delete('/super-admin/admins/{id}', [App\Http\Controllers\SuperAdminController::class, 'deleteAdmin']);
+    Route::get('/super-admin/subscriptions', [App\Http\Controllers\SuperAdminController::class, 'getSubscriptionTransactions']);
+    Route::put('/super-admin/subscriptions/{id}', [App\Http\Controllers\SuperAdminController::class, 'updateSubscriptionTransaction']);
 });
 
 Route::middleware('auth:sanctum')->get('/mpesa/status/{checkoutId}', [MpesaController::class, 'checkStatus']);
@@ -102,6 +113,7 @@ Route::middleware('auth:sanctum')->get('/reports/weekly-sales', [App\Http\Contro
 Route::middleware('auth:sanctum')->get('/reports/monthly-sales', [App\Http\Controllers\ReportController::class, 'monthlySales']);
 Route::middleware('auth:sanctum')->get('/reports/top-products', [App\Http\Controllers\ReportController::class, 'topProducts']);
 Route::middleware('auth:sanctum')->get('/reports/sales-by-category', [App\Http\Controllers\ReportController::class, 'salesByCategory']);
+Route::middleware('auth:sanctum')->get('/reports/sales-by-payment-method', [App\Http\Controllers\ReportController::class, 'salesByPaymentMethod']);
 
 Route::middleware('auth:sanctum')->get('/settings', [App\Http\Controllers\SettingsController::class, 'index']);
 Route::middleware('auth:sanctum')->post('/settings', [App\Http\Controllers\SettingsController::class, 'update'])->middleware('role:admin');
@@ -145,6 +157,7 @@ Route::middleware('auth:sanctum')->post('/returned-items/{returnedItem}/image', 
 Route::middleware('auth:sanctum')->get('/reports/returned-items', [App\Http\Controllers\ReportController::class, 'returnedItems']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/subscriptions/history', [App\Http\Controllers\SubscriptionController::class, 'history']);
     Route::post('/subscriptions/subscribe', [App\Http\Controllers\SubscriptionController::class, 'subscribe']);
     Route::post('/subscriptions/callback', [App\Http\Controllers\SubscriptionController::class, 'handleCallback']);
     Route::post('/onboarding/complete', [App\Http\Controllers\SettingsController::class, 'completeOnboarding']);

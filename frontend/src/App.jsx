@@ -6,10 +6,17 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import PageLoader from './components/common/PageLoader';
 import MarketingLayout from './components/marketing/MarketingLayout';
 
+import Home from './pages/marketing/Home';
+import Features from './pages/marketing/Features';
+import Pricing from './pages/marketing/Pricing';
+
 // Lazy loaded marketing pages
-const Home = React.lazy(() => import('./pages/marketing/Home'));
-const Features = React.lazy(() => import('./pages/marketing/Features'));
-const Pricing = React.lazy(() => import('./pages/marketing/Pricing'));
+const Hardware = React.lazy(() => import('./pages/marketing/Hardware'));
+const HelpCenter = React.lazy(() => import('./pages/marketing/HelpCenter'));
+const Community = React.lazy(() => import('./pages/marketing/Community'));
+const About = React.lazy(() => import('./pages/marketing/About'));
+const Contact = React.lazy(() => import('./pages/marketing/Contact'));
+const Privacy = React.lazy(() => import('./pages/marketing/Privacy'));
 const Register = React.lazy(() => import('./pages/Register'));
 
 // Lazy loaded app pages
@@ -39,10 +46,13 @@ const Finance = React.lazy(() => import('./pages/Finance'));
 const CashDrawer = React.lazy(() => import('./pages/CashDrawer'));
 const SuperAdminLogin = React.lazy(() => import('./pages/SuperAdminLogin'));
 const SuperAdminDashboard = React.lazy(() => import('./pages/SuperAdminDashboard'));
+const SuperAdminForgotPassword = React.lazy(() => import('./pages/SuperAdminForgotPassword'));
+const SuperAdminResetPassword = React.lazy(() => import('./pages/SuperAdminResetPassword'));
 const Billing = React.lazy(() => import('./pages/Billing'));
 const OnboardingWizard = React.lazy(() => import('./pages/OnboardingWizard'));
 
 import SuspendedModal from './components/common/SuspendedModal';
+import ScrollToTop from './components/common/ScrollToTop';
 
 function App() {
     return (
@@ -50,6 +60,7 @@ function App() {
             <Toaster position="top-right" />
             <SuspendedModal />
             <BrowserRouter>
+                <ScrollToTop />
                 <Suspense fallback={<PageLoader message="Loading page..." />}>
                     <Routes>
                         {/* Marketing Routes */}
@@ -57,6 +68,12 @@ function App() {
                             <Route path="/" element={<Home />} />
                             <Route path="/features" element={<Features />} />
                             <Route path="/pricing" element={<Pricing />} />
+                            <Route path="/hardware" element={<Hardware />} />
+                            <Route path="/help-center" element={<HelpCenter />} />
+                            <Route path="/community" element={<Community />} />
+                            <Route path="/about" element={<About />} />
+                            <Route path="/contact" element={<Contact />} />
+                            <Route path="/privacy" element={<Privacy />} />
                         </Route>
 
                         {/* Auth Routes */}
@@ -67,6 +84,8 @@ function App() {
                         
                         {/* Super Admin Routes */}
                         <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+                        <Route path="/super-admin/forgot-password" element={<SuperAdminForgotPassword />} />
+                        <Route path="/super-admin/reset-password" element={<SuperAdminResetPassword />} />
                         <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
                         
                         <Route path="/remote-scanner/:sessionId" element={<RemoteScannerApp />} />
@@ -98,6 +117,9 @@ function App() {
                                 <Route path="/billing" element={<Billing />} />
                             </Route>
                         </Route>
+
+                        {/* Catch-all Route */}
+                        <Route path="*" element={<Home />} />
                     </Routes>
                 </Suspense>
             </BrowserRouter>

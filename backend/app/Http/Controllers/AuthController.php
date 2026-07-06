@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
 
@@ -27,6 +28,20 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($request->has('is_super_admin') && $request->is_super_admin) {
+            if ($user->role !== 'super_admin') {
+                throw ValidationException::withMessages([
+                    'email' => ['Invalid super admin credentials.'],
+                ]);
+            }
+        } else {
+            if ($user->role === 'super_admin') {
+                throw ValidationException::withMessages([
+                    'email' => ['Invalid credentials for tenant portal.'],
+                ]);
+            }
+        }
+
         if ($user->tenant && !$user->tenant->is_active && $user->role !== 'admin') {
             throw ValidationException::withMessages([
                 'email' => ['Please contact your admin. Your store account is currently suspended.'],
@@ -40,7 +55,7 @@ class AuthController extends Controller
         $user->save();
 
         // Send OTP email
-        Mail::to($user->email)->queue(new OtpMail($otpCode));
+        Mail::to($user->email)->send(new OtpMail($otpCode));
 
         return response()->json([
             'requires_2fa' => true,
@@ -53,50 +68,47 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
             'tier' => 'nullable|string|in:bronze,silver,custom',
         ]);
 
-        $tenantName = explode(' ', $request->name)[0] . "'s Store";
-        $tier = $request->tier ?? 'bronze';
+        $baseTenantName = explode(' ', $request->name)[0] . "'s Store";
+        $tenantName = $baseTenantName;
+        $counter = 1;
+        while (\App\Models\Tenant::where('name', $tenantName)->exists()) {
+            $tenantName = $baseTenantName . " " . $counter;
+            $counter++;
+        }
+        
+        $tier = 'silver';
 
-        $tenant = Tenant::create([
-            'name' => $tenantName,
-            'tier' => $tier,
-            'is_active' => true,
-            'trial_ends_at' => now()->addDays(3),
-        ]);
+        // Generate OTP
+        $otpCode = (string) rand(100000, 999999);
 
-        $branch = Branch::create([
-            'tenant_id' => $tenant->id,
-            'name' => 'Main Branch',
-            'location' => 'Headquarters',
-            'status' => 'active',
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'admin',
-            'pin' => '0000',
-            'tenant_id' => $tenant->id,
-            'branch_id' => $branch->id,
-        ]);
+        // Store registration data in pending_registrations table for 30 minutes
+        \App\Models\PendingRegistration::updateOrCreate(
+            ['email' => $request->email],
+            [
+                'name' => $request->name,
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+                'tier' => $tier,
+                'tenant_name' => $tenantName,
+                'otp_code' => $otpCode,
+                'expires_at' => now()->addMinutes(30)
+            ]
+        );
 
         try {
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\WelcomeTenantMail($tenant, $user));
+            \Illuminate\Support\Facades\Mail::to($request->email)->send(new \App\Mail\WelcomeTenantMail($tenantName, $request->name, $otpCode));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send welcome email: ' . $e->getMessage());
         }
 
-        $token = $user->createToken('pos-token')->plainTextToken;
-
         return response()->json([
-            'user' => $user->load('tenant'),
-            'token' => $token,
-            'message' => 'Registration successful.'
+            'requires_2fa' => true,
+            'email' => $request->email,
+            'message' => 'Registration successful. Please check your email for the verification code.'
         ]);
     }
 
@@ -110,7 +122,56 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            throw ValidationException::withMessages(['email' => ['User not found.']]);
+            // Check if it's a pending registration
+            $pending = \App\Models\PendingRegistration::where('email', $request->email)->first();
+            if ($pending) {
+                if ($pending->otp_code !== $request->otp_code) {
+                    throw ValidationException::withMessages(['otp_code' => ['Invalid OTP code.']]);
+                }
+                
+                if (now()->greaterThan($pending->expires_at)) {
+                    throw ValidationException::withMessages(['otp_code' => ['Registration session has expired. Please register again.']]);
+                }
+
+                // Create the tenant, branch, and user
+                $tenant = \App\Models\Tenant::create([
+                    'name' => $pending->tenant_name,
+                    'tier' => $pending->tier,
+                    'is_active' => true,
+                    'billing_status' => 'trialing',
+                    'trial_ends_at' => now()->addDays(7),
+                ]);
+
+                $branch = \App\Models\Branch::create([
+                    'tenant_id' => $tenant->id,
+                    'name' => 'Main Branch',
+                    'location' => 'Headquarters',
+                    'status' => 'active',
+                ]);
+
+                $user = User::create([
+                    'name' => $pending->name,
+                    'email' => $pending->email,
+                    'password' => $pending->password,
+                    'role' => 'admin',
+                    'pin' => '0000',
+                    'tenant_id' => $tenant->id,
+                    'branch_id' => $branch->id,
+                    'otp_code' => null,
+                    'otp_expires_at' => null,
+                ]);
+
+                $pending->delete();
+
+                $token = $user->createToken('pos-token')->plainTextToken;
+
+                return response()->json([
+                    'user' => $user->load('tenant'),
+                    'token' => $token
+                ]);
+            }
+
+            throw ValidationException::withMessages(['email' => ['User not found or registration session expired.']]);
         }
 
         if ($user->otp_code !== $request->otp_code) {
@@ -143,18 +204,43 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
+        // Generate new OTP
+        $otpCode = (string) rand(100000, 999999);
+
         if (!$user) {
+            $pending = \App\Models\PendingRegistration::where('email', $request->email)->first();
+            if ($pending) {
+                $pending->update([
+                    'otp_code' => $otpCode,
+                    'expires_at' => now()->addMinutes(30)
+                ]);
+
+                try {
+                    \Illuminate\Support\Facades\Mail::to($request->email)->send(new \App\Mail\WelcomeTenantMail($pending->tenant_name, $pending->name, $otpCode));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Failed to resend welcome email: ' . $e->getMessage());
+                    return response()->json(['message' => 'OTP generated but failed to send email. Check logs.'], 500);
+                }
+
+                return response()->json([
+                    'message' => 'A new OTP has been sent to your email.'
+                ]);
+            }
+
             throw ValidationException::withMessages(['email' => ['User not found.']]);
         }
 
-        // Generate new OTP
-        $otpCode = (string) rand(100000, 999999);
         $user->otp_code = $otpCode;
         $user->otp_expires_at = now()->addMinutes(10);
         $user->save();
 
         // Send OTP email
-        Mail::to($user->email)->queue(new OtpMail($otpCode));
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otpCode));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to resend OTP email: ' . $e->getMessage());
+            return response()->json(['message' => 'OTP generated but failed to send email. Check logs.'], 500);
+        }
 
         return response()->json([
             'message' => 'A new OTP has been sent to your email.'

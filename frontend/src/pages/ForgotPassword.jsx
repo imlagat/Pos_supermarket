@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Mail, Send, ShoppingCart } from 'lucide-react';
+import { Mail, Send, ShoppingCart, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ForgotPassword() {
@@ -77,7 +77,14 @@ export default function ForgotPassword() {
               disabled={loading}
               className="w-full bg-[#E55A2A] hover:bg-[#D44A1A] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-orange-500/30 flex items-center justify-center gap-2 mb-4"
             >
-              {loading ? 'Sending...' : 'Send Reset Link'}
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin w-5 h-5" />
+                  Sending...
+                </>
+              ) : (
+                'Send Reset Link'
+              )}
             </button>
           </form>
 

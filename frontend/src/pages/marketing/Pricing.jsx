@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Check, X, Building2, Zap, Headphones, BarChart3, Cloud, Layers } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import ContactSalesModal from '../../components/marketing/ContactSalesModal';
@@ -9,6 +9,22 @@ export default function Pricing() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('monthly');
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (hash === '#tiers') {
+      const element = document.getElementById('tiers');
+      if (element) {
+        // slight timeout to allow rendering
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [hash]);
 
   const handleSelectPlan = (planName) => {
     if (planName === 'Enterprise') {
@@ -83,14 +99,37 @@ export default function Pricing() {
               Simple, transparent pricing
             </h1>
             <p className="text-xl text-gray-600">
-              {user 
-                ? `Welcome ${user.name}! Choose the right plan to jumpstart your business.` 
-                : 'Choose the right plan for your business. No hidden fees, cancel anytime.'}
+              Choose the right plan for your business. No hidden fees, cancel anytime.
             </p>
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        <div className="flex justify-center mb-12">
+          <div className="bg-white border border-gray-200 p-1.5 rounded-full flex items-center shadow-sm">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
+                billingCycle === 'monthly' 
+                  ? 'bg-orange-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingCycle('annual')}
+              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${
+                billingCycle === 'annual' 
+                  ? 'bg-orange-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              Annual <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${billingCycle === 'annual' ? 'bg-white text-orange-600' : 'bg-green-500 text-white'}`}>SAVE 40%</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="tiers" className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start pt-8">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -123,9 +162,15 @@ export default function Pricing() {
 
               <div className="mb-6">
                 <span className="text-4xl font-extrabold text-gray-900">
-                  {plan.price === 'Custom' ? 'Custom' : `KSH ${plan.price}`}
+                  {plan.price === 'Custom' 
+                    ? 'Custom' 
+                    : `KSH ${billingCycle === 'monthly' ? plan.price : (plan.price === '1,599' ? '11,513' : '18,713')}`}
                 </span>
-                {plan.price !== 'Custom' && <span className="text-gray-500 font-medium">/mo</span>}
+                {plan.price !== 'Custom' && (
+                  <span className="text-gray-500 font-medium">
+                    /{billingCycle === 'monthly' ? 'mo' : 'yr'}
+                  </span>
+                )}
               </div>
 
               <button
@@ -136,7 +181,7 @@ export default function Pricing() {
                     : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-100'
                 }`}
               >
-                {plan.price === 'Custom' ? 'Talk to Sales' : 'Select Plan'}
+                {plan.price === 'Custom' ? 'Talk to Sales' : 'Start 7 Days Trial'}
               </button>
 
               <div className="space-y-4">
@@ -158,6 +203,45 @@ export default function Pricing() {
               </div>
             </motion.div>
           ))}
+        </div>
+
+        {/* All plans include section */}
+        <div className="mt-12 text-center bg-gray-100 rounded-2xl p-6 mx-auto max-w-4xl shadow-sm">
+          <p className="text-gray-600 font-medium">
+            <span className="font-bold text-gray-900">All plans include:</span> Free onboarding, automatic updates, data backups, SSL encryption, and offline support.
+          </p>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="mt-24 max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Frequently asked questions</h2>
+          
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">How does the 7 days trial work?</h3>
+              <p className="text-gray-600">Sign up and get full access to all features for 7 days. No credit card required. After the trial, subscribe to keep using POSsuper.</p>
+            </div>
+            
+            <div className="border-t border-gray-200 pt-8">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Can I use POSsuper for multiple branches?</h3>
+              <p className="text-gray-600">Yes! Our Silver plan supports unlimited branches, making it ideal for growing supermarkets and multi-location retail stores. Our Bronze plan is perfect for a single store.</p>
+            </div>
+            
+            <div className="border-t border-gray-200 pt-8">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Can I switch between monthly and annual?</h3>
+              <p className="text-gray-600">Yes. Switch anytime from your dashboard. When switching to annual, you'll get the 40% discount immediately.</p>
+            </div>
+            
+            <div className="border-t border-gray-200 pt-8">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">What payment methods do you accept?</h3>
+              <p className="text-gray-600">We accept M-Pesa, Visa, Mastercard, and bank transfers for subscriptions.</p>
+            </div>
+            
+            <div className="border-t border-gray-200 pt-8">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">What happens when my trial expires?</h3>
+              <p className="text-gray-600">Your data is saved. You can still log in and view your dashboard, but POS features will be locked until you subscribe.</p>
+            </div>
+          </div>
         </div>
 
       </div>

@@ -49,6 +49,42 @@ export default function Finance() {
     );
   }
 
+  const handleExport = () => {
+    if (!data || !data.items) return;
+
+    // Build CSV content
+    const headers = ['Product Name', 'Cost Price (Buy)', 'Selling Price', 'Qty Sold', 'Total Profit'];
+    const rows = data.items.map(item => [
+      `"${item.product_name}"`,
+      item.cost_price,
+      item.selling_price,
+      item.quantity_sold,
+      item.profit
+    ]);
+
+    // Add summary row
+    rows.push([]);
+    rows.push(['Total Gross Revenue', '', '', '', data.total_revenue]);
+    rows.push(['Total COGS', '', '', '', data.total_cogs]);
+    rows.push(['Total Gross Profit', '', '', '', data.total_gross_profit]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `PnL_Statement_${data.start_date}_to_${data.end_date}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success('P&L Exported successfully!');
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -74,7 +110,10 @@ export default function Finance() {
             <option value="this_month">This Month</option>
             <option value="custom">Custom Range</option>
           </select>
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition">
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition"
+          >
             <Download size={18} /> Export
           </button>
         </div>
@@ -113,11 +152,11 @@ export default function Finance() {
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
               <div className="relative">
                 <p className="text-sm font-medium text-gray-500 mb-1">Total Gross Revenue</p>
                 <h3 className="text-3xl font-bold text-gray-900">Ksh {data.total_revenue.toLocaleString()}</h3>
-                <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
                   <Activity size={14} /> From item sales
                 </p>
               </div>
@@ -185,7 +224,7 @@ export default function Finance() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-lg text-xs font-medium">
+                          <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded-lg text-xs font-medium">
                             Ksh {item.selling_price.toLocaleString()}
                           </span>
                         </td>

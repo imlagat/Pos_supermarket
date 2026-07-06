@@ -86,7 +86,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
     }
     if (diff > 0) {
       return (
-        <div className="mt-4 flex items-center gap-1 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg text-sm font-semibold border border-blue-100">
+        <div className="mt-4 flex items-center gap-1 text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg text-sm font-semibold border border-orange-100">
           <AlertCircle size={16} /> + Overage: Ksh {diff.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       );
@@ -162,7 +162,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
 
             {/* M-Pesa Float Column */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
-              <div className="flex items-center gap-2 text-blue-700 bg-blue-50 w-fit px-3 py-1.5 rounded-lg mb-6">
+              <div className="flex items-center gap-2 text-orange-700 bg-orange-50 w-fit px-3 py-1.5 rounded-lg mb-6">
                 <Smartphone size={16} />
                 <span className="text-sm font-bold tracking-wide">M-Pesa Float</span>
               </div>
@@ -203,7 +203,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
 
             {/* Card Float Column */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
-              <div className="flex items-center gap-2 text-purple-700 bg-purple-50 w-fit px-3 py-1.5 rounded-lg mb-6">
+              <div className="flex items-center gap-2 text-slate-700 bg-slate-50 w-fit px-3 py-1.5 rounded-lg mb-6">
                 <Wallet size={16} />
                 <span className="text-sm font-bold tracking-wide">Card Float</span>
               </div>
