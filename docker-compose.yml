@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: supermarket-backend
+    container_name: supermarket-backend
+    restart: unless-stopped
+    ports:
+      # Map to port 8080 to avoid conflicts with local server
+      - "8080:80"
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=supermarket
+      - DB_USERNAME=supermarket
+      - DB_PASSWORD=supermarket_pass
+    depends_on:
+      - db
+    # Commented out volumes so it uses the built-in code by default.
+    # If you want to enable hot-reloading for local development with docker, uncomment these.
+    # volumes:
+    #   - ./backend:/var/www/html
+    #   - /var/www/html/vendor
+    #   - /var/www/html/node_modules
+
+  db:
+    image: mysql:8.0
+    container_name: supermarket-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: supermarket
+      MYSQL_USER: supermarket
+      MYSQL_PASSWORD: supermarket_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      # Map to port 33060 to avoid conflicts with local MySQL
+      - "33060:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+
+volumes:
+  dbdata:
