@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../stores/authStore';
 
 // Dynamically determine backend URL. We use /api to leverage Vite's proxy for HTTPS support
-const apiBaseUrl = '/api';
+const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
     baseURL: apiBaseUrl,
