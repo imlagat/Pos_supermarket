@@ -3,6 +3,9 @@
 # Exit on fail
 set -e
 
+# Create missing framework directories
+mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions
+
 # Run migrations
 php artisan migrate --force || true
 
