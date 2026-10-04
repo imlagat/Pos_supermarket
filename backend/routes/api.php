@@ -19,7 +19,7 @@ Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 // M-Pesa callback — must be public (no auth) so Safaricom can reach it
-Route::post('/mpesa/callback', [MpesaController::class, 'callback']);
+Route::post('/mpesa/callback/{tenant_id}', [MpesaController::class, 'callback']);
 
 Route::post('/remote-scan/session/{sessionId}', [App\Http\Controllers\RemoteScannerController::class, 'store']);
 Route::get('/remote-scan/session/{sessionId}', [App\Http\Controllers\RemoteScannerController::class, 'check']);
@@ -36,7 +36,6 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/switch-account', [AuthController::class, 'switchAccount']);
-    Route::post('/upgrade', [AuthController::class, 'upgradeMock']);
 
     Route::get('/products/lookup/{barcode}', [ProductController::class, 'lookup']);
     Route::apiResource('products', ProductController::class);
@@ -91,6 +90,7 @@ Route::middleware("auth:sanctum")->get("/transactions/export", [App\Http\Control
 
     // Super Admin Routes
     Route::get('/super-admin/tenants', [App\Http\Controllers\SuperAdminController::class, 'getTenants']);
+    Route::put('/super-admin/tenants/{id}/extend', [App\Http\Controllers\SuperAdminController::class, 'extendSubscription']);
     Route::put('/super-admin/tenants/{id}/tier', [App\Http\Controllers\SuperAdminController::class, 'updateTier']);
     Route::put('/super-admin/tenants/{id}/status', [App\Http\Controllers\SuperAdminController::class, 'updateStatus']);
     Route::put('/super-admin/tenants/{id}', [App\Http\Controllers\SuperAdminController::class, 'updateTenant']);

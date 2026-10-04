@@ -32,7 +32,7 @@ export default function SuperAdminLogin() {
         return;
       }
       try {
-        const res = await login(email, password);
+        const res = await login(email, password, true);
         if (res && res.requires_2fa) {
           setRequires2FA(true);
           toast.success(res.message || 'OTP sent to your email');

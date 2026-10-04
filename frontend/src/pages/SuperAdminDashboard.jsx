@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { LogOut, Shield, Users, Building2, Activity, Settings, RefreshCw, XCircle, CheckCircle, Clock, ShoppingCart, Trash2, Edit2, CreditCard } from 'lucide-react';
+import { LogOut, Shield, Users, Building2, Activity, Settings, RefreshCw, XCircle, CheckCircle, Clock, ShoppingCart, Trash2, Edit2, CreditCard, Calendar, Loader2 } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
   const { user, logout } = useAuthStore();
@@ -19,6 +19,15 @@ export default function SuperAdminDashboard() {
   const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '' });
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [editingTenant, setEditingTenant] = useState(null);
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [extendingTenant, setExtendingTenant] = useState(null);
+  const [extendDays, setExtendDays] = useState(7);
+  const [adjustAction, setAdjustAction] = useState('add');
+  const [actionLoading, setActionLoading] = useState({});
+
+  const setLoader = (key, isLoading) => {
+    setActionLoading(prev => ({ ...prev, [key]: isLoading }));
+  };
 
   useEffect(() => {
     if (!user || user.role !== 'super_admin') {
@@ -60,6 +69,7 @@ export default function SuperAdminDashboard() {
   };
 
   const updateSubscriptionStatus = async (id, newStatus) => {
+    setLoader(`sub-status-${id}`, true);
     try {
       await api.put(`/super-admin/subscriptions/${id}`, { status: newStatus });
       toast.success('Subscription status updated');
@@ -68,11 +78,14 @@ export default function SuperAdminDashboard() {
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || error.message || 'Failed to update subscription status');
+    } finally {
+      setLoader(`sub-status-${id}`, false);
     }
   };
 
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
+    setLoader('modal-submit', true);
     try {
       await api.post('/super-admin/admins', newAdmin);
       toast.success('Super admin created successfully');
@@ -81,11 +94,14 @@ export default function SuperAdminDashboard() {
       fetchAdmins();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create admin');
+    } finally {
+      setLoader('modal-submit', false);
     }
   };
 
   const handleEditAdmin = async (e) => {
     e.preventDefault();
+    setLoader('modal-submit', true);
     try {
       await api.put(`/super-admin/admins/${editingAdmin.id}`, editingAdmin);
       toast.success('Super admin updated successfully');
@@ -94,21 +110,27 @@ export default function SuperAdminDashboard() {
       fetchAdmins();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update admin');
+    } finally {
+      setLoader('modal-submit', false);
     }
   };
 
   const handleDeleteAdmin = async (id) => {
     if (!window.confirm('Are you sure you want to delete this admin?')) return;
+    setLoader(`delete-admin-${id}`, true);
     try {
       await api.delete(`/super-admin/admins/${id}`);
       toast.success('Super admin deleted successfully');
       fetchAdmins();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete admin');
+    } finally {
+      setLoader(`delete-admin-${id}`, false);
     }
   };
 
   const updateTier = async (tenantId, newTier) => {
+    setLoader(`tier-${tenantId}`, true);
     try {
       await api.put(`/super-admin/tenants/${tenantId}/tier`, { tier: newTier });
       toast.success('Tenant tier updated successfully');
@@ -116,10 +138,13 @@ export default function SuperAdminDashboard() {
     } catch (error) {
       console.error("Tier update error:", error.response || error);
       toast.error(error.response?.data?.message || 'Failed to update tenant tier');
+    } finally {
+      setLoader(`tier-${tenantId}`, false);
     }
   };
 
   const toggleStatus = async (tenantId, currentStatus) => {
+    setLoader(`status-${tenantId}`, true);
     try {
       await api.put(`/super-admin/tenants/${tenantId}/status`, { is_active: !currentStatus });
       toast.success('Tenant status updated');
@@ -127,22 +152,28 @@ export default function SuperAdminDashboard() {
     } catch (error) {
       console.error("Status update error:", error.response || error);
       toast.error(error.response?.data?.message || 'Failed to update status');
+    } finally {
+      setLoader(`status-${tenantId}`, false);
     }
   };
 
   const handleDeleteTenant = async (tenantId) => {
     if (!window.confirm('Are you sure you want to delete this store? This action cannot be undone and will delete all associated data.')) return;
+    setLoader(`delete-tenant-${tenantId}`, true);
     try {
       await api.delete(`/super-admin/tenants/${tenantId}`);
       toast.success('Store deleted successfully');
       fetchTenants();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete store');
+    } finally {
+      setLoader(`delete-tenant-${tenantId}`, false);
     }
   };
 
   const handleEditTenant = async (e) => {
     e.preventDefault();
+    setLoader('modal-submit', true);
     try {
       await api.put(`/super-admin/tenants/${editingTenant.id}`, {
         name: editingTenant.name
@@ -153,6 +184,31 @@ export default function SuperAdminDashboard() {
       fetchTenants();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update store');
+    } finally {
+      setLoader('modal-submit', false);
+    }
+  };
+
+  const handleExtendSubscription = async (e) => {
+    e.preventDefault();
+    setLoader('modal-submit', true);
+    try {
+      const res = await api.put(`/super-admin/tenants/${extendingTenant.id}/extend`, { days: extendDays, action: adjustAction });
+      toast.success(adjustAction === 'add' ? `Adjusted subscription by ${extendDays} days` : `Set remaining days to ${extendDays}`);
+      
+      // Update tenant locally for real-time reflection
+      if (res.data && res.data.tenant) {
+        setTenants(prev => prev.map(t => t.id === extendingTenant.id ? { ...t, ...res.data.tenant } : t));
+      } else {
+        fetchTenants();
+      }
+
+      setShowExtendModal(false);
+      setExtendingTenant(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to adjust subscription');
+    } finally {
+      setLoader('modal-submit', false);
     }
   };
 
@@ -275,22 +331,31 @@ export default function SuperAdminDashboard() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {tenants.map(tenant => {
-                  const daysRemaining = tenant.trial_ends_at ? Math.ceil((new Date(tenant.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                  const expDate = tenant.trial_ends_at || tenant.next_billing_date;
+                  const daysRemaining = expDate ? Math.ceil((new Date(expDate) - new Date()) / (1000 * 60 * 60 * 24)) : null;
                   
                   return (
                     <tr key={tenant.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4 font-medium text-gray-900">{tenant.name}</td>
                       <td className="px-6 py-4 text-gray-500">{tenant.users && tenant.users.length > 0 ? tenant.users[0].email : 'N/A'}</td>
                       <td className="px-6 py-4">
-                        <select 
-                          value={tenant.tier} 
-                          onChange={(e) => updateTier(tenant.id, e.target.value)}
-                          className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block p-2"
-                        >
-                          <option value="bronze">Bronze (Downgrade/Current)</option>
-                          <option value="silver">Silver (Upgrade/Downgrade)</option>
-                          <option value="custom">Custom (Upgrade)</option>
-                        </select>
+                        <div className="relative">
+                          <select 
+                            value={tenant.tier} 
+                            disabled={actionLoading[`tier-${tenant.id}`]}
+                            onChange={(e) => updateTier(tenant.id, e.target.value)}
+                            className="bg-gray-50 border border-gray-200 text-gray-900 text-sm font-medium rounded-lg focus:ring-orange-500 focus:border-orange-500 block p-2 w-full pr-8 disabled:opacity-50"
+                          >
+                            <option value="bronze">Bronze Plan</option>
+                            <option value="silver">Silver Plan</option>
+                            <option value="custom">Custom Plan</option>
+                          </select>
+                          {actionLoading[`tier-${tenant.id}`] && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <Loader2 size={16} className="animate-spin text-orange-600" />
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${tenant.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-800'}`}>
@@ -298,9 +363,9 @@ export default function SuperAdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-gray-500">
-                        {tenant.trial_ends_at ? (
+                        {expDate ? (
                           <div className="flex flex-col">
-                            <span className="text-xs text-gray-400">{new Date(tenant.trial_ends_at).toLocaleDateString()}</span>
+                            <span className="text-xs text-gray-400">{new Date(expDate).toLocaleDateString()}</span>
                             {daysRemaining > 0 ? (
                               <span className="text-green-600 font-bold text-sm">{daysRemaining} days remaining</span>
                             ) : daysRemaining === 0 ? (
@@ -312,27 +377,12 @@ export default function SuperAdminDashboard() {
                         ) : 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-right flex justify-end gap-2">
-                        {tenant.tier === 'bronze' && (
-                          <button 
-                            onClick={() => updateTier(tenant.id, 'silver')}
-                            className="text-sm font-bold px-3 py-1.5 rounded-lg border bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200"
-                          >
-                            Upgrade
-                          </button>
-                        )}
-                        {tenant.tier === 'silver' && (
-                          <button 
-                            onClick={() => updateTier(tenant.id, 'bronze')}
-                            className="text-sm font-bold px-3 py-1.5 rounded-lg border bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200"
-                          >
-                            Downgrade
-                          </button>
-                        )}
                         <button 
                           onClick={() => toggleStatus(tenant.id, tenant.is_active)}
-                          className={`text-sm font-bold px-3 py-1.5 rounded-lg border ${tenant.is_active ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'}`}
+                          disabled={actionLoading[`status-${tenant.id}`]}
+                          className={`text-sm font-bold px-3 py-1.5 rounded-lg border flex items-center justify-center gap-2 min-w-[90px] disabled:opacity-50 ${tenant.is_active ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'}`}
                         >
-                          {tenant.is_active ? 'Suspend' : 'Activate'}
+                          {actionLoading[`status-${tenant.id}`] ? <Loader2 size={16} className="animate-spin" /> : (tenant.is_active ? 'Suspend' : 'Activate')}
                         </button>
                         <button 
                           onClick={() => { setEditingTenant(tenant); setShowEditTenantModal(true); }}
@@ -342,11 +392,19 @@ export default function SuperAdminDashboard() {
                           <Edit2 size={16} />
                         </button>
                         <button 
+                          onClick={() => { setExtendingTenant(tenant); setShowExtendModal(true); setExtendDays(7); setAdjustAction('add'); }}
+                          className="p-1.5 rounded text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors"
+                          title="Adjust Subscription"
+                        >
+                          <Calendar size={16} />
+                        </button>
+                        <button 
                           onClick={() => handleDeleteTenant(tenant.id)}
-                          className="p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          disabled={actionLoading[`delete-tenant-${tenant.id}`]}
+                          className="p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
                           title="Delete Store"
                         >
-                          <Trash2 size={16} />
+                          {actionLoading[`delete-tenant-${tenant.id}`] ? <Loader2 size={16} className="animate-spin text-red-600" /> : <Trash2 size={16} />}
                         </button>
                       </td>
                     </tr>
@@ -412,11 +470,11 @@ export default function SuperAdminDashboard() {
                       </button>
                       <button 
                         onClick={() => handleDeleteAdmin(admin.id)}
-                        className={`p-1.5 rounded transition-colors ${admin.id === user.id ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'}`}
+                        className={`p-1.5 rounded transition-colors ${admin.id === user.id ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:text-red-600 hover:bg-red-50'} disabled:opacity-50`}
                         title={admin.id === user.id ? "Cannot delete yourself" : "Delete Admin"}
-                        disabled={admin.id === user.id}
+                        disabled={admin.id === user.id || actionLoading[`delete-admin-${admin.id}`]}
                       >
-                        <Trash2 size={16} />
+                        {actionLoading[`delete-admin-${admin.id}`] ? <Loader2 size={16} className="animate-spin text-red-600" /> : <Trash2 size={16} />}
                       </button>
                     </td>
                   </tr>
@@ -477,15 +535,23 @@ export default function SuperAdminDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <select
-                        value={sub.status}
-                        onChange={(e) => updateSubscriptionStatus(sub.id, e.target.value)}
-                        className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 p-2 ml-auto"
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="completed">Completed</option>
-                        <option value="failed">Failed</option>
-                      </select>
+                      <div className="relative inline-block">
+                        <select
+                          value={sub.status}
+                          disabled={actionLoading[`sub-status-${sub.id}`]}
+                          onChange={(e) => updateSubscriptionStatus(sub.id, e.target.value)}
+                          className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 p-2 ml-auto pr-8 disabled:opacity-50 appearance-none min-w-[110px]"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="completed">Completed</option>
+                          <option value="failed">Failed</option>
+                        </select>
+                        {actionLoading[`sub-status-${sub.id}`] && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <Loader2 size={16} className="animate-spin text-orange-600" />
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -554,9 +620,10 @@ export default function SuperAdminDashboard() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg"
+                  disabled={actionLoading['modal-submit']}
+                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg flex items-center justify-center gap-2 min-w-[120px] disabled:opacity-50"
                 >
-                  Create Admin
+                  {actionLoading['modal-submit'] ? <Loader2 size={18} className="animate-spin" /> : 'Create Admin'}
                 </button>
               </div>
             </form>
@@ -616,9 +683,10 @@ export default function SuperAdminDashboard() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg"
+                  disabled={actionLoading['modal-submit']}
+                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg flex items-center justify-center gap-2 min-w-[130px] disabled:opacity-50"
                 >
-                  Save Changes
+                  {actionLoading['modal-submit'] ? <Loader2 size={18} className="animate-spin" /> : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -657,9 +725,69 @@ export default function SuperAdminDashboard() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg"
+                  disabled={actionLoading['modal-submit']}
+                  className="px-4 py-2 bg-orange-600 text-white font-medium hover:bg-orange-700 rounded-lg flex items-center justify-center gap-2 min-w-[130px] disabled:opacity-50"
                 >
-                  Save Changes
+                  {actionLoading['modal-submit'] ? <Loader2 size={18} className="animate-spin" /> : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Adjust Subscription Modal */}
+      {showExtendModal && extendingTenant && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-gray-900 text-lg">Adjust Subscription Days</h3>
+              <button onClick={() => { setShowExtendModal(false); setExtendingTenant(null); }} className="text-gray-400 hover:text-gray-600">
+                <XCircle size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleExtendSubscription} className="p-6 space-y-4">
+              <div className="bg-orange-50 text-orange-800 p-3 rounded-lg text-sm mb-2 border border-orange-100">
+                Adjusting subscription for <strong>{extendingTenant.name}</strong>.
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
+                <select 
+                  value={adjustAction} 
+                  onChange={(e) => setAdjustAction(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="add">Add / Subtract Days</option>
+                  <option value="set">Set Exact Days Remaining</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {adjustAction === 'add' ? 'Days (use negative to subtract)' : 'Exact Days Remaining'}
+                </label>
+                <input
+                  type="number"
+                  required
+                  className="w-full border border-gray-200 rounded-lg p-2.5 focus:ring-orange-500 focus:border-orange-500"
+                  value={extendDays}
+                  onChange={(e) => setExtendDays(e.target.value)}
+                />
+              </div>
+              <div className="pt-4 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowExtendModal(false); setExtendingTenant(null); }}
+                  className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading['modal-submit']}
+                  className="px-4 py-2 bg-green-600 text-white font-medium hover:bg-green-700 rounded-lg flex items-center justify-center gap-2 min-w-[160px] disabled:opacity-50"
+                >
+                  {actionLoading['modal-submit'] ? <Loader2 size={18} className="animate-spin" /> : 'Confirm Adjustment'}
                 </button>
               </div>
             </form>

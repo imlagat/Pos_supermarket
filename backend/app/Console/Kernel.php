@@ -21,6 +21,9 @@ class Kernel extends ConsoleKernel
         
         // Apply automatic markdowns for expiring products
         $schedule->command('inventory:apply-markdowns')->daily();
+        
+        // Check expiring trials and subscriptions daily
+        $schedule->command('subscriptions:check-expiry')->daily();
     }
 
     /**
