@@ -55,7 +55,12 @@ class AuthController extends Controller
         $user->save();
 
         // Send OTP email
-        Mail::to($user->email)->send(new OtpMail($otpCode));
+        try {
+            Mail::to($user->email)->send(new OtpMail($otpCode));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send login OTP: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to send OTP email: ' . $e->getMessage()], 500);
+        }
 
         return response()->json([
             'requires_2fa' => true,
