@@ -151,7 +151,7 @@ export default function ChatWidget() {
                         }
                         setIsOpen(true);
                     }}
-                    className={`fixed bottom-20 right-4 md:bottom-6 md:right-6 p-4 rounded-full shadow-2xl transition-all z-[100] flex items-center justify-center
+                    className={`fixed bottom-20 right-4 md:bottom-6 md:right-6 p-3 rounded-full shadow-xl transition-all z-[100] flex items-center justify-center
                         ${(user?.tenant?.tier === 'bronze' || (user?.tenant && !user.tenant.is_active))
                             ? 'bg-gray-400 text-gray-200 cursor-pointer opacity-80 hover:bg-gray-500' 
                             : 'bg-orange-600 text-white hover:bg-orange-700 hover:scale-110'
@@ -162,13 +162,13 @@ export default function ChatWidget() {
                     }
                     disabled={user?.tenant && !user.tenant.is_active}
                 >
-                    <MessageCircle size={28} />
+                    <MessageCircle size={22} />
                 </button>
             )}
 
             {/* Chat Window */}
             {isOpen && (
-                <div className={`fixed bottom-20 right-2 left-2 sm:left-auto sm:right-6 md:bottom-6 md:right-6 ${isExpanded ? 'w-full md:w-[600px] h-[75vh] max-h-[800px]' : 'w-[calc(100vw-1rem)] sm:w-96 h-[500px] sm:h-[550px]'} bg-white rounded-2xl shadow-2xl flex flex-col z-[100] border border-gray-200 overflow-hidden transform transition-all duration-300 origin-bottom-right`}>
+                <div className={`fixed bottom-20 right-2 left-2 sm:left-auto sm:right-6 md:bottom-6 md:right-6 ${isExpanded ? 'w-full md:w-[520px] h-[65vh] max-h-[650px]' : 'w-[calc(100vw-1.5rem)] sm:w-80 h-[420px] sm:h-[460px]'} bg-white rounded-2xl shadow-2xl flex flex-col z-[100] border border-gray-200 overflow-hidden transform transition-all duration-300 origin-bottom-right`}>
                     {/* Header */}
                     <div className="bg-slate-900 p-4 flex justify-between items-center text-white shrink-0">
                         <div className="flex items-center gap-2">
