@@ -7,81 +7,32 @@ import { Eye, EyeOff, Mail, Lock, LogIn, ShoppingCart, Loader2 } from 'lucide-re
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [requires2FA, setRequires2FA] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { login, verifyOtp, resendOtp, isLoading } = useAuthStore();
+  const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (requires2FA) {
-      if (!otpCode || otpCode.trim() === '') {
-        toast.error('Please enter the OTP code.');
-        return;
-      }
-      try {
-        await verifyOtp(email, otpCode);
-        navigate('/dashboard');
-      } catch {
-        toast.error('Invalid or expired OTP');
-      }
-    } else {
-      if (!email || !password || email.trim() === '' || password.trim() === '') {
-        toast.error('Please enter your email and password.');
-        return;
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        toast.error('Please enter a valid email address.');
-        return;
-      }
-      try {
-        const res = await login(email, password);
-        if (res && res.requires_2fa) {
-          setRequires2FA(true);
-          toast.success(res.message || 'OTP sent to your email');
-        } else {
-          navigate('/dashboard');
-        }
-      } catch (error) {
-        if (error.response && error.response.status === 500) {
-          toast.error(error.response?.data?.message || 'Server error. Please check your database connection and logs.');
-        } else {
-          toast.error(error.response?.data?.message || 'Invalid credentials');
-        }
-      }
+    if (!email || !password || email.trim() === '' || password.trim() === '') {
+      toast.error('Please enter your email and password.');
+      return;
     }
-  };
-
-  const [isResending, setIsResending] = useState(false);
-  const [resendStatus, setResendStatus] = useState('');
-  const [cooldown, setCooldown] = useState(0);
-
-  const handleResendOtp = async () => {
-    if (cooldown > 0 || isResending) return;
-    setIsResending(true);
-    setResendStatus('');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
     try {
-      const res = await resendOtp(email);
-      const msg = res?.message || 'New OTP sent to your email';
-      setResendStatus(msg);
-      toast.success(msg);
-      setCooldown(30);
-      const timer = setInterval(() => {
-        setCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      await login(email, password);
+      toast.success('Login successful!');
+      navigate('/dashboard');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to resend OTP');
-    } finally {
-      setIsResending(false);
+      if (error.response && error.response.status === 500) {
+        toast.error(error.response?.data?.message || 'Server error. Please check your database connection and logs.');
+      } else {
+        toast.error(error.response?.data?.message || 'Invalid credentials');
+      }
     }
   };
 
@@ -113,75 +64,57 @@ export default function Login() {
           </div>
           
           <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto md:mx-0">
-            {!requires2FA ? (
-              <>
-                <div className="mb-5">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
-                    placeholder="Enter your email"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                
-                <div className="mb-5">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-4 pr-12 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
-                      placeholder="Enter your password"
-                      required
-                      disabled={isLoading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600 transition-colors"
-                      disabled={isLoading}
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between mb-8">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
-                      disabled={isLoading}
-                    />
-                    <span className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors">Remember me</span>
-                  </label>
-                  <Link to="/forgot-password" className="text-sm text-orange-600 hover:text-orange-700 font-bold transition-colors">
-                    Forgot Password?
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <div className="mb-8">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Enter OTP</label>
-                <p className="text-sm text-gray-500 mb-4">Please check your email ({email}) for the 6-digit code.</p>
+            <div className="mb-5">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
+                placeholder="Enter your email"
+                required
+                disabled={isLoading}
+              />
+            </div>
+            
+            <div className="mb-5">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
+              <div className="relative">
                 <input
-                  type="text"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  className="w-full px-4 py-4 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-center tracking-[0.5em] font-mono text-xl text-gray-800 font-bold"
-                  placeholder="------"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-4 pr-12 py-3.5 bg-gray-100 border-transparent rounded-xl focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-gray-800"
+                  placeholder="Enter your password"
                   required
                   disabled={isLoading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600 transition-colors"
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
-            )}
+            </div>
+            
+            <div className="flex items-center justify-between mb-8">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                  disabled={isLoading}
+                />
+                <span className="text-sm font-medium text-gray-600 group-hover:text-gray-800 transition-colors">Remember me</span>
+              </label>
+              <Link to="/forgot-password" className="text-sm text-orange-600 hover:text-orange-700 font-bold transition-colors">
+                Forgot Password?
+              </Link>
+            </div>
             
             <button
               type="submit"
@@ -189,54 +122,18 @@ export default function Login() {
               className="w-full bg-[#E55A2A] hover:bg-[#D44A1A] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-orange-500/30 flex items-center justify-center gap-2 mb-4 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-              {isLoading ? (requires2FA ? 'Verifying...' : 'Signing in...') : (requires2FA ? 'Verify & Continue' : 'Sign in')}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
-
-            {requires2FA && (
-              <div className="text-center space-y-4">
-                {resendStatus && (
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl transition-all">
-                    {resendStatus}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={isLoading || isResending || cooldown > 0}
-                  className="text-sm font-bold text-gray-600 hover:text-orange-600 transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isResending && <Loader2 className="w-4 h-4 animate-spin text-orange-600" />}
-                  {isResending
-                    ? 'Sending code...'
-                    : cooldown > 0
-                    ? `Resend Code in ${cooldown}s`
-                    : 'Resend Code'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRequires2FA(false);
-                    setOtpCode('');
-                    setResendStatus('');
-                  }}
-                  className="text-sm block mx-auto text-gray-500 hover:text-gray-800 transition-colors mt-2"
-                >
-                  Back to Login
-                </button>
-              </div>
-            )}
           </form>
 
-          {!requires2FA && (
-            <div className="w-full max-w-sm mx-auto md:mx-0 mt-8 text-center">
-              <p className="text-gray-600 font-medium">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-orange-600 hover:text-orange-800 font-bold underline transition-colors">
-                  Signup
-                </Link>
-              </p>
-            </div>
-          )}
+          <div className="w-full max-w-sm mx-auto md:mx-0 mt-8 text-center">
+            <p className="text-gray-600 font-medium">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-orange-600 hover:text-orange-800 font-bold underline transition-colors">
+                Signup
+              </Link>
+            </p>
+          </div>
         </div>
 
         {/* Right Side: Image */}

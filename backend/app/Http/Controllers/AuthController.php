@@ -48,29 +48,13 @@ class AuthController extends Controller
             ]);
         }
 
-        // Generate OTP
-        $otpCode = (string) rand(100000, 999999);
-        $user->otp_code = $otpCode;
-        $user->otp_expires_at = now()->addMinutes(10);
-        $user->save();
-
-        // Send OTP email (with fallback for local dev)
-        try {
-            Mail::to($user->email)->send(new OtpMail($otpCode));
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to send login OTP: ' . $e->getMessage());
-            // Always log OTP for easy local debugging / fallback
-            \Illuminate\Support\Facades\Log::info("LOGIN OTP for [{$user->email}]: {$otpCode}");
-            return response()->json(['message' => 'Failed to send OTP email: ' . $e->getMessage()], 500);
-        }
-
-        // Always log OTP for easy local debugging / fallback
-        \Illuminate\Support\Facades\Log::info("LOGIN OTP for [{$user->email}]: {$otpCode}");
+        // Direct login token (OTP feature disabled)
+        $token = $user->createToken('pos-token')->plainTextToken;
 
         return response()->json([
-            'requires_2fa' => true,
-            'email' => $user->email,
-            'message' => 'OTP sent to your email.'
+            'user' => $user->load('tenant'),
+            'token' => $token,
+            'message' => 'Login successful.'
         ]);
     }
 
@@ -93,32 +77,38 @@ class AuthController extends Controller
         
         $tier = 'silver';
 
-        // Generate OTP
-        $otpCode = (string) rand(100000, 999999);
+        // Direct registration (OTP feature disabled)
+        $tenant = \App\Models\Tenant::create([
+            'name' => $tenantName,
+            'tier' => $tier,
+            'is_active' => true,
+            'billing_status' => 'trialing',
+            'trial_ends_at' => now()->addDays(7),
+        ]);
 
-        // Store registration data in pending_registrations table for 30 minutes
-        \App\Models\PendingRegistration::updateOrCreate(
-            ['email' => $request->email],
-            [
-                'name' => $request->name,
-                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-                'tier' => $tier,
-                'tenant_name' => $tenantName,
-                'otp_code' => $otpCode,
-                'expires_at' => now()->addMinutes(30)
-            ]
-        );
+        $branch = \App\Models\Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+            'location' => 'Headquarters',
+            'status' => 'active',
+        ]);
 
-        try {
-            \Illuminate\Support\Facades\Mail::to($request->email)->send(new \App\Mail\WelcomeTenantMail($tenantName, $request->name, $otpCode));
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to send welcome email: ' . $e->getMessage());
-        }
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'role' => 'admin',
+            'pin' => '0000',
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+        ]);
+
+        $token = $user->createToken('pos-token')->plainTextToken;
 
         return response()->json([
-            'requires_2fa' => true,
-            'email' => $request->email,
-            'message' => 'Registration successful. Please check your email for the verification code.'
+            'user' => $user->load('tenant'),
+            'token' => $token,
+            'message' => 'Registration successful.'
         ]);
     }
 

@@ -49,25 +49,12 @@ class PasswordResetController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            return response()->json(['message' => 'If this email exists in our system, an OTP code has been sent.'], 200);
+            return response()->json(['message' => 'User not found.'], 404);
         }
-
-        $otpCode = (string) rand(100000, 999999);
-        $user->otp_code = $otpCode;
-        $user->otp_expires_at = now()->addMinutes(15);
-        $user->save();
-
-        try {
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otpCode));
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to send password reset OTP: ' . $e->getMessage());
-        }
-
-        \Illuminate\Support\Facades\Log::info("PASSWORD RESET OTP for [{$user->email}]: {$otpCode}");
 
         return response()->json([
-            'requires_otp' => true,
-            'message' => 'A 6-digit verification code has been sent to your email.'
+            'requires_otp' => false,
+            'message' => 'Please enter your new password.'
         ]);
     }
 
@@ -75,18 +62,13 @@ class PasswordResetController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'otp_code' => 'required|string',
             'password' => 'required|string|min:6',
         ]);
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || $user->otp_code !== $request->otp_code) {
-            return response()->json(['message' => 'Invalid or expired OTP code.'], 422);
-        }
-
-        if ($user->otp_expires_at && now()->greaterThan($user->otp_expires_at)) {
-            return response()->json(['message' => 'OTP code has expired. Please request a new one.'], 422);
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
         }
 
         $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
