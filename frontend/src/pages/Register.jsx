@@ -14,6 +14,7 @@ export default function Register() {
   const [isResending, setIsResending] = useState(false);
   const [resendStatus, setResendStatus] = useState('');
   const [cooldown, setCooldown] = useState(0);
+  const { register, verifyOtp, resendOtp, isLoading } = useAuthStore();
 
   const handleResend = async () => {
     if (cooldown > 0 || isResending) return;
