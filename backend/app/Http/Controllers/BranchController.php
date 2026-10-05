@@ -7,9 +7,19 @@ use App\Models\Branch;
 
 class BranchController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Branch::all());
+        $user = $request->user();
+        $query = Branch::query();
+
+        if ($user && $user->tenant_id) {
+            $query->where('tenant_id', $user->tenant_id);
+        } else if ($user && !$user->tenant_id) {
+            $query->whereNull('tenant_id');
+        }
+
+        $branches = $query->get()->unique('id')->values();
+        return response()->json($branches);
     }
 
     public function store(Request $request)
@@ -27,6 +37,12 @@ class BranchController extends Controller
             if ($branchCount >= 1) {
                 return response()->json(['message' => 'Bronze plan does not support multiple branches. Please upgrade to Silver or Custom to add more.'], 403);
             }
+        }
+
+        $tenantId = $user ? $user->tenant_id : null;
+        $exists = Branch::where('tenant_id', $tenantId)->where('name', $validated['name'])->exists();
+        if ($exists) {
+            return response()->json(['message' => 'A branch with this name already exists.'], 422);
         }
 
         $branch = Branch::create($validated);

@@ -109,10 +109,13 @@ export const useAuthStore = create((set, get) => ({
     },
 
     resendOtp: async (email) => {
+        set({ isLoading: true });
         try {
             const res = await api.post('/resend-otp', { email });
+            set({ isLoading: false });
             return res.data;
         } catch (error) {
+            set({ isLoading: false });
             throw error;
         }
     },

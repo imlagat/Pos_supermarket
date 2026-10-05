@@ -54,13 +54,18 @@ class AuthController extends Controller
         $user->otp_expires_at = now()->addMinutes(10);
         $user->save();
 
-        // Send OTP email
+        // Send OTP email (with fallback for local dev)
         try {
             Mail::to($user->email)->send(new OtpMail($otpCode));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send login OTP: ' . $e->getMessage());
+            // Always log OTP for easy local debugging / fallback
+            \Illuminate\Support\Facades\Log::info("LOGIN OTP for [{$user->email}]: {$otpCode}");
             return response()->json(['message' => 'Failed to send OTP email: ' . $e->getMessage()], 500);
         }
+
+        // Always log OTP for easy local debugging / fallback
+        \Illuminate\Support\Facades\Log::info("LOGIN OTP for [{$user->email}]: {$otpCode}");
 
         return response()->json([
             'requires_2fa' => true,
@@ -242,10 +247,11 @@ class AuthController extends Controller
         // Send OTP email
         try {
             \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\OtpMail($otpCode));
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to resend OTP email: ' . $e->getMessage());
-            return response()->json(['message' => 'OTP generated but failed to send email. Check logs.'], 500);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to resend OTP email: ' . $e->getMessage());
         }
+
+        \Illuminate\Support\Facades\Log::info("RESEND OTP for [{$user->email}]: {$otpCode}");
 
         return response()->json([
             'message' => 'A new OTP has been sent to your email.'

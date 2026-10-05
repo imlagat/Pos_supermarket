@@ -5,7 +5,7 @@ use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $settings = Setting::all()->pluck('value', 'key');
         return response()->json($settings);
@@ -13,8 +13,20 @@ class SettingsController extends Controller
 
     public function update(Request $request)
     {
-        $tenant = $request->user()->tenant;
-        $tenant->update($request->only('store_name', 'store_phone', 'store_email', 'store_address', 'currency_symbol', 'tax_rate', 'receipt_footer'));
+        $user = $request->user();
+        if ($user && $user->tenant) {
+            $user->tenant->update($request->only('store_name', 'store_phone', 'store_email', 'store_address', 'currency_symbol', 'tax_rate', 'receipt_footer'));
+        }
+
+        $submittedSettings = $request->all();
+        foreach ($submittedSettings as $key => $value) {
+            if ($value !== null) {
+                Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $value]
+                );
+            }
+        }
 
         return response()->json(['message' => 'Settings updated successfully']);
     }

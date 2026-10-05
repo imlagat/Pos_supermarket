@@ -55,12 +55,33 @@ export default function Login() {
     }
   };
 
+  const [isResending, setIsResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState('');
+  const [cooldown, setCooldown] = useState(0);
+
   const handleResendOtp = async () => {
+    if (cooldown > 0 || isResending) return;
+    setIsResending(true);
+    setResendStatus('');
     try {
       const res = await resendOtp(email);
-      toast.success(res.message || 'OTP resent to your email');
-    } catch {
-      toast.error('Failed to resend OTP');
+      const msg = res?.message || 'New OTP sent to your email';
+      setResendStatus(msg);
+      toast.success(msg);
+      setCooldown(30);
+      const timer = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to resend OTP');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -173,20 +194,30 @@ export default function Login() {
 
             {requires2FA && (
               <div className="text-center space-y-4">
+                {resendStatus && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl transition-all">
+                    {resendStatus}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  disabled={isLoading}
-                  className="text-sm font-bold text-gray-600 hover:text-orange-600 transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={isLoading || isResending || cooldown > 0}
+                  className="text-sm font-bold text-gray-600 hover:text-orange-600 transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isLoading ? 'Sending...' : 'Resend Code'}
+                  {isResending && <Loader2 className="w-4 h-4 animate-spin text-orange-600" />}
+                  {isResending
+                    ? 'Sending code...'
+                    : cooldown > 0
+                    ? `Resend Code in ${cooldown}s`
+                    : 'Resend Code'}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setRequires2FA(false);
                     setOtpCode('');
+                    setResendStatus('');
                   }}
                   className="text-sm block mx-auto text-gray-500 hover:text-gray-800 transition-colors mt-2"
                 >

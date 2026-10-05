@@ -11,7 +11,35 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const { register, verifyOtp, resendOtp, isLoading } = useAuthStore();
+  const [isResending, setIsResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState('');
+  const [cooldown, setCooldown] = useState(0);
+
+  const handleResend = async () => {
+    if (cooldown > 0 || isResending) return;
+    setIsResending(true);
+    setResendStatus('');
+    try {
+      const res = await resendOtp(email);
+      const successMsg = res?.message || 'New verification code sent to your email!';
+      setResendStatus(successMsg);
+      toast.success(successMsg);
+      setCooldown(30);
+      const timer = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to resend verification code.');
+    } finally {
+      setIsResending(false);
+    }
+  };
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -167,21 +195,23 @@ export default function Register() {
 
             {requires2FA && (
               <div className="text-center space-y-4">
+                {resendStatus && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl transition-all">
+                    {resendStatus}
+                  </div>
+                )}
                 <button
                   type="button"
-                  onClick={async () => {
-                    try {
-                      const res = await resendOtp(email);
-                      toast.success(res.message || 'Verification code resent');
-                    } catch {
-                      toast.error('Failed to resend code');
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="text-sm font-bold text-gray-600 hover:text-orange-600 transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-70 disabled:cursor-not-allowed"
+                  onClick={handleResend}
+                  disabled={isLoading || isResending || cooldown > 0}
+                  className="text-sm font-bold text-gray-600 hover:text-orange-600 transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isLoading ? 'Sending...' : 'Resend Code'}
+                  {isResending && <Loader2 className="w-4 h-4 animate-spin text-orange-600" />}
+                  {isResending
+                    ? 'Sending code...'
+                    : cooldown > 0
+                    ? `Resend Code in ${cooldown}s`
+                    : 'Resend Code'}
                 </button>
               </div>
             )}

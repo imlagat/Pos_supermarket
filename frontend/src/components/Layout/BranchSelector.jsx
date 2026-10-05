@@ -10,7 +10,11 @@ export default function BranchSelector() {
   useEffect(() => {
     if (user?.role === 'admin') {
       api.get('/branches')
-        .then(res => setBranches(res.data))
+        .then(res => {
+          const list = Array.isArray(res.data) ? res.data : [];
+          const unique = list.filter((b, idx, self) => idx === self.findIndex(t => t.id === b.id));
+          setBranches(unique);
+        })
         .catch(err => console.error('Failed to load branches', err));
     }
   }, [user]);

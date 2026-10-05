@@ -21,30 +21,55 @@ class MpesaController extends Controller
             'order_id' => 'required|string'
         ]);
 
-        $tenantId = $request->user()->tenant_id;
+        $user = $request->user();
+        $tenantId = $user ? $user->tenant_id : null;
         
-        // Fetch M-Pesa credentials for this tenant
-        $settings = Setting::where('tenant_id', $tenantId)
-            ->whereIn('key', [
-                'mpesa_consumer_key', 
-                'mpesa_consumer_secret', 
-                'mpesa_shortcode', 
-                'mpesa_passkey', 
-                'mpesa_environment'
-            ])
-            ->pluck('value', 'key');
+        // Fetch M-Pesa credentials for this tenant or default settings
+        $query = Setting::query();
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        } else {
+            $query->whereNull('tenant_id');
+        }
+
+        $settings = $query->whereIn('key', [
+            'mpesa_consumer_key', 
+            'mpesa_consumer_secret', 
+            'mpesa_shortcode', 
+            'mpesa_passkey', 
+            'mpesa_environment'
+        ])->pluck('value', 'key');
             
-        if (!isset($settings['mpesa_consumer_key']) || !isset($settings['mpesa_consumer_secret']) || !isset($settings['mpesa_shortcode']) || !isset($settings['mpesa_passkey'])) {
+        $consumerKey = $settings['mpesa_consumer_key'] ?? env('MPESA_CONSUMER_KEY');
+        $consumerSecret = $settings['mpesa_consumer_secret'] ?? env('MPESA_CONSUMER_SECRET');
+        $shortcode = $settings['mpesa_shortcode'] ?? env('MPESA_SHORTCODE');
+        $passkey = $settings['mpesa_passkey'] ?? env('MPESA_PASSKEY');
+        $environment = $settings['mpesa_environment'] ?? env('MPESA_ENVIRONMENT', 'sandbox');
+
+        if (!$consumerKey || !$consumerSecret || !$shortcode || !$passkey) {
             return response()->json(['error' => 'M-Pesa API credentials are not configured. Please configure them in Settings.'], 400);
         }
 
+        // Ensure callback URL is a valid public HTTPS URL for Safaricom Daraja API
+        $envCallback = env('MPESA_CALLBACK_URL');
+        if ($envCallback && str_starts_with($envCallback, 'https://')) {
+            $callbackUrl = rtrim($envCallback, '/') . '/' . ($tenantId ?? 1);
+        } else {
+            $appUrl = env('APP_URL', '');
+            if (str_starts_with($appUrl, 'https://') && !str_contains($appUrl, 'localhost')) {
+                $callbackUrl = rtrim($appUrl, '/') . '/api/mpesa/callback/' . ($tenantId ?? 1);
+            } else {
+                $callbackUrl = 'https://crouton-pout-shanty.ngrok-free.dev/api/mpesa/callback/' . ($tenantId ?? 1);
+            }
+        }
+
         $credentials = [
-            'consumer_key' => $settings['mpesa_consumer_key'],
-            'consumer_secret' => $settings['mpesa_consumer_secret'],
-            'shortcode' => $settings['mpesa_shortcode'],
-            'passkey' => $settings['mpesa_passkey'],
-            'environment' => $settings['mpesa_environment'] ?? 'sandbox',
-            'callback_url' => url('/api/mpesa/callback/' . $tenantId)
+            'consumer_key' => $consumerKey,
+            'consumer_secret' => $consumerSecret,
+            'shortcode' => $shortcode,
+            'passkey' => $passkey,
+            'environment' => $environment,
+            'callback_url' => $callbackUrl
         ];
 
         $mpesa = new MpesaService($credentials);
@@ -64,11 +89,12 @@ class MpesaController extends Controller
         }
 
         if (isset($response['ResponseCode']) && $response['ResponseCode'] == '0') {
-            Cache::put('mpesa_' . $tenantId . '_' . $response['CheckoutRequestID'], 'pending', now()->addMinutes(5));
+            Cache::put('mpesa_' . ($tenantId ?? 'default') . '_' . $response['CheckoutRequestID'], 'pending', now()->addMinutes(5));
             return response()->json(['message' => 'STK push sent', 'checkout_id' => $response['CheckoutRequestID']]);
         }
 
-        return response()->json(['error' => 'STK push failed', 'details' => $response], 500);
+        $errorMsg = $response['errorMessage'] ?? $response['ResponseDescription'] ?? 'STK push failed';
+        return response()->json(['error' => $errorMsg, 'details' => $response], 400);
     }
 
 
