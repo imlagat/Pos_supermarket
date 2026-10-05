@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import toast from 'react-hot-toast';
 import { 
   LayoutDashboard, ShoppingCart, Package, Tag, Users, 
-  AlertTriangle, Receipt, UserPlus, BarChart3, Settings, LogOut, UserCircle, FileText,
-  Truck, RefreshCw, Wallet, UserCog, Banknote, CreditCard
+  Receipt, UserPlus, BarChart3, Settings, LogOut, UserCircle, FileText,
+  Truck, RefreshCw, UserCog, Banknote, CreditCard, X
 } from 'lucide-react';
 
 import BranchSelector from './BranchSelector';
@@ -30,7 +29,7 @@ const menuItems = [
   { name: 'Settings', path: '/settings', icon: Settings, roles: ['admin', 'manager'] },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const [loadingPath, setLoadingPath] = useState(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const { user, logout } = useAuthStore();
@@ -39,25 +38,44 @@ export default function Sidebar() {
   const isSuspended = user?.tenant && !user.tenant.is_active;
   const allowedPathsIfSuspended = ['/dashboard', '/transactions', '/reports'];
 
-  return (
-    <aside className="bg-slate-900 text-white flex flex-col shadow-2xl h-screen sticky top-0 w-20 md:w-72 transition-all duration-300 print:hidden">
+  const handleNavClick = (path, e) => {
+    if (isSuspended && !allowedPathsIfSuspended.includes(path)) {
+      e.preventDefault();
+      useAuthStore.getState().setSuspendedModal(true);
+      return;
+    }
+    setLoadingPath(path);
+    setTimeout(() => setLoadingPath(null), 600);
+    if (onClose) onClose();
+  };
+
+  const navContent = (
+    <>
       {/* Logo section */}
-      <div className="p-4 border-b border-slate-800 flex justify-center md:justify-start">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-sm">
-            <ShoppingCart className="text-white w-4 h-4" strokeWidth={2.5} />
+      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center shadow-md">
+            <ShoppingCart className="text-white w-5 h-5" strokeWidth={2.5} />
           </div>
-          <h1 className="text-xl font-black tracking-tight hidden md:block">
+          <h1 className="text-xl font-black tracking-tight">
             <span className="text-white">POS</span>
             <span className="text-orange-500">super</span>
           </h1>
         </div>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {user?.tenant?.tier !== 'bronze' && <BranchSelector />}
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-1">
+      {/* Navigation Links */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {allowed.map((item) => {
           const Icon = item.icon;
           const isNavigating = loadingPath === item.path;
@@ -65,19 +83,11 @@ export default function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
-              onClick={(e) => {
-                if (isSuspended && !allowedPathsIfSuspended.includes(item.path)) {
-                  e.preventDefault();
-                  useAuthStore.getState().setSuspendedModal(true);
-                  return;
-                }
-                setLoadingPath(item.path);
-                setTimeout(() => setLoadingPath(null), 600);
-              }}
+              onClick={(e) => handleNavClick(item.path, e)}
               className={({ isActive }) =>
-                `flex items-center justify-center md:justify-start gap-3 px-2 md:px-4 py-3 rounded-xl transition-all duration-200 ${
+                `flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                   isActive || isNavigating
-                    ? 'bg-orange-500 text-white shadow-md'
+                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`
               }
@@ -87,50 +97,73 @@ export default function Sidebar() {
               ) : (
                 <Icon size={20} className="flex-shrink-0" />
               )}
-              <span className="hidden md:inline font-medium">{item.name}</span>
+              <span className="font-semibold tracking-wide">{item.name}</span>
             </NavLink>
           );
         })}
       </nav>
 
       {/* System Status Widget */}
-      <div className="hidden md:block px-4 mb-4">
-        <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+      <div className="px-4 mb-3 hidden md:block">
+        <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-            <span className="text-xs font-semibold text-slate-300">System Online</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span className="text-xs font-semibold text-slate-200">System Online</span>
           </div>
-          <p className="text-[10px] text-slate-500">Last Sync: Just now</p>
+          <p className="text-[10px] text-slate-400 font-mono">Last Sync: Just now</p>
         </div>
       </div>
 
-      <div className="p-4 border-t border-slate-800">
-        <div className="flex items-center justify-center md:justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
-              <span className="text-sm font-bold text-white">{user?.name?.charAt(0)}</span>
+      {/* User Footer */}
+      <div className="p-4 border-t border-slate-800 bg-slate-950/40">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-bold text-white text-sm shadow-md shrink-0">
+              {user?.name?.charAt(0) || 'U'}
             </div>
-            <div className="hidden md:block text-sm">
-              <p className="font-medium leading-tight">{user?.name}</p>
-              <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
+            <div className="text-sm truncate">
+              <p className="font-bold text-slate-100 truncate leading-tight">{user?.name}</p>
+              <p className="text-[11px] text-slate-400 font-semibold capitalize tracking-wider">{user?.role}</p>
             </div>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 shrink-0">
             {user?.role === 'admin' && (
-              <button onClick={() => setShowSwitchModal(true)} className="p-1 text-slate-400 hover:text-white transition-colors" title="Switch Account">
+              <button onClick={() => setShowSwitchModal(true)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Switch Account">
                 <UserCog size={18} />
               </button>
             )}
-            <NavLink to="/profile" className="p-1 text-slate-400 hover:text-white transition-colors" title="Profile">
+            <NavLink to="/profile" onClick={() => onClose && onClose()} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Profile">
               <UserCircle size={18} />
             </NavLink>
-            <button onClick={() => logout()} className="p-1 text-slate-400 hover:text-white transition-colors" title="Logout">
+            <button onClick={() => logout()} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition" title="Logout">
               <LogOut size={18} />
             </button>
           </div>
         </div>
       </div>
       <SwitchAccountModal isOpen={showSwitchModal} onClose={() => setShowSwitchModal(false)} />
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside className="hidden md:flex md:flex-col bg-slate-900 text-white shadow-2xl h-screen sticky top-0 w-72 transition-all duration-300 print:hidden shrink-0 z-40">
+        {navContent}
+      </aside>
+
+      {/* Mobile Drawer Overlay */}
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] md:hidden">
+          <div 
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+            onClick={onClose}
+          />
+          <aside className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-slate-900 text-white z-[101] flex flex-col shadow-2xl transition-transform duration-300">
+            {navContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

@@ -393,23 +393,29 @@ export default function POS() {
   }
 
   return (
-    <div className="grid grid-cols-12 gap-6 relative">
-      <div className="col-span-7 bg-white rounded-2xl shadow-xl p-6 print:hidden">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 relative">
+      <div className="lg:col-span-7 bg-white rounded-2xl shadow-xl p-4 sm:p-6 print:hidden">
         <div className="mb-6">
-          <div className="flex gap-3 mb-4">
-            <div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search products..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500" /></div>
-            <div className="flex gap-2">
-              <div className="relative"><Barcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Scan barcode" value={barcode} onChange={e => setBarcode(e.target.value)} onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  lookupProduct(e.target.value);
-                }
-              }} className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 w-48" /></div>
-              <button onClick={() => setShowScanner(true)} className="flex items-center justify-center gap-1 bg-orange-100 text-orange-800 px-3 py-2 rounded-xl hover:bg-orange-200 transition whitespace-nowrap text-sm font-medium" title="Scan with Webcam">
-                <Camera size={18} /> Webcam
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="text" placeholder="Search products..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 text-sm" />
+            </div>
+            <div className="flex flex-wrap sm:flex-nowrap gap-2">
+              <div className="relative flex-1 sm:flex-initial">
+                <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input type="text" placeholder="Scan barcode" value={barcode} onChange={e => setBarcode(e.target.value)} onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    lookupProduct(e.target.value);
+                  }
+                }} className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 w-full sm:w-44 text-sm" />
+              </div>
+              <button onClick={() => setShowScanner(true)} className="flex items-center justify-center gap-1 bg-orange-100 text-orange-800 px-3 py-2 rounded-xl hover:bg-orange-200 transition whitespace-nowrap text-xs sm:text-sm font-medium" title="Scan with Webcam">
+                <Camera size={16} /> Webcam
               </button>
-              <button onClick={handleRemotePair} className="flex items-center justify-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl hover:bg-indigo-200 transition whitespace-nowrap text-sm font-medium" title="Pair Phone Scanner">
-                <Smartphone size={18} /> Phone
+              <button onClick={handleRemotePair} className="flex items-center justify-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl hover:bg-indigo-200 transition whitespace-nowrap text-xs sm:text-sm font-medium" title="Pair Phone Scanner">
+                <Smartphone size={16} /> Phone
               </button>
             </div>
           </div>
@@ -419,7 +425,7 @@ export default function POS() {
               <h3 className="text-md font-semibold text-orange-500 mb-2 flex items-center gap-2">
                 <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs">Open Box Deals</span>
               </h3>
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 {openBoxItems.map(item => (
                   <div key={item.id} className="border border-orange-200 rounded-xl p-3 bg-orange-50 hover:shadow-md cursor-pointer relative" onClick={() => {
                     const existing = items.find(i => i.is_open_box && i.returned_item_id === item.id);
@@ -450,21 +456,23 @@ export default function POS() {
           )}
           {categories.length > 0 && <div className="flex gap-2 mb-4 overflow-x-auto pb-2"><button onClick={() => setSelectedCategory('')} className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${selectedCategory === '' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>All</button>{categories.map(cat => <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-1.5 rounded-full text-sm font-medium transition whitespace-nowrap ${selectedCategory === cat ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{cat}</button>)}</div>}
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 max-h-[calc(100vh-300px)] overflow-auto pb-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-h-[calc(100vh-300px)] overflow-auto pb-2">
           {filteredProducts.map(product => (
-            <div key={product.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all hover:-translate-y-0.5 cursor-pointer bg-white" onClick={() => handleAddProduct(product)}>
-              <div className="font-semibold text-gray-800 truncate">{product.name}</div>
-              <div className="text-lg font-bold text-orange-500 mt-1">Ksh {product.base_price}</div>
-              <div className="text-xs text-gray-500 mt-2">Stock: {product.current_stock ?? product.stock_quantity}</div>
-              <button className="mt-3 w-full bg-orange-50 text-orange-500 py-1.5 rounded-lg text-sm font-medium hover:bg-orange-100 transition flex items-center justify-center gap-1"><Plus size={14} /> Add</button>
+            <div key={product.id} className="border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-lg transition-all hover:-translate-y-0.5 cursor-pointer bg-white flex flex-col justify-between" onClick={() => handleAddProduct(product)}>
+              <div>
+                <div className="font-semibold text-gray-800 text-sm sm:text-base truncate">{product.name}</div>
+                <div className="text-base sm:text-lg font-bold text-orange-500 mt-1">Ksh {product.base_price}</div>
+                <div className="text-xs text-gray-500 mt-1">Stock: {product.current_stock ?? product.stock_quantity}</div>
+              </div>
+              <button className="mt-3 w-full bg-orange-50 text-orange-500 py-1.5 rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-100 transition flex items-center justify-center gap-1"><Plus size={14} /> Add</button>
             </div>
           ))}
         </div>
       </div>
-      <div className="col-span-5 bg-white rounded-2xl shadow-xl flex flex-col h-[calc(100vh-120px)] print:hidden">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+      <div className="lg:col-span-5 bg-white rounded-2xl shadow-xl flex flex-col min-h-[480px] lg:h-[calc(100vh-120px)] print:hidden">
+        <div className="p-4 sm:p-6 border-b border-gray-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
               <ShoppingBag size={20} /> Cart
               {heldTransactions.length > 0 && (
                 <button 
@@ -475,20 +483,27 @@ export default function POS() {
                 </button>
               )}
             </h2>
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-wrap items-center gap-2">
               {activeShift ? (
-                <button onClick={() => setShowCloseRegister(true)} className="mr-2 text-xs bg-gray-800 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-gray-700">
+                <button onClick={() => setShowCloseRegister(true)} className="text-xs bg-gray-800 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-gray-700">
                   <Lock size={12} /> Close Register
                 </button>
               ) : (
-                <button onClick={() => setShowStartShift(true)} className="mr-2 text-xs bg-orange-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-orange-700">
+                <button onClick={() => setShowStartShift(true)} className="text-xs bg-orange-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-orange-700">
                   <Lock size={12} /> Open Register
                 </button>
               )}
-              <div className="relative"><User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="tel" placeholder="Phone number" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="pl-10 pr-2 py-1 border rounded-full text-sm w-36" /><button onClick={searchCustomer} className="ml-1 text-xs bg-orange-500 text-white px-2 py-1 rounded-full">Find</button>{customerSearchResult && <button onClick={clearCustomer} className="ml-1 text-xs text-red-500">X</button>}</div>
+              <div className="relative flex items-center gap-1">
+                <div className="relative">
+                  <User size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input type="tel" placeholder="Phone number" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} className="pl-8 pr-2 py-1 border border-gray-300 rounded-full text-xs w-28 sm:w-32 focus:ring-1 focus:ring-orange-500" />
+                </div>
+                <button onClick={searchCustomer} className="text-xs bg-orange-500 text-white px-2 py-1 rounded-full hover:bg-orange-600 transition">Find</button>
+                {customerSearchResult && <button onClick={clearCustomer} className="text-xs text-red-500 font-bold px-1">X</button>}
+              </div>
             </div>
           </div>
-          {customerId && customerPoints > 0 && (<div className="mt-3 p-2 bg-orange-50 rounded-lg flex justify-between items-center"><span className="text-sm">Points: {customerPoints}</span><div className="flex gap-2"><input type="number" placeholder="Redeem" value={redeemPoints} onChange={e => setRedeemPoints(parseInt(e.target.value) || 0)} className="w-20 p-1 border rounded text-sm" /><button onClick={applyRedeem} className="bg-orange-500 text-white px-2 py-1 rounded text-sm">Apply</button></div></div>)}
+          {customerId && customerPoints > 0 && (<div className="mt-2 p-2 bg-orange-50 rounded-lg flex justify-between items-center"><span className="text-xs sm:text-sm">Points: {customerPoints}</span><div className="flex gap-2"><input type="number" placeholder="Redeem" value={redeemPoints} onChange={e => setRedeemPoints(parseInt(e.target.value) || 0)} className="w-16 p-1 border rounded text-xs" /><button onClick={applyRedeem} className="bg-orange-500 text-white px-2 py-1 rounded text-xs">Apply</button></div></div>)}
         </div>
         <div className="flex-1 overflow-auto p-4">
           {items.length === 0 ? <div className="text-center text-gray-400 py-12"><ShoppingBag size={48} className="mx-auto mb-3 opacity-50" /><p>Cart is empty</p><p className="text-sm">Scan or search products above</p></div> : <div className="space-y-3">{items.map((item, idx) => (<div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div className="flex-1"><p className="font-medium text-gray-800">{item.name}</p><p className="text-sm text-gray-500">Ksh {item.price} each</p></div><div className="flex items-center gap-2"><button onClick={() => handleUpdateQuantity(idx, item.quantity - 1)} className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"><Minus size={14} /></button><span className="w-8 text-center font-semibold">{item.quantity}</span><button onClick={() => handleUpdateQuantity(idx, item.quantity + 1)} className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"><Plus size={14} /></button><button onClick={() => removeItem(idx)} className="ml-2 text-orange-500 hover:text-orange-800"><Trash2 size={16} /></button></div><div className="ml-4 w-24 text-right font-semibold">Ksh {(item.price * item.quantity).toFixed(2)}</div></div>))}</div>}
