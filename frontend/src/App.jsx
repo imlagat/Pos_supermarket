@@ -83,6 +83,12 @@ function App() {
                         <Route path="/reset-password" element={<ResetPassword />} />
                         
                         {/* Super Admin Routes */}
+                        <Route path="/superadmin" element={<SuperAdminLogin />} />
+                        <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+                        <Route path="/superadmin/forgot-password" element={<SuperAdminForgotPassword />} />
+                        <Route path="/superadmin/reset-password" element={<SuperAdminResetPassword />} />
+                        <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+                        
                         <Route path="/super-admin/login" element={<SuperAdminLogin />} />
                         <Route path="/super-admin/forgot-password" element={<SuperAdminForgotPassword />} />
                         <Route path="/super-admin/reset-password" element={<SuperAdminResetPassword />} />

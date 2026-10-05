@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Mail, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { Mail, ShoppingCart, ArrowLeft, Lock, Loader2, KeyRound } from 'lucide-react';
 import api from '../services/api';
 
 export default function SuperAdminForgotPassword() {
   const [email, setEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [step, setStep] = useState(1); // 1 = enter email, 2 = enter OTP & new password
   const [isLoading, setIsLoading] = useState(false);
-  const [isSent, setIsSent] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!email) {
       toast.error('Please enter your email address');
@@ -18,11 +21,38 @@ export default function SuperAdminForgotPassword() {
     
     setIsLoading(true);
     try {
-      await api.post('/forgot-password', { email });
-      setIsSent(true);
-      toast.success('Password reset link sent to your email');
+      const res = await api.post('/forgot-password', { email });
+      setStep(2);
+      toast.success(res.data?.message || 'Verification code sent to your email');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to send reset link');
+      toast.error(error.response?.data?.message || 'Failed to send verification code');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!otpCode || !newPassword) {
+      toast.error('Please enter the OTP code and new password');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await api.post('/reset-password', {
+        email,
+        otp_code: otpCode,
+        password: newPassword,
+      });
+      toast.success(res.data?.message || 'Password reset successful!');
+      navigate('/superadmin');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to reset password. Please check your OTP code.');
     } finally {
       setIsLoading(false);
     }
@@ -47,32 +77,19 @@ export default function SuperAdminForgotPassword() {
       <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Reset Password
+            {step === 1 ? 'Super Admin Account Recovery' : 'Reset Your Password'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-500">
-            Enter your super admin email to receive a reset link
+            {step === 1
+              ? 'Enter your email to receive a 6-digit verification code'
+              : `Enter the code sent to ${email} and your new password`}
           </p>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-gray-100">
-            {isSent ? (
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Mail size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Check your email</h3>
-                <p className="text-gray-600 text-sm">
-                  We've sent a password reset link to <span className="font-semibold">{email}</span>. Please check your inbox and spam folder.
-                </p>
-                <div className="pt-4">
-                  <Link to="/super-admin/login" className="text-orange-600 hover:text-orange-700 font-medium flex items-center justify-center gap-2">
-                    <ArrowLeft size={16} /> Return to login
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <form className="space-y-6" onSubmit={handleSubmit}>
+            {step === 1 ? (
+              <form className="space-y-6" onSubmit={handleSendOtp}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Email address</label>
                   <div className="mt-1 relative rounded-xl shadow-sm">
@@ -83,8 +100,10 @@ export default function SuperAdminForgotPassword() {
                       type="email"
                       required
                       className="bg-gray-50 border border-gray-200 text-gray-900 block w-full pl-10 sm:text-sm rounded-xl py-3 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                      placeholder="superposlish@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -93,15 +112,74 @@ export default function SuperAdminForgotPassword() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-gradient-to-r from-[#E55A2A] to-orange-500 hover:from-orange-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-70 transition-all active:scale-[0.98]"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-gradient-to-r from-[#E55A2A] to-orange-500 hover:from-orange-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-70 transition-all active:scale-[0.98]"
                   >
-                    {isLoading ? 'Sending Link...' : 'Send Reset Link'}
+                    {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isLoading ? 'Sending Code...' : 'Send Verification Code'}
                   </button>
                 </div>
                 
                 <div className="text-center pt-2">
-                  <Link to="/super-admin/login" className="text-sm font-medium text-gray-600 hover:text-orange-600 transition-colors">
-                    Back to login
+                  <Link to="/superadmin" className="text-sm font-medium text-gray-600 hover:text-orange-600 transition-colors flex items-center justify-center gap-1">
+                    <ArrowLeft size={16} /> Return to Login
+                  </Link>
+                </div>
+              </form>
+            ) : (
+              <form className="space-y-6" onSubmit={handleResetPassword}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Verification Code (OTP)</label>
+                  <div className="mt-1 relative rounded-xl shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <KeyRound className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      className="bg-gray-50 border border-gray-200 text-gray-900 block w-full pl-10 text-center tracking-[0.5em] font-mono font-bold sm:text-lg rounded-xl py-3 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                      placeholder="------"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">New Password</label>
+                  <div className="mt-1 relative rounded-xl shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="password"
+                      required
+                      className="bg-gray-50 border border-gray-200 text-gray-900 block w-full pl-10 sm:text-sm rounded-xl py-3 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-gradient-to-r from-[#E55A2A] to-orange-500 hover:from-orange-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-70 transition-all active:scale-[0.98]"
+                  >
+                    {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isLoading ? 'Resetting Password...' : 'Reset Password & Login'}
+                  </button>
+                </div>
+                
+                <div className="flex items-center justify-between text-xs font-semibold text-gray-500 pt-2">
+                  <button type="button" onClick={() => setStep(1)} className="hover:text-orange-600">
+                    Change Email
+                  </button>
+                  <Link to="/superadmin" className="hover:text-orange-600">
+                    Back to Login
                   </Link>
                 </div>
               </form>

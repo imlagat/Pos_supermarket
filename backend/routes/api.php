@@ -16,8 +16,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
-Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLinkEmail']);
-Route::post('/reset-password', [PasswordResetController::class, 'reset']);
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetOtp']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetWithOtp']);
+Route::post('/forgot-password/link', [PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('/reset-password/link', [PasswordResetController::class, 'reset']);
 // M-Pesa callback — must be public (no auth) so Safaricom can reach it
 Route::post('/mpesa/callback/{tenant_id}', [MpesaController::class, 'callback']);
 

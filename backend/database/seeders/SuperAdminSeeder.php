@@ -13,6 +13,15 @@ class SuperAdminSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
+            ['email' => 'superposlish@gmail.com'],
+            [
+                'name' => 'Global Super Admin',
+                'password' => Hash::make('admin123'),
+                'role' => 'super_admin',
+            ]
+        );
+
+        User::updateOrCreate(
             ['email' => 'superadmin@pos.com'],
             [
                 'name' => 'Global Super Admin',
