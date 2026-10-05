@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { DollarSign, TrendingUp, CreditCard, Activity, Calendar, Download } from 'lucide-react';
+import PageLoader from '../components/common/PageLoader';
 
 export default function Finance() {
   const [period, setPeriod] = useState('today');
@@ -42,11 +43,7 @@ export default function Finance() {
   };
 
   if (loading && !data) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-      </div>
-    );
+    return <PageLoader message="Loading financial data..." />;
   }
 
   const handleExport = () => {

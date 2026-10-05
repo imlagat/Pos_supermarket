@@ -1,11 +1,12 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 
-export default function PageLoader({ message = "Loading..." }) {
+export default function PageLoader({ message }) {
   return (
-    <div className="flex flex-col justify-center items-center h-64 w-full">
-      <Loader2 className="w-12 h-12 text-orange-600 animate-spin mb-4" />
-      <p className="text-gray-500 font-medium animate-pulse">{message}</p>
+    <div className="flex flex-col justify-center items-center min-h-[60vh] h-full w-full py-20 bg-slate-50/50">
+      <div className="w-11 h-11 border-[2.5px] border-orange-500 border-t-transparent border-r-transparent rounded-full animate-spin" />
+      {message && (
+        <p className="mt-4 text-xs font-medium text-gray-400 tracking-wider uppercase">{message}</p>
+      )}
     </div>
   );
 }

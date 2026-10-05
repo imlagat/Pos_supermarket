@@ -75,7 +75,7 @@ export default function SwitchAccountModal({ isOpen, onClose }) {
         <div className="p-6 overflow-y-auto flex-1">
           {loading ? (
             <div className="flex justify-center items-center py-12">
-              <Loader2 className="animate-spin text-orange-500 w-8 h-8" />
+              <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent border-r-transparent rounded-full animate-spin" />
             </div>
           ) : !selectedUser ? (
             <div className="space-y-4">

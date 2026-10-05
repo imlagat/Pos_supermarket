@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { LogOut, Shield, Users, Building2, Activity, Settings, RefreshCw, XCircle, CheckCircle, Clock, ShoppingCart, Trash2, Edit2, CreditCard, Calendar, Loader2 } from 'lucide-react';
+import PageLoader from '../components/common/PageLoader';
 
 export default function SuperAdminDashboard() {
   const { user, logout } = useAuthStore();
@@ -212,7 +213,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-orange-600">Loading...</div>;
+  if (loading) return <PageLoader message="Loading SuperAdmin dashboard..." />;
 
   const totalTenants = tenants.length;
   const activeTenants = tenants.filter(t => t.is_active).length;

@@ -67,7 +67,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-xl">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
+          <div className="w-10 h-10 border-[2.5px] border-orange-500 border-t-transparent border-r-transparent rounded-full animate-spin mb-4"></div>
           <p className="text-gray-600 font-medium">Calculating totals...</p>
         </div>
       </div>
