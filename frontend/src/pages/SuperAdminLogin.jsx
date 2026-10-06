@@ -30,7 +30,11 @@ export default function SuperAdminLogin() {
 
   const handleOneTimeSetup = async () => {
     if (!email || !password) {
-      toast.error('Please enter email (superposlish@gmail.com) and password');
+      toast.error('Please enter email and password (minimum 6 characters)');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
       return;
     }
     setSettingUp(true);
@@ -40,7 +44,8 @@ export default function SuperAdminLogin() {
       await login(email, password, true);
       navigate('/superadmin/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to setup Super Admin account.');
+      const msg = err.response?.data?.message || err.response?.data?.errors?.email?.[0] || err.response?.data?.errors?.password?.[0] || 'Failed to setup Super Admin account.';
+      toast.error(msg);
     } finally {
       setSettingUp(false);
     }

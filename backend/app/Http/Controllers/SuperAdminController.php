@@ -21,42 +21,57 @@ class SuperAdminController extends Controller
 {
     public function setupAccount(Request $request)
     {
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required|string|min:6',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
         $email = strtolower(trim($request->email));
         $password = $request->password;
 
-        $user = User::where('email', $email)->first();
-
-        if (!$user) {
-            $user = User::create([
-                'name' => 'Super Admin',
-                'email' => $email,
-                'password' => Hash::make($password),
-                'role' => 'super_admin',
-            ]);
-        } else {
-            $user->role = 'super_admin';
-            $user->password = Hash::make($password);
-            $user->save();
-        }
-
-        $confirmationCode = sprintf("%06d", mt_rand(100000, 999999));
-
         try {
-            Mail::to($email)->send(new SuperAdminSetupMail($user->name, $email, $password, $confirmationCode));
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to send Super Admin setup email: " . $e->getMessage());
-        }
+            $user = User::withoutGlobalScopes()->where('email', $email)->first();
 
-        return response()->json([
-            'message' => 'Super Admin account confirmed & ready! Confirmation code & email sent to ' . $email,
-            'confirmation_code' => $confirmationCode,
-            'email' => $email
-        ]);
+            if (!$user) {
+                $user = User::create([
+                    'name' => 'Super Admin',
+                    'email' => $email,
+                    'password' => Hash::make($password),
+                    'role' => 'super_admin',
+                    'pin' => '0000',
+                ]);
+            } else {
+                $user->role = 'super_admin';
+                $user->password = Hash::make($password);
+                $user->deleted_at = null;
+                $user->save();
+            }
+
+            $confirmationCode = sprintf("%06d", mt_rand(100000, 999999));
+
+            try {
+                Mail::to($email)->send(new SuperAdminSetupMail($user->name, $email, $password, $confirmationCode));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send Super Admin setup email: " . $e->getMessage());
+            }
+
+            return response()->json([
+                'message' => 'Super Admin account confirmed & ready! Confirmation code sent to ' . $email,
+                'confirmation_code' => $confirmationCode,
+                'email' => $email
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Super Admin setup exception: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Setup failed: ' . $e->getMessage()
+            ], 500);
+        }
     }
     public function getTenants(Request $request)
     {
