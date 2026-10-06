@@ -3,15 +3,27 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Shield, Lock, Mail, ShoppingCart, Loader2, CheckCircle2 } from 'lucide-react';
+import api from '../services/api';
 
 export default function SuperAdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [superAdminExists, setSuperAdminExists] = useState(false);
 
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
   const [settingUp, setSettingUp] = useState(false);
+
+  useEffect(() => {
+    api.get('/superadmin/check-status')
+      .then(res => {
+        if (res.data && res.data.exists) {
+          setSuperAdminExists(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -133,15 +145,22 @@ export default function SuperAdminLogin() {
               </div>
 
               <div className="pt-2 border-t border-gray-100 text-center">
-                <button
-                  type="button"
-                  onClick={handleOneTimeSetup}
-                  disabled={isLoading || settingUp}
-                  className="w-full py-2.5 px-3 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-xs font-semibold border border-orange-200 transition flex items-center justify-center gap-1.5"
-                >
-                  {settingUp ? <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-600" /> : <Shield size={14} />}
-                  Create / Reset One-Time Super Admin & Send Code
-                </button>
+                {superAdminExists ? (
+                  <p className="text-xs text-gray-500 font-medium flex items-center justify-center gap-1.5 py-1">
+                    <CheckCircle2 size={14} className="text-emerald-500" />
+                    Master Super Admin Account Active (Creation Locked)
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleOneTimeSetup}
+                    disabled={isLoading || settingUp}
+                    className="w-full py-2.5 px-3 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-xs font-semibold border border-orange-200 transition flex items-center justify-center gap-1.5"
+                  >
+                    {settingUp ? <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-600" /> : <Shield size={14} />}
+                    Register Initial Super Admin Account & Send Code
+                  </button>
+                )}
               </div>
             </form>
           </div>

@@ -19,6 +19,14 @@ use App\Mail\SuperAdminSetupMail;
 
 class SuperAdminController extends Controller
 {
+    public function checkStatus()
+    {
+        $exists = User::withoutGlobalScopes()->where('role', 'super_admin')->whereNull('deleted_at')->exists();
+        return response()->json([
+            'exists' => $exists
+        ]);
+    }
+
     public function setupAccount(Request $request)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
@@ -34,6 +42,14 @@ class SuperAdminController extends Controller
 
         $email = strtolower(trim($request->email));
         $password = $request->password;
+
+        // Block creating additional Super Admin accounts if one already exists
+        $existingSuperAdmin = User::withoutGlobalScopes()->where('role', 'super_admin')->whereNull('deleted_at')->first();
+        if ($existingSuperAdmin && strtolower($existingSuperAdmin->email) !== $email) {
+            return response()->json([
+                'message' => 'A master Super Admin account is already registered on this system. Additional Super Admin creation is blocked. Please log in directly.'
+            ], 403);
+        }
 
         try {
             $user = User::withoutGlobalScopes()->where('email', $email)->first();
@@ -62,7 +78,7 @@ class SuperAdminController extends Controller
             }
 
             return response()->json([
-                'message' => 'Super Admin account confirmed & ready! Confirmation code sent to ' . $email,
+                'message' => 'Super Admin account created & saved in system! Confirmation email sent to ' . $email,
                 'confirmation_code' => $confirmationCode,
                 'email' => $email
             ]);
