@@ -15,9 +15,49 @@ use App\Mail\SubscriptionExpiringMail;
 use App\Mail\TenantSuspendedMail;
 use App\Mail\TenantReactivatedMail;
 use App\Mail\TierChangedMail;
+use App\Mail\SuperAdminSetupMail;
 
 class SuperAdminController extends Controller
 {
+    public function setupAccount(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $email = strtolower(trim($request->email));
+        $password = $request->password;
+
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            $user = User::create([
+                'name' => 'Super Admin',
+                'email' => $email,
+                'password' => Hash::make($password),
+                'role' => 'super_admin',
+            ]);
+        } else {
+            $user->role = 'super_admin';
+            $user->password = Hash::make($password);
+            $user->save();
+        }
+
+        $confirmationCode = sprintf("%06d", mt_rand(100000, 999999));
+
+        try {
+            Mail::to($email)->send(new SuperAdminSetupMail($user->name, $email, $password, $confirmationCode));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send Super Admin setup email: " . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Super Admin account confirmed & ready! Confirmation code & email sent to ' . $email,
+            'confirmation_code' => $confirmationCode,
+            'email' => $email
+        ]);
+    }
     public function getTenants(Request $request)
     {
         if (!$request->user()->isSuperAdmin()) {

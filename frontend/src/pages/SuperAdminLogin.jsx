@@ -11,6 +11,8 @@ export default function SuperAdminLogin() {
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
+  const [settingUp, setSettingUp] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -23,6 +25,24 @@ export default function SuperAdminLogin() {
       navigate('/superadmin/dashboard');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Invalid super admin credentials');
+    }
+  };
+
+  const handleOneTimeSetup = async () => {
+    if (!email || !password) {
+      toast.error('Please enter email (superposlish@gmail.com) and password');
+      return;
+    }
+    setSettingUp(true);
+    try {
+      const res = await api.post('/superadmin/setup-account', { email, password });
+      toast.success(res.data.message || 'Super Admin account set up! Confirmation code sent.');
+      await login(email, password, true);
+      navigate('/superadmin/dashboard');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to setup Super Admin account.');
+    } finally {
+      setSettingUp(false);
     }
   };
 
@@ -99,11 +119,23 @@ export default function SuperAdminLogin() {
               <div>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || settingUp}
                   className="w-full flex items-center justify-center gap-2 py-3 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 focus:ring-offset-white disabled:opacity-50 transition-all duration-200"
                 >
                   {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {isLoading ? 'Authenticating...' : 'Sign in to Portal'}
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 text-center">
+                <button
+                  type="button"
+                  onClick={handleOneTimeSetup}
+                  disabled={isLoading || settingUp}
+                  className="w-full py-2.5 px-3 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-xs font-semibold border border-orange-200 transition flex items-center justify-center gap-1.5"
+                >
+                  {settingUp ? <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-600" /> : <Shield size={14} />}
+                  Create / Reset One-Time Super Admin & Send Code
                 </button>
               </div>
             </form>
