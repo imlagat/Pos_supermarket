@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Tenant;
 use App\Models\SubscriptionPayment;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\TierChangedMail;
 
 class SubscriptionController extends Controller
 {
@@ -87,15 +89,28 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $tenant = $user->tenant;
 
-            $cycle = $request->cycle ?? 'monthly';
-            $nextBillingDate = $cycle === 'yearly' ? now()->addYear() : now()->addMonth();
+        $cycle = $request->cycle ?? 'monthly';
+        $nextBillingDate = $cycle === 'yearly' ? now()->addYear() : now()->addMonth();
 
-            $tenant->update([
-                'tier' => $request->tier,
-                'billing_status' => 'active',
-                'next_billing_date' => $nextBillingDate,
-                'trial_ends_at' => null, // Trial is over
-            ]);
+        $oldTier = $tenant->tier;
+        $tenant->update([
+            'tier' => $request->tier,
+            'billing_status' => 'active',
+            'next_billing_date' => $nextBillingDate,
+            'trial_ends_at' => null, // Trial is over
+        ]);
+
+        // Send upgrade / plan change email to admin
+        try {
+            $admins = \App\Models\User::where('tenant_id', $tenant->id)->where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                if ($admin->email) {
+                    Mail::to($admin->email)->send(new TierChangedMail($tenant, $oldTier, $request->tier));
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to send tier changed email: " . $e->getMessage());
+        }
 
             return response()->json([
                 'message' => 'Subscription upgraded successfully!',

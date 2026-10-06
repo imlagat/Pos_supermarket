@@ -44,10 +44,16 @@ class ShiftController extends Controller
             'status' => 'open'
         ]);
 
-        // Send email to admins
-        $admins = \App\Models\User::where('role', 'admin')->get();
-        if ($admins->isNotEmpty()) {
-            Mail::to($admins)->queue(new \App\Mail\ShiftOpenedMail($shift));
+        // Send email to tenant admins
+        try {
+            $admins = \App\Models\User::where('tenant_id', $user->tenant_id)->where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                if ($admin->email) {
+                    Mail::to($admin->email)->send(new \App\Mail\ShiftOpenedMail($shift));
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send shift opened email: " . $e->getMessage());
         }
 
         return response()->json(['shift' => $shift], 201);
@@ -111,16 +117,22 @@ class ShiftController extends Controller
             'notes' => $request->notes
         ]);
 
-        // Send email to admins
-        $admins = \App\Models\User::where('role', 'admin')->get();
-        if ($admins->isNotEmpty()) {
+        // Send email to tenant admins
+        try {
+            $admins = \App\Models\User::where('tenant_id', $user->tenant_id)->where('role', 'admin')->get();
             $data = [
                 'cashSales' => $cashSales,
                 'mpesaSales' => $mpesaSales,
                 'cardSales' => $cardSales,
                 'deposits' => $deposits,
             ];
-            Mail::to($admins)->queue(new \App\Mail\ShiftClosedMail($shift, $data));
+            foreach ($admins as $admin) {
+                if ($admin->email) {
+                    Mail::to($admin->email)->send(new \App\Mail\ShiftClosedMail($shift, $data));
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send shift closed email: " . $e->getMessage());
         }
 
         return response()->json(['shift' => $shift]);

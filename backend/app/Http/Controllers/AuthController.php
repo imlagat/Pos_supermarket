@@ -7,6 +7,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
+use App\Mail\WelcomeTenantMail;
 
 use App\Models\Tenant;
 use App\Models\Branch;
@@ -102,6 +103,13 @@ class AuthController extends Controller
             'tenant_id' => $tenant->id,
             'branch_id' => $branch->id,
         ]);
+
+        // Send Welcome & Account Confirmation email from super main email
+        try {
+            Mail::to($user->email)->send(new WelcomeTenantMail($tenant->name, $user->name));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send welcome email: " . $e->getMessage());
+        }
 
         $token = $user->createToken('pos-token')->plainTextToken;
 

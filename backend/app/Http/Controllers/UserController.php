@@ -44,7 +44,23 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'branch_id' => $branchId,
+            'tenant_id' => $authUser ? $authUser->tenant_id : null,
         ]);
+
+        // Send staff invitation email with role and credentials
+        try {
+            $tenantName = ($authUser && $authUser->tenant) ? $authUser->tenant->name : 'Supermarket POS';
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\StaffInvitationMail(
+                $tenantName,
+                $user->name,
+                $user->role,
+                $user->email,
+                $request->password
+            ));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send staff invitation email: " . $e->getMessage());
+        }
+
         return response()->json($user, 201);
     }
 
