@@ -261,46 +261,48 @@ class ShiftController extends Controller
 
     private function notifyAdminsOfShift($shift, $mailable)
     {
-        try {
-            $shift->load(['user', 'branch']);
-            $tenantId = $shift->user->tenant_id ?? $shift->branch->tenant_id ?? (auth()->check() ? auth()->user()->tenant_id : null);
-            
-            if (!$tenantId) {
-                \Illuminate\Support\Facades\Log::warning("No tenant_id found for shift notification. Shift ID: {$shift->id}");
-                return;
-            }
+        dispatch(function () use ($shift, $mailable) {
+            try {
+                $shift->load(['user', 'branch']);
+                $tenantId = $shift->user->tenant_id ?? $shift->branch->tenant_id ?? (auth()->check() ? auth()->user()->tenant_id : null);
+                
+                if (!$tenantId) {
+                    \Illuminate\Support\Facades\Log::warning("No tenant_id found for shift notification. Shift ID: {$shift->id}");
+                    return;
+                }
 
-            // Get all registered admin and manager emails for this specific tenant
-            $tenantAdmins = \App\Models\User::withoutGlobalScopes()
-                ->where('tenant_id', $tenantId)
-                ->whereIn('role', ['admin', 'manager'])
-                ->whereNotNull('email')
-                ->pluck('email');
-
-            // Fallback: If no admin/manager role found, get any registered user email for this tenant
-            if ($tenantAdmins->isEmpty()) {
+                // Get all registered admin and manager emails for this specific tenant
                 $tenantAdmins = \App\Models\User::withoutGlobalScopes()
                     ->where('tenant_id', $tenantId)
+                    ->whereIn('role', ['admin', 'manager'])
                     ->whereNotNull('email')
                     ->pluck('email');
+
+                // Fallback: If no admin/manager role found, get any registered user email for this tenant
+                if ($tenantAdmins->isEmpty()) {
+                    $tenantAdmins = \App\Models\User::withoutGlobalScopes()
+                        ->where('tenant_id', $tenantId)
+                        ->whereNotNull('email')
+                        ->pluck('email');
+                }
+
+                $recipientList = $tenantAdmins->filter()->map(function($e) {
+                    return strtolower(trim($e));
+                })->unique()->values()->all();
+
+                if (empty($recipientList)) {
+                    \Illuminate\Support\Facades\Log::warning("No tenant admin emails found for Tenant ID {$tenantId}. Shift ID: {$shift->id}");
+                    return;
+                }
+
+                \Illuminate\Support\Facades\Log::info("Sending shift notification (Shift ID: {$shift->id}) to Tenant ID {$tenantId} admins: " . implode(', ', $recipientList));
+
+                foreach ($recipientList as $email) {
+                    Mail::to($email)->send($mailable);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send shift notification email: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             }
-
-            $recipientList = $tenantAdmins->filter()->map(function($e) {
-                return strtolower(trim($e));
-            })->unique()->values()->all();
-
-            if (empty($recipientList)) {
-                \Illuminate\Support\Facades\Log::warning("No tenant admin emails found for Tenant ID {$tenantId}. Shift ID: {$shift->id}");
-                return;
-            }
-
-            \Illuminate\Support\Facades\Log::info("Sending shift notification (Shift ID: {$shift->id}) to Tenant ID {$tenantId} admins: " . implode(', ', $recipientList));
-
-            foreach ($recipientList as $email) {
-                Mail::to($email)->send($mailable);
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to send shift notification email: " . $e->getMessage() . "\n" . $e->getTraceAsString());
-        }
+        })->afterResponse();
     }
 }
