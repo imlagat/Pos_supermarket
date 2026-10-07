@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { 
   LayoutDashboard, ShoppingCart, Package, Tag, Users, 
@@ -30,6 +30,7 @@ const menuItems = [
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
+  const navigate = useNavigate();
   const [loadingPath, setLoadingPath] = useState(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const { user, logout } = useAuthStore();
@@ -135,7 +136,14 @@ export default function Sidebar({ isOpen, onClose }) {
             <NavLink to="/profile" onClick={() => onClose && onClose()} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Profile">
               <UserCircle size={18} />
             </NavLink>
-            <button onClick={() => logout()} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition" title="Logout">
+            <button 
+              onClick={async () => {
+                const res = await logout();
+                if (res?.success) navigate('/login');
+              }} 
+              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition" 
+              title="Logout"
+            >
               <LogOut size={18} />
             </button>
           </div>

@@ -376,7 +376,14 @@ export default function Layout() {
                     )}
                   </div>
                   <div className="p-2 border-t border-gray-100">
-                    <button onClick={() => { setShowProfileMenu(false); logout(); navigate('/login'); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+                    <button 
+                      onClick={async () => { 
+                        setShowProfileMenu(false); 
+                        const res = await logout(); 
+                        if (res?.success) navigate('/login'); 
+                      }} 
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    >
                       <LogOut size={16} /> Log Out
                     </button>
                   </div>

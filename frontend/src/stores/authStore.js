@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../services/api';
+import toast from 'react-hot-toast';
 
 export const useAuthStore = create((set, get) => ({
     user: JSON.parse(localStorage.getItem('user') || 'null'),
@@ -113,11 +114,18 @@ export const useAuthStore = create((set, get) => ({
     },
 
     logout: async () => {
-        try { await api.post('/logout'); } catch (e) {}
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('activeBranchId');
-        set({ user: null, token: null, activeBranchId: null });
+        try {
+            await api.post('/logout');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('activeBranchId');
+            set({ user: null, token: null, activeBranchId: null });
+            return { success: true };
+        } catch (e) {
+            const message = e.response?.data?.message || 'Failed to logout';
+            toast.error(message);
+            return { success: false, message };
+        }
     },
 
     // Call this on app start to validate token and refresh user if needed

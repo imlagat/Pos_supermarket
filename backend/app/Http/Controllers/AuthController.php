@@ -263,8 +263,23 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out']);
+        $user = $request->user();
+        if ($user) {
+            $openShift = \App\Models\Shift::where('user_id', $user->id)
+                ->where('status', 'open')
+                ->first();
+
+            if ($openShift) {
+                return response()->json([
+                    'message' => 'You must first close your active shift before logging out.'
+                ], 400);
+            }
+
+            if ($user->currentAccessToken()) {
+                $user->currentAccessToken()->delete();
+            }
+        }
+        return response()->json(['message' => 'Logged out successfully']);
     }
 
     public function switchAccount(Request $request)

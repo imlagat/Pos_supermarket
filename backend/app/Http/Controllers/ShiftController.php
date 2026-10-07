@@ -68,26 +68,18 @@ class ShiftController extends Controller
             return response()->json(['message' => 'No open shift found'], 404);
         }
 
-        // Calculate expected cash
-        $cashSales = \App\Models\Payment::whereHas('order', function ($query) use ($shift) {
-                $query->where('shift_id', $shift->id);
-            })
-            ->where('method', 'cash')
-            ->sum('amount');
-            
-        $mpesaSales = \App\Models\Payment::whereHas('order', function ($query) use ($shift) {
-                $query->where('shift_id', $shift->id);
-            })
-            ->where('method', 'mpesa')
-            ->sum('amount');
+        // Calculate expected sales using high-speed indexed query
+        $orderIds = \App\Models\Order::where('shift_id', $shift->id)->pluck('id');
+        $paymentTotals = \App\Models\Payment::whereIn('order_id', $orderIds)
+            ->select('method', \Illuminate\Support\Facades\DB::raw('SUM(amount) as total'))
+            ->groupBy('method')
+            ->pluck('total', 'method');
 
-        $cardSales = \App\Models\Payment::whereHas('order', function ($query) use ($shift) {
-                $query->where('shift_id', $shift->id);
-            })
-            ->where('method', 'card')
-            ->sum('amount');
+        $cashSales = (float) ($paymentTotals['cash'] ?? 0);
+        $mpesaSales = (float) ($paymentTotals['mpesa'] ?? 0);
+        $cardSales = (float) ($paymentTotals['card'] ?? 0);
 
-        $deposits = $shift->drawerMovements()->where('type', 'deposit')->sum('amount');
+        $deposits = (float) $shift->drawerMovements()->where('type', 'deposit')->sum('amount');
 
         $expectedCash = $shift->opening_balance + $cashSales - $deposits;
         $variance = $request->actual_cash - $expectedCash;
@@ -201,19 +193,17 @@ class ShiftController extends Controller
             return response()->json(['message' => 'No open shift'], 404);
         }
 
-        $cashSales = \App\Models\Payment::whereHas('order', function ($query) use ($shift) {
-            $query->where('shift_id', $shift->id);
-        })->where('method', 'cash')->sum('amount');
+        $orderIds = \App\Models\Order::where('shift_id', $shift->id)->pluck('id');
+        $paymentTotals = \App\Models\Payment::whereIn('order_id', $orderIds)
+            ->select('method', \Illuminate\Support\Facades\DB::raw('SUM(amount) as total'))
+            ->groupBy('method')
+            ->pluck('total', 'method');
 
-        $mpesaSales = \App\Models\Payment::whereHas('order', function ($query) use ($shift) {
-            $query->where('shift_id', $shift->id);
-        })->where('method', 'mpesa')->sum('amount');
+        $cashSales = (float) ($paymentTotals['cash'] ?? 0);
+        $mpesaSales = (float) ($paymentTotals['mpesa'] ?? 0);
+        $cardSales = (float) ($paymentTotals['card'] ?? 0);
 
-        $cardSales = \App\Models\Payment::whereHas('order', function ($query) use ($shift) {
-            $query->where('shift_id', $shift->id);
-        })->where('method', 'card')->sum('amount');
-
-        $deposits = $shift->drawerMovements()->where('type', 'deposit')->sum('amount');
+        $deposits = (float) $shift->drawerMovements()->where('type', 'deposit')->sum('amount');
         
         $cashInDrawer = $shift->opening_balance + $cashSales - $deposits;
         $mpesaTotal = $shift->opening_mpesa_balance + $mpesaSales;
