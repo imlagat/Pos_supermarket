@@ -41,9 +41,15 @@ export default function Products() {
         try {
           const res = await api.get(`/remote-scan/session/${remoteSessionId}`);
           if (res.data.scanned && res.data.barcode) {
-            setForm(prev => ({ ...prev, barcode: res.data.barcode }));
+            const scannedBarcode = res.data.barcode.trim();
+            if (scannedBarcode.length > 30) {
+              toast.error('Scanned barcode exceeds maximum unit length of 30 characters.');
+              setForm(prev => ({ ...prev, barcode: scannedBarcode.substring(0, 30) }));
+            } else {
+              setForm(prev => ({ ...prev, barcode: scannedBarcode }));
+              toast.success('Barcode scanned successfully!');
+            }
             setShowRemoteScanner(false);
-            toast.success('Barcode scanned successfully!');
           }
         } catch (err) {}
       }, 1000);
@@ -82,6 +88,7 @@ export default function Products() {
     if (!form.name || form.name.trim() === '') return toast.error('Product Name is required.');
     if (!form.sku || form.sku.trim() === '') return toast.error('SKU is required.');
     if (!form.barcode || form.barcode.trim() === '') return toast.error('Barcode is required.');
+    if (form.barcode.trim().length > 30) return toast.error('Barcode length cannot exceed 30 characters.');
     if (!form.base_price || Number(form.base_price) <= 0) return toast.error('Base Price must be greater than 0.');
     if (!form.stock_quantity || Number(form.stock_quantity) < 0) return toast.error('Stock Quantity cannot be negative.');
 
@@ -291,9 +298,28 @@ export default function Products() {
                     <input type="text" placeholder="e.g., PROD-001" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-gray-100" required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-sm font-medium text-gray-700">Barcode</label>
+                      <span className={`text-xs ${form.barcode.length > 30 ? 'text-red-600 font-bold' : 'text-gray-400'}`}>
+                        {form.barcode.length}/30 max
+                      </span>
+                    </div>
                     <div className="flex gap-2">
-                      <input type="text" placeholder="Enter barcode" value={form.barcode} onChange={e => setForm({...form, barcode: e.target.value})} className="w-full border border-gray-300 p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white" required />
+                      <input 
+                        type="text" 
+                        placeholder="Enter barcode (max 30 chars)" 
+                        value={form.barcode} 
+                        maxLength={30}
+                        onChange={e => {
+                          if (e.target.value.length <= 30) {
+                            setForm({...form, barcode: e.target.value});
+                          } else {
+                            toast.error('Barcode cannot exceed 30 characters');
+                          }
+                        }} 
+                        className={`w-full border ${form.barcode.length > 30 ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'} p-2 rounded-xl focus:ring-2 focus:ring-orange-600 outline-none`} 
+                        required 
+                      />
                       <button type="button" onClick={() => setShowScanner(true)} className="flex items-center justify-center gap-1 bg-orange-100 text-orange-800 px-3 py-2 rounded-xl hover:bg-orange-200 transition whitespace-nowrap text-sm font-medium" title="Scan with Webcam">
                         <Camera size={18} /> Webcam
                       </button>
@@ -497,9 +523,15 @@ export default function Products() {
       {showScanner && (
         <BarcodeScannerModal 
           onScan={(code) => {
-            setForm(prev => ({ ...prev, barcode: code }));
+            const scannedCode = code.trim();
+            if (scannedCode.length > 30) {
+              toast.error('Scanned barcode exceeds maximum unit length of 30 characters.');
+              setForm(prev => ({ ...prev, barcode: scannedCode.substring(0, 30) }));
+            } else {
+              setForm(prev => ({ ...prev, barcode: scannedCode }));
+              toast.success('Barcode scanned successfully!');
+            }
             setShowScanner(false);
-            toast.success('Barcode scanned successfully!');
           }} 
           onClose={() => setShowScanner(false)} 
         />

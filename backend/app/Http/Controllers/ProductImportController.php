@@ -43,11 +43,13 @@ class ProductImportController extends Controller
             $validator = Validator::make($row, [
                 'name' => 'required|string',
                 'sku' => 'required|string|unique:products',
-                'barcode' => 'nullable|string|unique:products',
+                'barcode' => 'nullable|string|max:30|unique:products',
                 'category' => 'nullable|string',
                 'base_price' => 'required|numeric|min:0',
                 'stock_quantity' => 'required|integer|min:0',
                 'min_stock_threshold' => 'required|integer|min:0',
+            ], [
+                'barcode.max' => 'Barcode length cannot exceed 30 characters.'
             ]);
 
             if ($validator->fails()) {

@@ -11,6 +11,18 @@ class ProductController extends Controller
         }])->get(); 
     }
     public function store(Request $request) { 
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:100',
+            'barcode' => 'nullable|string|max:30',
+            'base_price' => 'required|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'stock_quantity' => 'nullable|numeric|min:0',
+            'min_stock_threshold' => 'nullable|numeric|min:0',
+        ], [
+            'barcode.max' => 'Barcode length cannot exceed 30 characters.'
+        ]);
+
         $product = Product::create($request->except(['stock_quantity', 'expiry_date'])); 
         if ($request->has('stock_quantity')) {
             \App\Models\BranchStock::create([
@@ -42,6 +54,18 @@ class ProductController extends Controller
     }
     public function show(Product $product) { return $product->load('batches'); }
     public function update(Request $request, Product $product) { 
+        $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'sku' => 'sometimes|required|string|max:100',
+            'barcode' => 'nullable|string|max:30',
+            'base_price' => 'sometimes|required|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'stock_quantity' => 'nullable|numeric|min:0',
+            'min_stock_threshold' => 'nullable|numeric|min:0',
+        ], [
+            'barcode.max' => 'Barcode length cannot exceed 30 characters.'
+        ]);
+
         $product->update($request->except(['stock_quantity', 'expiry_date'])); 
         if ($request->has('stock_quantity')) {
             \App\Models\BranchStock::updateOrCreate(
