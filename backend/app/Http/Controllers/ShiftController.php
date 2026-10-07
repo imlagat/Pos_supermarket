@@ -265,40 +265,36 @@ class ShiftController extends Controller
             $shift->load(['user', 'branch']);
             $tenantId = $shift->user->tenant_id ?? $shift->branch->tenant_id ?? (auth()->check() ? auth()->user()->tenant_id : null);
             
-            $emails = collect();
-
-            // 1. Get all tenant admins and managers without global scopes
-            if ($tenantId) {
-                $tenantEmails = \App\Models\User::withoutGlobalScopes()
-                    ->where('tenant_id', $tenantId)
-                    ->whereIn('role', ['admin', 'manager'])
-                    ->whereNotNull('email')
-                    ->pluck('email');
-                $emails = $emails->merge($tenantEmails);
+            if (!$tenantId) {
+                \Illuminate\Support\Facades\Log::warning("No tenant_id found for shift notification. Shift ID: {$shift->id}");
+                return;
             }
 
-            // 2. Also get Super Admin emails
-            $superAdminEmails = \App\Models\User::withoutGlobalScopes()
-                ->where('role', 'super_admin')
+            // Get all registered admin and manager emails for this specific tenant
+            $tenantAdmins = \App\Models\User::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->whereIn('role', ['admin', 'manager'])
                 ->whereNotNull('email')
                 ->pluck('email');
-            $emails = $emails->merge($superAdminEmails);
 
-            // 3. Include logged in user if admin/super_admin/manager
-            if (auth()->check() && auth()->user()->email && in_array(auth()->user()->role, ['admin', 'super_admin', 'manager'])) {
-                $emails->push(auth()->user()->email);
+            // Fallback: If no admin/manager role found, get any registered user email for this tenant
+            if ($tenantAdmins->isEmpty()) {
+                $tenantAdmins = \App\Models\User::withoutGlobalScopes()
+                    ->where('tenant_id', $tenantId)
+                    ->whereNotNull('email')
+                    ->pluck('email');
             }
 
-            $recipientList = $emails->filter()->map(function($e) {
+            $recipientList = $tenantAdmins->filter()->map(function($e) {
                 return strtolower(trim($e));
             })->unique()->values()->all();
 
             if (empty($recipientList)) {
-                \Illuminate\Support\Facades\Log::warning("No recipient emails found for shift notification. Shift ID: {$shift->id}");
+                \Illuminate\Support\Facades\Log::warning("No tenant admin emails found for Tenant ID {$tenantId}. Shift ID: {$shift->id}");
                 return;
             }
 
-            \Illuminate\Support\Facades\Log::info("Sending shift notification (Shift ID: {$shift->id}) to: " . implode(', ', $recipientList));
+            \Illuminate\Support\Facades\Log::info("Sending shift notification (Shift ID: {$shift->id}) to Tenant ID {$tenantId} admins: " . implode(', ', $recipientList));
 
             foreach ($recipientList as $email) {
                 Mail::to($email)->send($mailable);
