@@ -91,7 +91,24 @@ class ProductController extends Controller
         }
         return $product->load('batches'); 
     }
-    public function destroy(Product $product) { $product->delete(); return response()->noContent(); }
+    public function destroy(Product $product)
+    {
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($product) {
+                \App\Models\Batch::where('product_id', $product->id)->delete();
+                \App\Models\BranchStock::where('product_id', $product->id)->delete();
+                \App\Models\DiscountRule::where('product_id', $product->id)->delete();
+                $product->delete();
+            });
+
+            return response()->json(['message' => 'Product deleted successfully']);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to delete product ID {$product->id}: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Cannot delete product because it is linked to past sales or transaction records.'
+            ], 422);
+        }
+    }
     public function lookup($barcode)
     {
         $product = Product::where('barcode', $barcode)->first();

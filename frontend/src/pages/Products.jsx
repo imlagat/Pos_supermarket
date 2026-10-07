@@ -123,7 +123,7 @@ export default function Products() {
       toast.success('Deleted');
       fetchProducts();
     } catch (err) {
-      toast.error('Delete failed');
+      toast.error(err.response?.data?.message || 'Delete failed');
     }
   };
 
