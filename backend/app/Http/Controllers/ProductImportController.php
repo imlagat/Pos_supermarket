@@ -73,11 +73,16 @@ class ProductImportController extends Controller
 
         if (!empty($products)) {
             $branchId = app('current_branch_id') ?? 1;
+            $tenantId = auth()->check() ? auth()->user()->tenant_id : null;
             foreach ($products as $pData) {
                 $stockQty = $pData['stock_quantity'];
                 $minStock = $pData['min_stock_threshold'];
                 unset($pData['stock_quantity'], $pData['min_stock_threshold']);
                 
+                if ($tenantId) {
+                    $pData['tenant_id'] = $tenantId;
+                }
+
                 $product = Product::create($pData);
                 
                 \App\Models\BranchStock::create([

@@ -5,10 +5,21 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function index() { 
-        return Product::with(['batches', 'branchStocks' => function($q) {
+    public function index(Request $request) { 
+        $user = auth()->user();
+        $query = Product::with(['batches', 'branchStocks' => function($q) {
             $q->where('branch_id', app('current_branch_id') ?? 1);
-        }])->get(); 
+        }]);
+
+        if ($user) {
+            if (!$user->isSuperAdmin()) {
+                $query->where('tenant_id', $user->tenant_id);
+            } elseif ($request->hasHeader('X-Tenant-ID')) {
+                $query->where('tenant_id', $request->header('X-Tenant-ID'));
+            }
+        }
+
+        return $query->get(); 
     }
     public function store(Request $request) { 
         $request->validate([
@@ -23,7 +34,12 @@ class ProductController extends Controller
             'barcode.max' => 'Barcode length cannot exceed 30 characters.'
         ]);
 
-        $product = Product::create($request->except(['stock_quantity', 'expiry_date'])); 
+        $data = $request->except(['stock_quantity', 'expiry_date']);
+        if (auth()->check() && auth()->user()->tenant_id) {
+            $data['tenant_id'] = auth()->user()->tenant_id;
+        }
+
+        $product = Product::create($data); 
         if ($request->has('stock_quantity')) {
             \App\Models\BranchStock::create([
                 'branch_id' => app('current_branch_id') ?? 1,
