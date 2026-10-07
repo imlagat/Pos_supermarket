@@ -9,6 +9,8 @@ import {
   ShoppingCart, Tag, CreditCard, FileText 
 } from 'lucide-react';
 
+import TopProgressBar from '../common/TopProgressBar';
+import { useLoadingStore } from '../../stores/loadingStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
 import api from '../../services/api';
@@ -19,8 +21,20 @@ export default function Layout() {
   const cartItems = useCartStore(state => state.items);
   const cartCount = cartItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
+  const activeRequests = useLoadingStore(state => state.activeRequests);
+  const isNavigating = useLoadingStore(state => state.isNavigating);
+  const isSystemLoading = activeRequests > 0 || isNavigating;
+
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    useLoadingStore.getState().setNavigating(true);
+    const timer = setTimeout(() => {
+      useLoadingStore.getState().setNavigating(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
   const isBronze = user?.tenant?.tier === 'bronze';
   const isSuspended = user?.tenant && !user.tenant.is_active;
 
@@ -123,7 +137,8 @@ export default function Layout() {
   }, [billingStatus, trialEndsAt]);
 
   return (
-    <div className="flex h-screen overflow-hidden print:h-auto print:overflow-visible bg-gray-50">
+    <div className="flex h-screen overflow-hidden print:h-auto print:overflow-visible bg-gray-50 relative">
+      <TopProgressBar />
       <Sidebar isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <main className="flex-1 flex flex-col overflow-auto bg-[#F8F9FA] print:bg-white print:overflow-visible print:p-0 min-w-0">
         <header className="bg-white h-16 border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 shrink-0 z-[60] sticky top-0 print:hidden">
@@ -206,6 +221,21 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            {/* Live System Loading & Spinning Refresh Status Indicator */}
+            <div 
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 shadow-sm cursor-pointer hover:bg-slate-100 transition" 
+              onClick={() => window.location.reload()}
+              title="Click to refresh page or view status"
+            >
+              <RefreshCw size={14} className={`${isSystemLoading ? 'animate-spin text-orange-500' : 'text-slate-400 hover:text-slate-600'}`} />
+              <span className="hidden sm:inline-block">
+                {isSystemLoading ? (
+                  <span className="text-orange-600 font-bold animate-pulse">Syncing...</span>
+                ) : (
+                  <span className="text-slate-500 font-medium">Synced</span>
+                )}
+              </span>
+            </div>
             <div className="relative" ref={notifRef}>
               <button 
                 onClick={() => {

@@ -13,7 +13,10 @@ const api = axios.create({
     }
 });
 
+import { useLoadingStore } from '../stores/loadingStore';
+
 api.interceptors.request.use((config) => {
+    useLoadingStore.getState().startRequest();
     const token = localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -23,11 +26,18 @@ api.interceptors.request.use((config) => {
         config.headers['X-Branch-ID'] = branchId;
     }
     return config;
+}, (error) => {
+    useLoadingStore.getState().finishRequest();
+    return Promise.reject(error);
 });
 
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        useLoadingStore.getState().finishRequest();
+        return response;
+    },
     (error) => {
+        useLoadingStore.getState().finishRequest();
         if (error.response && error.response.status === 403 && error.response.data?.error === 'tenant_suspended_readonly') {
             useAuthStore.getState().setSuspendedModal(true);
         }
