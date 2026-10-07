@@ -99,28 +99,28 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#f3f4f6] rounded-[24px] w-full max-w-4xl overflow-hidden shadow-2xl animate-fade-in relative">
-        <button onClick={onClose} className="absolute top-5 right-5 text-gray-500 hover:text-gray-800 transition">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-6 overflow-y-auto">
+      <div className="bg-[#f3f4f6] rounded-[24px] w-full max-w-4xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in relative my-auto border border-gray-200">
+        <button onClick={onClose} className="absolute top-4 right-4 sm:top-5 sm:right-5 text-gray-500 hover:text-gray-800 transition z-10 bg-white/80 p-1.5 rounded-full">
           <X size={20} />
         </button>
         
-        <div className="p-8 pb-6">
+        <div className="p-4 sm:p-8 pb-4 sm:pb-6">
           <h2 className="text-xl font-bold text-gray-800">Close Shift</h2>
           <p className="text-sm text-gray-500 mt-1">Reconcile cash drawer, M-Pesa, and Card float</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-8 pb-8">
-          <div className="grid grid-cols-3 gap-6 mb-6">
+        <form onSubmit={handleSubmit} className="px-4 sm:px-8 pb-20 md:pb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
             
             {/* Cash Drawer Column */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
-              <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 w-fit px-3 py-1.5 rounded-lg mb-6">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col">
+              <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 w-fit px-3 py-1.5 rounded-lg mb-4 sm:mb-6">
                 <Wallet size={16} />
                 <span className="text-sm font-bold tracking-wide">Cash Drawer</span>
               </div>
               
-              <div className="space-y-3 mb-6 flex-1">
+              <div className="space-y-3 mb-4 sm:mb-6 flex-1">
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Opening</span>
                   <span className="font-semibold text-gray-800">Ksh {status.opening_cash.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -152,7 +152,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
                     required
                     value={actualCash}
                     onChange={(e) => setActualCash(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800 text-sm"
                     placeholder="0.00"
                   />
                 </div>
@@ -161,13 +161,13 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
             </div>
 
             {/* M-Pesa Float Column */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
-              <div className="flex items-center gap-2 text-orange-700 bg-orange-50 w-fit px-3 py-1.5 rounded-lg mb-6">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col">
+              <div className="flex items-center gap-2 text-orange-700 bg-orange-50 w-fit px-3 py-1.5 rounded-lg mb-4 sm:mb-6">
                 <Smartphone size={16} />
                 <span className="text-sm font-bold tracking-wide">M-Pesa Float</span>
               </div>
               
-              <div className="space-y-3 mb-6 flex-1">
+              <div className="space-y-3 mb-4 sm:mb-6 flex-1">
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Opening</span>
                   <span className="font-semibold text-gray-800">Ksh {status.opening_mpesa.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -193,7 +193,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
                     required
                     value={actualMpesa}
                     onChange={(e) => setActualMpesa(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800 text-sm"
                     placeholder="0.00"
                   />
                 </div>
@@ -202,13 +202,13 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
             </div>
 
             {/* Card Float Column */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
-              <div className="flex items-center gap-2 text-slate-700 bg-slate-50 w-fit px-3 py-1.5 rounded-lg mb-6">
+            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col">
+              <div className="flex items-center gap-2 text-slate-700 bg-slate-50 w-fit px-3 py-1.5 rounded-lg mb-4 sm:mb-6">
                 <Wallet size={16} />
                 <span className="text-sm font-bold tracking-wide">Card Float</span>
               </div>
               
-              <div className="space-y-3 mb-6 flex-1">
+              <div className="space-y-3 mb-4 sm:mb-6 flex-1">
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Opening</span>
                   <span className="font-semibold text-gray-800">Ksh 0.00</span>
@@ -234,7 +234,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
                     required
                     value={actualCard}
                     onChange={(e) => setActualCard(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-mono font-semibold text-gray-800 text-sm"
                     placeholder="0.00"
                   />
                 </div>
@@ -244,7 +244,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
 
           </div>
 
-          <div className="mb-8">
+          <div className="mb-6">
             <label className="block text-xs font-bold text-gray-400 tracking-wider mb-2 uppercase">Notes (Optional)</label>
             <textarea
               value={notes}
@@ -255,7 +255,7 @@ export default function CloseRegisterModal({ onClose, onShiftClosed }) {
             ></textarea>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               onClick={onClose}
