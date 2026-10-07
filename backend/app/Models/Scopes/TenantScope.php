@@ -36,7 +36,13 @@ class TenantScope implements Scope
             return;
         }
 
-        // 3. Unauthenticated requests must not leak tenant data
+        // 3. Unauthenticated requests:
+        // Allow User model lookups for authentication flows (login, password reset, etc.)
+        if ($model instanceof \App\Models\User || $model->getTable() === 'users') {
+            return;
+        }
+
+        // Block unauthenticated requests for domain data (products, orders, inventory, etc.)
         $builder->whereRaw('1 = 0');
     }
 }
