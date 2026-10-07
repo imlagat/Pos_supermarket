@@ -44,17 +44,8 @@ class ShiftController extends Controller
             'status' => 'open'
         ]);
 
-        // Send email to tenant admins
-        try {
-            $admins = \App\Models\User::where('tenant_id', $user->tenant_id)->where('role', 'admin')->get();
-            foreach ($admins as $admin) {
-                if ($admin->email) {
-                    Mail::to($admin->email)->send(new \App\Mail\ShiftOpenedMail($shift));
-                }
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to send shift opened email: " . $e->getMessage());
-        }
+        // Send email to tenant admins, managers, and super admins
+        $this->notifyAdminsOfShift($shift, new \App\Mail\ShiftOpenedMail($shift));
 
         return response()->json(['shift' => $shift], 201);
     }
@@ -117,23 +108,13 @@ class ShiftController extends Controller
             'notes' => $request->notes
         ]);
 
-        // Send email to tenant admins
-        try {
-            $admins = \App\Models\User::where('tenant_id', $user->tenant_id)->where('role', 'admin')->get();
-            $data = [
-                'cashSales' => $cashSales,
-                'mpesaSales' => $mpesaSales,
-                'cardSales' => $cardSales,
-                'deposits' => $deposits,
-            ];
-            foreach ($admins as $admin) {
-                if ($admin->email) {
-                    Mail::to($admin->email)->send(new \App\Mail\ShiftClosedMail($shift, $data));
-                }
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to send shift closed email: " . $e->getMessage());
-        }
+        $data = [
+            'cashSales' => $cashSales,
+            'mpesaSales' => $mpesaSales,
+            'cardSales' => $cardSales,
+            'deposits' => $deposits,
+        ];
+        $this->notifyAdminsOfShift($shift, new \App\Mail\ShiftClosedMail($shift, $data));
 
         return response()->json(['shift' => $shift]);
     }
@@ -276,5 +257,54 @@ class ShiftController extends Controller
         ]);
 
         return response()->json(['message' => 'Deposit recorded', 'movement' => $movement]);
+    }
+
+    private function notifyAdminsOfShift($shift, $mailable)
+    {
+        try {
+            $shift->load(['user', 'branch']);
+            $tenantId = $shift->user->tenant_id ?? $shift->branch->tenant_id ?? (auth()->check() ? auth()->user()->tenant_id : null);
+            
+            $emails = collect();
+
+            // 1. Get all tenant admins and managers without global scopes
+            if ($tenantId) {
+                $tenantEmails = \App\Models\User::withoutGlobalScopes()
+                    ->where('tenant_id', $tenantId)
+                    ->whereIn('role', ['admin', 'manager'])
+                    ->whereNotNull('email')
+                    ->pluck('email');
+                $emails = $emails->merge($tenantEmails);
+            }
+
+            // 2. Also get Super Admin emails
+            $superAdminEmails = \App\Models\User::withoutGlobalScopes()
+                ->where('role', 'super_admin')
+                ->whereNotNull('email')
+                ->pluck('email');
+            $emails = $emails->merge($superAdminEmails);
+
+            // 3. Include logged in user if admin/super_admin/manager
+            if (auth()->check() && auth()->user()->email && in_array(auth()->user()->role, ['admin', 'super_admin', 'manager'])) {
+                $emails->push(auth()->user()->email);
+            }
+
+            $recipientList = $emails->filter()->map(function($e) {
+                return strtolower(trim($e));
+            })->unique()->values()->all();
+
+            if (empty($recipientList)) {
+                \Illuminate\Support\Facades\Log::warning("No recipient emails found for shift notification. Shift ID: {$shift->id}");
+                return;
+            }
+
+            \Illuminate\Support\Facades\Log::info("Sending shift notification (Shift ID: {$shift->id}) to: " . implode(', ', $recipientList));
+
+            foreach ($recipientList as $email) {
+                Mail::to($email)->send($mailable);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to send shift notification email: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+        }
     }
 }
